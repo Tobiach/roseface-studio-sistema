@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-rf-blush: #F7D9E3;
+  --color-rf-rose: #E8A0B4;
+  --color-rf-rose-deep: #C46E88;
+  --color-rf-gold: #C9A227;
+  --color-rf-gold-bright: #D4AF37;
+  --color-rf-cream: #FDF8F5;
+  --color-rf-black: #1A1315;
+  --color-rf-charcoal: #4A3F42;
+  --color-rf-red-lip: #B23A48;
+  --color-rf-white: #FFFFFF;
+  --color-rf-success: #6B9080;
+  --color-rf-warning: #D9A441;
+  --color-rf-danger: #C1666B;
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Poppins', sans-serif;
+  --font-admin: 'Inter', sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-rf-cream);
+    color: var(--color-rf-black);
+    font-family: var(--font-body);
+  }
+}
+
+/* Custom utility for smooth transitions and timeline pulse */
+@keyframes goldPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(212, 175, 55, 0);
+  }
+}
+
+.animate-gold-pulse {
+  animation: goldPulse 2s infinite;
+}

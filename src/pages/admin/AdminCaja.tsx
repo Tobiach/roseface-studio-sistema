@@ -1,0 +1,207 @@
+// src/pages/admin/AdminCaja.tsx
+import React from 'react';
+import { useApp } from '../../context/AppContext';
+import { Card } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
+import { StatusPill } from '../../components/ui/StatusPill';
+import { formatCurrency } from '../../lib/formatters';
+import {
+  DollarSign,
+  TrendingUp,
+  Calendar,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
+  BarChart3,
+} from 'lucide-react';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  BarChart,
+  Bar,
+} from 'recharts';
+
+export const AdminCaja: React.FC = () => {
+  const { turnos, profesionales } = useApp();
+
+  // Mock 30 days financial timeline data
+  const dataFacturacion30Dias = [
+    { dia: '15 Jul', monto: 35000 },
+    { dia: '18 Jul', monto: 48000 },
+    { dia: '21 Jul', monto: 62000 },
+    { dia: '24 Jul', monto: 50000 },
+    { dia: '27 Jul', monto: 75000 },
+    { dia: '30 Jul', monto: 90000 },
+    { dia: '02 Ago', monto: 82000 },
+    { dia: '05 Ago', monto: 110000 },
+    { dia: '08 Ago', monto: 125000 },
+    { dia: '12 Ago', monto: 117000 },
+  ];
+
+  // Ranking per professional
+  const rankingProfesionales = profesionales.map((prof) => {
+    const turnosProf = turnos.filter(
+      (t) => t.profesionalId === prof.id && t.estado === 'completado'
+    );
+    const monto = turnosProf.reduce((sum, t) => sum + t.montoTotal, 0);
+    return {
+      nombre: prof.nombre,
+      monto,
+    };
+  });
+
+  const turnosCancelados = turnos.filter((t) => t.estado.startsWith('cancelado'));
+
+  return (
+    <div className="space-y-8 font-admin">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-pink-100">
+        <div>
+          <div className="flex items-center gap-2">
+            <Badge variant="gold">Finanzas & Control</Badge>
+            <span className="text-xs text-rf-charcoal font-medium">Control.Evo Engine</span>
+          </div>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-rf-black mt-1">
+            Caja & KPIs Financieros
+          </h1>
+        </div>
+      </div>
+
+      {/* 4 KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="space-y-2 border-l-4 border-l-rf-rose-deep">
+          <span className="text-xs font-semibold text-rf-charcoal">Facturación Hoy (12 Ago)</span>
+          <p className="text-2xl font-bold text-rf-black">{formatCurrency(117000)}</p>
+          <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+            <TrendingUp className="w-3 h-3" /> +15% vs ayer
+          </span>
+        </Card>
+
+        <Card className="space-y-2 border-l-4 border-l-rf-gold-bright">
+          <span className="text-xs font-semibold text-rf-charcoal">Facturación Esta Semana</span>
+          <p className="text-2xl font-bold text-rf-black">{formatCurrency(310000)}</p>
+          <span className="text-[10px] text-rf-charcoal">Semana del 04 al 10 de Agosto</span>
+        </Card>
+
+        <Card className="space-y-2 border-l-4 border-l-emerald-500">
+          <span className="text-xs font-semibold text-rf-charcoal">Facturación Mes de Agosto</span>
+          <p className="text-2xl font-bold text-rf-black">{formatCurrency(1450000)}</p>
+          <span className="text-[10px] text-emerald-700 font-bold">Proyección en meta</span>
+        </Card>
+
+        <Card className="space-y-2 border-l-4 border-l-rf-danger">
+          <span className="text-xs font-semibold text-rf-charcoal">Tasa de Cancelación</span>
+          <p className="text-2xl font-bold text-rf-black">4.2%</p>
+          <span className="text-[10px] text-emerald-700 font-bold">
+            Baja (Protegida por política 48h)
+          </span>
+        </Card>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Income Line Chart */}
+        <Card className="lg:col-span-7 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-rf-black">
+              Evolución de Facturación (Últimos 30 días)
+            </h3>
+            <Badge variant="rose">ARS $</Badge>
+          </div>
+
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={dataFacturacion30Dias}>
+                <defs>
+                  <linearGradient id="colorFacturacion" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#C46E88" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#C46E88" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="dia" stroke="#888888" fontSize={11} />
+                <YAxis stroke="#888888" fontSize={11} />
+                <Tooltip formatter={(val: number) => formatCurrency(val)} />
+                <Area
+                  type="monotone"
+                  dataKey="monto"
+                  stroke="#C46E88"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorFacturacion)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        {/* Bar Chart per Professional */}
+        <Card className="lg:col-span-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-rf-black">
+              Facturación por Profesional
+            </h3>
+            <BarChart3 className="w-4 h-4 text-rf-gold" />
+          </div>
+
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={rankingProfesionales}>
+                <XAxis dataKey="nombre" stroke="#888888" fontSize={11} />
+                <YAxis stroke="#888888" fontSize={11} />
+                <Tooltip formatter={(val: number) => formatCurrency(val)} />
+                <Bar dataKey="monto" fill="#D4AF37" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      {/* Cancellations & Deposit Retention Audit Table */}
+      <Card className="space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-pink-100">
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-rf-black">
+              Auditoría de Cancelaciones y Política de 48hs
+            </h3>
+            <p className="text-xs text-rf-charcoal">
+              Historial de señas devueltas (+48hs) vs retenidas (-48hs)
+            </p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead className="bg-rf-cream text-rf-charcoal uppercase font-bold text-[10px] border-b border-pink-100">
+              <tr>
+                <th className="p-3">Turno</th>
+                <th className="p-3">Fecha Cita</th>
+                <th className="p-3">Estado & Política</th>
+                <th className="p-3">Monto Seña</th>
+                <th className="p-3">Notas Internas</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-pink-100">
+              {turnosCancelados.map((t) => (
+                <tr key={t.id} className="hover:bg-pink-50/30">
+                  <td className="p-3 font-semibold text-rf-black">{t.id}</td>
+                  <td className="p-3">{t.fecha}</td>
+                  <td className="p-3">
+                    <StatusPill estado={t.estado} />
+                  </td>
+                  <td className="p-3 font-bold text-rf-black">
+                    {formatCurrency(t.montoSena)}
+                  </td>
+                  <td className="p-3 text-rf-charcoal italic">{t.notasInternas || 'Sin observaciones'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+};
