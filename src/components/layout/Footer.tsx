@@ -2,7 +2,8 @@
 import React from 'react';
 import { Logo } from '../ui/Logo';
 import { useApp } from '../../context/AppContext';
-import { MapPin, Clock, Instagram, Heart, Shield } from 'lucide-react';
+import { MapPin, Clock, Instagram, Heart, Shield, MessageCircle } from 'lucide-react';
+import { buildWhatsAppUrl } from '../../lib/whatsapp';
 
 export const Footer: React.FC = () => {
   const { rolActivo, setRolActivo } = useApp();
@@ -52,6 +53,15 @@ export const Footer: React.FC = () => {
             >
               <Instagram className="w-4 h-4 text-rf-rose-deep" />
               <span>@roseface.studio</span>
+            </a>
+            <a
+              href={buildWhatsAppUrl('Hola! Quiero reservar un turno en Rose Face Studio 💕')}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rf-cream text-rf-black text-xs font-medium border border-pink-200/60 hover:bg-rf-blush transition-colors"
+            >
+              <MessageCircle className="w-4 h-4 text-rf-rose-deep" />
+              <span>WhatsApp</span>
             </a>
           </div>
 

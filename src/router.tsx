@@ -4,6 +4,7 @@ import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { Sidebar } from './components/layout/Sidebar';
+import { FloatingWhatsAppButton } from './components/ui/FloatingWhatsAppButton';
 import { useApp } from './context/AppContext';
 
 // Pages
@@ -26,6 +27,7 @@ const PublicLayout: React.FC = () => {
         <Outlet />
       </main>
       <Footer />
+      <FloatingWhatsAppButton />
     </div>
   );
 };
