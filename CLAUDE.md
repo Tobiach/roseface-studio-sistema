@@ -81,9 +81,24 @@ Sigue siendo acción de producción — confirmar con Tobias antes de correr el 
 
 | Error | Fix |
 |---|---|
-| — | Ninguno conocido todavía (proyecto recién importado, 12/8/2026) |
+| `tsc --noEmit` explota con OOM ("Zone Allocation failed") | `Stop-Process -Name node -Force` + `$env:NODE_OPTIONS="--max-old-space-size=3072"` antes de lint/build |
 
 Ver también: `C:\Users\estudiante\.claude\controlevo-os\ERROR_REGISTRY.md`
+
+---
+
+## FUENTE DE VERDAD DEL NEGOCIO (Drive de Yosy)
+
+Carpeta madre: `Rose Face Studio - Yosy` en Google Drive — accesible sin login propio si Yosy la comparte como "Cualquiera con el enlace" (con `usp=drive_link` pide login; con `usp=sharing` funciona anónimo). Cuando esté así, se puede leer con WebFetch y descargar carpetas completas con Playwright (fila → click → botón "Descargar" que aparece scoped a esa fila, no buscar el texto "Descargar" global porque hay uno oculto por fila).
+
+Subcarpeta **"Tipografías, precios y servicios"** = precios reales + tipografía real de marca:
+- Precios de **Pestañas** y **Depilación Láser** ya verificados 1:1 contra `mockServicios.ts` (12/8/2026) — coinciden exactamente, no tocar.
+- Precios de **Cejas** y **Uñas** — sin flyer real todavía, quedan sin verificar.
+- Tipografía real del wordmark "Roseface" es un script/brush caligráfico (se usó **Alex Brush** de Google Fonts como el matching más cercano, aplicado solo al `Logo.tsx` — el resto de la app sigue en Playfair Display, que es lo que también usan los flyers reales para textos de precio/lista).
+
+Subcarpetas por servicio (`Clásicas lash ok`, `Uñas ok`, etc.) = fotos reales de trabajos, exportadas como capturas de Instagram (720x1600, con barra de estado/letterboxing negro). Pipeline usado: detectar filas negras por luminancia + recorte inteligente a cuadrado (`sharp`, `fit:'cover', position: sharp.strategy.attention`) → `src/assets/images/trabajos/`, mapeado por profesional en `src/data/trabajosFotos.ts`. Ya integradas las 44 fotos (12/8/2026) en Mili, Sharon, Camila, Valentina y Alexandra. Martina (alisados) y Sofía (masajes/faciales) siguen con stock de Unsplash — Yosy no mandó fotos reales de esas dos especialidades todavía.
+
+Carpeta **"fotos integrar app"** = fotos ya curadas por Yosy para secciones específicas de la Home (nombres literales tipo "primer imagen home.jpg") — ya usadas en Hero y sección Experiencia.
 
 ---
 
@@ -92,3 +107,4 @@ Ver también: `C:\Users\estudiante\.claude\controlevo-os\ERROR_REGISTRY.md`
 - No asumir que hay persistencia real: hoy todo son mocks en memoria, se pierden al refrescar la página.
 - No confundir con Control.Evo Puntos (Premia.ar) — proyecto de cliente distinto, repo distinto.
 - No deployar a producción sin avisar a Tobias, aunque el token esté linkeado.
+- No inventar precios de Cejas/Uñas ni fotos de Alisados/Masajes — pedir el material real a Yosy primero.
