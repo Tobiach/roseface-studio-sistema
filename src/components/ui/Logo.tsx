@@ -14,10 +14,10 @@ export const Logo: React.FC<LogoProps> = ({
   className = '',
 }) => {
   const sizeClasses = {
-    sm: { img: 'h-10 w-auto', text: 'text-base', sub: 'text-[9px]' },
-    md: { img: 'h-12 sm:h-14 w-auto', text: 'text-xl', sub: 'text-[10px]' },
-    lg: { img: 'h-16 sm:h-20 w-auto', text: 'text-2xl', sub: 'text-xs' },
-    xl: { img: 'h-24 sm:h-28 w-auto', text: 'text-3xl', sub: 'text-sm' },
+    sm: { img: 'h-10 w-auto', text: 'text-2xl', sub: 'text-[9px]' },
+    md: { img: 'h-12 sm:h-14 w-auto', text: 'text-3xl', sub: 'text-[10px]' },
+    lg: { img: 'h-16 sm:h-20 w-auto', text: 'text-4xl', sub: 'text-xs' },
+    xl: { img: 'h-24 sm:h-28 w-auto', text: 'text-5xl', sub: 'text-sm' },
   }[size];
 
   return (
@@ -31,7 +31,7 @@ export const Logo: React.FC<LogoProps> = ({
         />
       </div>
       <div className="flex flex-col">
-        <span className={`font-display font-bold text-rf-black tracking-wide leading-none ${sizeClasses.text}`}>
+        <span className={`font-script text-rf-black leading-none ${sizeClasses.text}`}>
           Roseface
         </span>
         {showSubtitle && (

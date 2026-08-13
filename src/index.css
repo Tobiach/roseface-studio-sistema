@@ -18,6 +18,7 @@
   --font-display: 'Playfair Display', Georgia, serif;
   --font-body: 'Poppins', sans-serif;
   --font-admin: 'Inter', sans-serif;
+  --font-script: 'Alex Brush', cursive;
 }
 
 @layer base {

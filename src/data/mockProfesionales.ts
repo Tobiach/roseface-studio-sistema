@@ -7,6 +7,7 @@ import fotoSofia from '../assets/images/profesionales/prof-sofia.jpg';
 import fotoAlexandra from '../assets/images/profesionales/prof-alexandra.jpg';
 import fotoCamila from '../assets/images/profesionales/prof-camila.jpg';
 import fotoValentina from '../assets/images/profesionales/prof-valentina.jpg';
+import { trabajosPorProfesional } from './trabajosFotos';
 
 export const mockProfesionales: Profesional[] = [
   {
@@ -17,13 +18,7 @@ export const mockProfesionales: Profesional[] = [
     especialidades: ['Pestañas', 'Lifting de Pestañas', 'Cejas'],
     bio: 'Especialista senior en diseño de mirada y lifting de pestañas. Apasionada por resaltar la belleza natural con técnicas de alta precisión.',
     aniosExperiencia: 5,
-    galeria: [
-      'https://images.unsplash.com/photo-1583001809873-a1284d5da326?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=800',
-    ],
+    galeria: trabajosPorProfesional['prof-mili'],
     calificacionPromedio: 4.9,
     cantidadResenas: 86,
     modeloComision: {
@@ -48,11 +43,7 @@ export const mockProfesionales: Profesional[] = [
     especialidades: ['Pestañas', 'Volumen Ruso'],
     bio: 'Experta certificada en extensiones pelo a pelo y volumen ruso. Enfoque hiper-detallista para miradas de impacto.',
     aniosExperiencia: 3,
-    galeria: [
-      'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1583001809873-a1284d5da326?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&q=80&w=800',
-    ],
+    galeria: trabajosPorProfesional['prof-sharon'],
     calificacionPromedio: 4.9,
     cantidadResenas: 142,
     modeloComision: {
@@ -133,11 +124,7 @@ export const mockProfesionales: Profesional[] = [
     especialidades: ['Uñas', 'Semipermanente', 'Esculpidas'],
     bio: 'Nail artist apasionada por la kapping gel, esculpidas en acrílico y esmaltado semipermanente con nail art personalizado.',
     aniosExperiencia: 4,
-    galeria: [
-      'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1632345031435-8727fec88f2d?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&q=80&w=800',
-    ],
+    galeria: trabajosPorProfesional['prof-alexandra'],
     calificacionPromedio: 4.9,
     cantidadResenas: 142,
     modeloComision: {
@@ -162,10 +149,7 @@ export const mockProfesionales: Profesional[] = [
     especialidades: ['Depilación Láser', 'Cejas'],
     bio: 'Técnica láser con equipamiento Soprano Ice de última generación y especialista en visajismo de cejas.',
     aniosExperiencia: 3,
-    galeria: [
-      'https://images.unsplash.com/photo-1519415510236-718bdfcd89c8?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=800',
-    ],
+    galeria: trabajosPorProfesional['prof-camila'],
     calificacionPromedio: 4.8,
     cantidadResenas: 64,
     modeloComision: {
@@ -190,10 +174,7 @@ export const mockProfesionales: Profesional[] = [
     especialidades: ['Cejas', 'Laminado de Cejas'],
     bio: 'Especialista en laminado de cejas — cejas peinadas, definidas y con efecto duradero.',
     aniosExperiencia: 2,
-    galeria: [
-      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?auto=format&fit=crop&q=80&w=800',
-    ],
+    galeria: trabajosPorProfesional['prof-valentina'],
     calificacionPromedio: 4.8,
     cantidadResenas: 45,
     modeloComision: {

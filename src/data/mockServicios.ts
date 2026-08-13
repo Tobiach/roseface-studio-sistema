@@ -150,8 +150,8 @@ export const mockServicios: Servicio[] = [
     profesionalesQueLoRealizan: ['prof-mili'],
   },
   {
-    id: 'serv-cejas-visajismo',
-    nombre: 'Visajismo de Cejas',
+    id: 'serv-cejas-sombreado',
+    nombre: 'Sombreado de Cejas',
     categoria: 'Cejas',
     descripcion: 'Diseño de cejas según estructura ósea y rasgos faciales únicos.',
     duracionMinutos: 40,

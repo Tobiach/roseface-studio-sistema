@@ -8,6 +8,8 @@ import { RitualTimeline } from '../components/ui/RitualTimeline';
 import { formatCurrency } from '../lib/formatters';
 import { buildWhatsAppUrl } from '../lib/whatsapp';
 import { Calendar, Star, MapPin, Clock, MessageCircle } from 'lucide-react';
+import heroYosyEstudio from '../assets/images/home/hero-yosy-estudio.jpg';
+import experienciaClienta from '../assets/images/home/experiencia-clienta.jpg';
 
 const CATEGORIA_DESCRIPTOR: Record<string, string> = {
   Pestañas: 'Miradas con carácter',
@@ -43,9 +45,10 @@ export const Home: React.FC = () => {
     <div className="pb-16">
       {/* 1. HERO — deseo / experiencia */}
       <section className="px-4 pt-8 sm:pt-14 max-w-3xl mx-auto">
-        <PhotoPlaceholder
-          label="Foto real del estudio, la atención o un resultado — reemplazar antes de publicar"
-          aspect="aspect-[4/5] sm:aspect-[16/9]"
+        <img
+          src={heroYosyEstudio}
+          alt="Yosy en Roseface Studio"
+          className="w-full aspect-[4/5] object-cover rounded-2xl border border-rf-gold/40"
         />
         <div className="text-center mt-8 space-y-4">
           <p className="text-xs font-semibold tracking-[0.2em] uppercase text-rf-rose-deep">
@@ -107,9 +110,10 @@ export const Home: React.FC = () => {
 
       {/* 4. EXPERIENCIA */}
       <section className="px-4 py-16 max-w-3xl mx-auto space-y-6">
-        <PhotoPlaceholder
-          label="Foto real del espacio o de una clienta en tratamiento — reemplazar antes de publicar"
-          aspect="aspect-[16/10]"
+        <img
+          src={experienciaClienta}
+          alt="Resultado real en una clienta de Roseface"
+          className="w-full aspect-[4/5] object-cover rounded-2xl border border-rf-gold/40"
         />
         <p className="text-center font-display text-xl sm:text-2xl text-rf-black italic">
           Más que un turno, un momento para vos.
