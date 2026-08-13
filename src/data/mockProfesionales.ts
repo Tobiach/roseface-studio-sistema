@@ -1,12 +1,19 @@
 // src/data/mockProfesionales.ts
 import { Profesional } from '../types';
+import fotoMili from '../assets/images/profesionales/prof-mili.jpg';
+import fotoSharon from '../assets/images/profesionales/prof-sharon.jpg';
+import fotoMartina from '../assets/images/profesionales/prof-martina.jpg';
+import fotoSofia from '../assets/images/profesionales/prof-sofia.jpg';
+import fotoAlexandra from '../assets/images/profesionales/prof-alexandra.jpg';
+import fotoCamila from '../assets/images/profesionales/prof-camila.jpg';
+import fotoValentina from '../assets/images/profesionales/prof-valentina.jpg';
 
 export const mockProfesionales: Profesional[] = [
   {
     id: 'prof-mili',
     nombre: 'Mili',
     apodo: 'Mili',
-    fotoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=600',
+    fotoUrl: fotoMili,
     especialidades: ['Pestañas', 'Lifting de Pestañas', 'Cejas'],
     bio: 'Especialista senior en diseño de mirada y lifting de pestañas. Apasionada por resaltar la belleza natural con técnicas de alta precisión.',
     aniosExperiencia: 5,
@@ -37,7 +44,7 @@ export const mockProfesionales: Profesional[] = [
     id: 'prof-sharon',
     nombre: 'Sharon',
     apodo: 'Sharon',
-    fotoUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=600',
+    fotoUrl: fotoSharon,
     especialidades: ['Pestañas', 'Volumen Ruso'],
     bio: 'Experta certificada en extensiones pelo a pelo y volumen ruso. Enfoque hiper-detallista para miradas de impacto.',
     aniosExperiencia: 3,
@@ -66,7 +73,7 @@ export const mockProfesionales: Profesional[] = [
     id: 'prof-martina',
     nombre: 'Martina',
     apodo: 'Marti',
-    fotoUrl: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&q=80&w=600',
+    fotoUrl: fotoMartina,
     especialidades: ['Alisados', 'Alisado Brasilero'],
     bio: 'Especialista en nutrición capilar y alisados progresivos libres de formol. Cabellos brillantes, sedosos y saludables.',
     aniosExperiencia: 4,
@@ -94,7 +101,7 @@ export const mockProfesionales: Profesional[] = [
     id: 'prof-sofia',
     nombre: 'Sofía',
     apodo: 'Sofi',
-    fotoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600',
+    fotoUrl: fotoSofia,
     especialidades: ['Masajes y Faciales', 'Limpieza Facial Profunda'],
     bio: 'Cosmiatra y masoterapeuta. Cuidado integral de la piel, peeling ultrasónico y masajes descontracturantes para el relax total.',
     aniosExperiencia: 6,
@@ -122,7 +129,7 @@ export const mockProfesionales: Profesional[] = [
     id: 'prof-alexandra',
     nombre: 'Alexandra',
     apodo: 'Ale',
-    fotoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=600',
+    fotoUrl: fotoAlexandra,
     especialidades: ['Uñas', 'Semipermanente', 'Esculpidas'],
     bio: 'Nail artist apasionada por la kapping gel, esculpidas en acrílico y esmaltado semipermanente con nail art personalizado.',
     aniosExperiencia: 4,
@@ -151,7 +158,7 @@ export const mockProfesionales: Profesional[] = [
     id: 'prof-camila',
     nombre: 'Camila',
     apodo: 'Cami',
-    fotoUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600',
+    fotoUrl: fotoCamila,
     especialidades: ['Depilación Láser', 'Cejas'],
     bio: 'Técnica láser con equipamiento Soprano Ice de última generación y especialista en visajismo de cejas.',
     aniosExperiencia: 3,
@@ -179,7 +186,7 @@ export const mockProfesionales: Profesional[] = [
     id: 'prof-valentina',
     nombre: 'Valentina',
     apodo: 'Valen',
-    fotoUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=600',
+    fotoUrl: fotoValentina,
     especialidades: ['Cejas', 'Laminado de Cejas'],
     bio: 'Especialista en laminado de cejas — cejas peinadas, definidas y con efecto duradero.',
     aniosExperiencia: 2,
