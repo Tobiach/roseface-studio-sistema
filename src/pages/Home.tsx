@@ -1,295 +1,224 @@
 // src/pages/Home.tsx
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
+import { PhotoPlaceholder } from '../components/ui/PhotoPlaceholder';
 import { RitualTimeline } from '../components/ui/RitualTimeline';
 import { formatCurrency } from '../lib/formatters';
-import {
-  Sparkles,
-  Calendar,
-  Clock,
-  Star,
-  CheckCircle2,
-  Heart,
-  Crown,
-  ChevronRight,
-  ShieldCheck,
-  Award,
-} from 'lucide-react';
+import { buildWhatsAppUrl } from '../lib/whatsapp';
+import { Calendar, Star, MapPin, Clock, MessageCircle } from 'lucide-react';
+
+const CATEGORIA_DESCRIPTOR: Record<string, string> = {
+  Pestañas: 'Miradas con carácter',
+  Cejas: 'El marco perfecto',
+  Uñas: 'Detalle que se nota',
+  Alisados: 'Brillo que se siente',
+  'Depilación Láser': 'Piel lista, siempre',
+  'Masajes y Faciales': 'Piel que respira',
+};
 
 export const Home: React.FC = () => {
-  const { servicios, profesionales, beneficiosVIP } = useApp();
-  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('Todas');
+  const { servicios, profesionales } = useApp();
 
-  const categorias = [
-    'Todas',
-    'Pestañas',
-    'Cejas',
-    'Uñas',
-    'Alisados',
-    'Depilación Láser',
-    'Masajes y Faciales',
-  ];
+  const categorias = useMemo(() => {
+    const nombres = Array.from(new Set(servicios.map((s) => s.categoria)));
+    return nombres.map((nombre) => ({
+      nombre,
+      desde: Math.min(...servicios.filter((s) => s.categoria === nombre).map((s) => s.precio)),
+    }));
+  }, [servicios]);
 
-  const serviciosFiltrados =
-    categoriaSeleccionada === 'Todas'
-      ? servicios
-      : servicios.filter((s) => s.categoria === categoriaSeleccionada);
+  const resenas = useMemo(() => {
+    const total = profesionales.reduce((acc, p) => acc + p.cantidadResenas, 0);
+    const promedioPonderado =
+      profesionales.reduce((acc, p) => acc + p.calificacionPromedio * p.cantidadResenas, 0) /
+      (total || 1);
+    return { total, promedio: promedioPonderado };
+  }, [profesionales]);
+
+  const mensajeWhatsApp = buildWhatsAppUrl('Hola! Quiero reservar un turno en Rose Face Studio 💕');
 
   return (
-    <div className="space-y-20 pb-16">
-      {/* HERO SECTION */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-pink-50/80 via-rf-cream to-rf-cream pt-12 pb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left Column Text */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rf-blush text-rf-rose-deep text-xs font-semibold border border-pink-200">
-                <Sparkles className="w-3.5 h-3.5 text-rf-gold" />
-                <span>Estudio Estético Exclusivo en Caballito</span>
-              </div>
-
-              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold text-rf-black leading-tight">
-                Tu momento de cuidado, <br />
-                <span className="italic text-rf-rose-deep font-serif">sin vueltas ni esperas</span>
-              </h1>
-
-              <p className="text-base sm:text-lg text-rf-charcoal max-w-xl mx-auto lg:mx-0 leading-relaxed font-body">
-                Reservá tu turno en 60 segundos con confirmación inmediata, recordatorios automáticos por WhatsApp y seña transparente.
-              </p>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
-                <Link to="/reserva">
-                  <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-md">
-                    <Calendar className="w-5 h-5" />
-                    <span>Reservar mi turno</span>
-                  </Button>
-                </Link>
-                <Link to="/profesionales">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    <span>Conocer al equipo</span>
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Guarantees Badges */}
-              <div className="pt-6 border-t border-pink-200/60 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-rf-charcoal">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <ShieldCheck className="w-4 h-4 text-rf-gold" />
-                  <span>Seña 30% protegida</span>
-                </div>
-                <div className="flex items-center gap-1.5 font-medium">
-                  <Clock className="w-4 h-4 text-rf-rose-deep" />
-                  <span>Cancelación flexible +48hs</span>
-                </div>
-                <div className="flex items-center gap-1.5 font-medium">
-                  <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                  <span>4.9 ★ (Más de 500 reseñas)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column Signature Element Showcase */}
-            <div className="lg:col-span-5">
-              <div className="relative mx-auto max-w-md lg:max-w-none bg-white/90 backdrop-blur-md rounded-3xl p-6 border border-pink-100 shadow-xl space-y-5">
-                <div className="flex items-center justify-between pb-3 border-b border-pink-100">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-rf-rose-deep animate-ping" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-rf-rose-deep">
-                      Ritual de Atención en Vivo
-                    </span>
-                  </div>
-                  <Badge variant="gold" size="sm">Turno en Progreso</Badge>
-                </div>
-
-                {/* Live Ritual Timeline Signature Element */}
-                <RitualTimeline estado="sena_confirmada" />
-
-                <div className="bg-rf-cream p-4 rounded-2xl border border-pink-200/60 space-y-2 text-xs">
-                  <div className="flex items-center justify-between font-semibold text-rf-black">
-                    <span>Lifting de Pestañas + Nutrición</span>
-                    <span className="text-rf-rose-deep font-bold">{formatCurrency(30000)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-rf-charcoal text-[11px]">
-                    <span>Profesional: Mili</span>
-                    <span>Seña confirmada ($9.000)</span>
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-center text-rf-charcoal italic">
-                  ✨ "Cada turno se gestiona solo de principio a fin, para que tu única preocupación sea disfrutar."
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CATÁLOGO DE SERVICIOS */}
-      <section id="servicios" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="text-center max-w-2xl mx-auto space-y-3">
-          <Badge variant="rose">Nuestros Servicios</Badge>
-          <h2 className="font-display text-3xl sm:text-4xl font-bold text-rf-black">
-            Experiencias diseñadas para resaltar tu mirada y tu piel
-          </h2>
-          <p className="text-sm text-rf-charcoal">
-            Elegí la categoría para ver detalles, precios y reservar tu lugar.
+    <div className="pb-16">
+      {/* 1. HERO — deseo / experiencia */}
+      <section className="px-4 pt-8 sm:pt-14 max-w-3xl mx-auto">
+        <PhotoPlaceholder
+          label="Foto real del estudio, la atención o un resultado — reemplazar antes de publicar"
+          aspect="aspect-[4/5] sm:aspect-[16/9]"
+        />
+        <div className="text-center mt-8 space-y-4">
+          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-rf-rose-deep">
+            Roseface · Caballito
           </p>
-        </div>
-
-        {/* Category Selector Tabs */}
-        <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {categorias.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategoriaSeleccionada(cat)}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                categoriaSeleccionada === cat
-                  ? 'bg-rf-rose-deep text-white shadow-xs'
-                  : 'bg-white text-rf-charcoal border border-pink-100 hover:bg-rf-blush/50'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {serviciosFiltrados.map((servicio) => (
-            <Card key={servicio.id} hoverable className="flex flex-col justify-between space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Badge variant="rose">{servicio.categoria}</Badge>
-                  <span className="text-xs text-rf-charcoal flex items-center gap-1 font-medium">
-                    <Clock className="w-3.5 h-3.5 text-rf-rose-deep" />
-                    {servicio.duracionMinutos} min
-                  </span>
-                </div>
-                <h3 className="font-display text-lg font-bold text-rf-black">
-                  {servicio.nombre}
-                </h3>
-                <p className="text-xs text-rf-charcoal leading-relaxed">
-                  {servicio.descripcion}
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-pink-100 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] text-gray-400 block font-medium">Precio Total</span>
-                  <span className="text-lg font-bold text-rf-black">
-                    {formatCurrency(servicio.precio)}
-                  </span>
-                </div>
-
-                <Link to={`/reserva?servicioId=${servicio.id}`}>
-                  <Button variant="secondary" size="sm">
-                    <span>Reservar</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Button>
-                </Link>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* EQUIPO DE PROFESIONALES PREVIEW */}
-      <section className="bg-rf-blush/30 py-16 border-y border-pink-100/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <Badge variant="gold">Equipo Experto</Badge>
-              <h2 className="font-display text-3xl font-bold text-rf-black mt-2">
-                Especialistas apasionadas por tu belleza
-              </h2>
-            </div>
-            <Link to="/profesionales">
-              <Button variant="outline" size="sm">
-                <span>Ver todo el equipo</span>
-                <ChevronRight className="w-4 h-4" />
+          <h1 className="font-display text-4xl sm:text-5xl font-semibold text-rf-black leading-tight">
+            Tu momento para vos.
+          </h1>
+          <p className="text-base text-rf-charcoal font-body max-w-md mx-auto leading-relaxed">
+            Belleza, cuidado y ese ratito que te debías.
+          </p>
+          <div className="pt-2">
+            <Link to="/reserva">
+              <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-sm">
+                <Calendar className="w-5 h-5" />
+                <span>Reservar mi turno</span>
               </Button>
             </Link>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {profesionales.slice(0, 4).map((prof) => (
-              <Card key={prof.id} hoverable className="text-center space-y-4">
-                <div className="relative mx-auto w-24 h-24 rounded-full overflow-hidden border-2 border-rf-gold p-0.5">
-                  <img
-                    src={prof.fotoUrl}
-                    alt={prof.nombre}
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-lg text-rf-black">{prof.nombre}</h3>
-                  <div className="flex flex-wrap items-center justify-center gap-1 mt-1">
-                    {prof.especialidades.map((esp) => (
-                      <span key={esp} className="text-[10px] bg-pink-50 text-rf-rose-deep px-2 py-0.5 rounded-full font-medium">
-                        {esp}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-center gap-1 text-xs text-amber-600 font-bold">
-                  <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                  <span>{prof.calificacionPromedio}</span>
-                  <span className="text-gray-400 font-normal">({prof.cantidadResenas} reseñas)</span>
-                </div>
-
-                <Link to={`/profesionales/${prof.id}`} className="block w-full">
-                  <Button variant="outline" size="sm" fullWidth>
-                    Ver perfil
-                  </Button>
-                </Link>
-              </Card>
-            ))}
-          </div>
+          <p className="text-[11px] text-rf-charcoal/80 pt-1">
+            Atención personalizada · Turnos online · Confirmación por WhatsApp
+          </p>
         </div>
       </section>
 
-      {/* ECOSISTEMA VIP BANNER PREVIEW */}
-      <section id="vip" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-gradient-to-r from-rf-black via-[#2a1d22] to-rf-black text-white rounded-3xl p-8 sm:p-12 shadow-xl border border-rf-gold/30 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-rf-gold/10 rounded-full blur-3xl -z-0" />
-          
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-7 space-y-4">
-              <Badge variant="gold" icon={<Crown className="w-3.5 h-3.5" />}>
-                Ecosistema VIP Roseface
-              </Badge>
-              <h2 className="font-display text-3xl sm:text-4xl font-bold leading-snug">
-                Tu fidelidad tiene premios exclusivos
-              </h2>
-              <p className="text-sm text-pink-100/80 leading-relaxed max-w-lg">
-                Sumá puntos con cada visita, disfrutá de tu bono especial de cumpleaños y regalale descuentos a tus amigas con nuestro programa de referidos.
-              </p>
+      {/* 2. MARCA — identificación */}
+      <section className="px-4 py-16 max-w-xl mx-auto text-center space-y-4">
+        <h2 className="font-display text-2xl sm:text-3xl text-rf-black leading-snug">
+          Un espacio pensado para que te sientas tan bien como te ves.
+        </h2>
+        <p className="text-sm text-rf-charcoal leading-relaxed font-body max-w-md mx-auto">
+          En Roseface cada detalle está pensado para que desconectes del afuera y te dediques,
+          por una vez, el tiempo que tanto le das a los demás.
+        </p>
+      </section>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 text-xs">
-                {beneficiosVIP.slice(0, 3).map((ben) => (
-                  <div key={ben.id} className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/10">
-                    <p className="font-semibold text-rf-gold-bright">{ben.nombre}</p>
-                    <p className="text-[10px] text-gray-300 mt-1">{ben.puntosNecesarios > 0 ? `${ben.puntosNecesarios} pts` : 'Gratis en Cumpleaños'}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="lg:col-span-5 text-center lg:text-right">
-              <Link to="/reserva">
-                <Button variant="gold" size="lg" className="shadow-lg">
-                  <Sparkles className="w-5 h-5" />
-                  <span>Empezar a sumar puntos</span>
-                </Button>
-              </Link>
-            </div>
-          </div>
+      {/* 3. SERVICIOS */}
+      <section id="servicios" className="px-4 py-16 max-w-4xl mx-auto space-y-8">
+        <div className="text-center">
+          <h2 className="font-display text-3xl text-rf-black">Elegí tu momento</h2>
         </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {categorias.map((cat) => (
+            <Link
+              key={cat.nombre}
+              to="/reserva"
+              className="group block rounded-2xl border border-pink-100 bg-white p-5 space-y-1.5 hover:border-rf-gold transition-colors"
+            >
+              <p className="font-display text-lg text-rf-black leading-snug">{cat.nombre}</p>
+              <p className="text-[11px] text-rf-rose-deep italic">
+                {CATEGORIA_DESCRIPTOR[cat.nombre] ?? ''}
+              </p>
+              <p className="text-[11px] text-rf-charcoal pt-1">Desde {formatCurrency(cat.desde)}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* 4. EXPERIENCIA */}
+      <section className="px-4 py-16 max-w-3xl mx-auto space-y-6">
+        <PhotoPlaceholder
+          label="Foto real del espacio o de una clienta en tratamiento — reemplazar antes de publicar"
+          aspect="aspect-[16/10]"
+        />
+        <p className="text-center font-display text-xl sm:text-2xl text-rf-black italic">
+          Más que un turno, un momento para vos.
+        </p>
+      </section>
+
+      {/* 5. EQUIPO */}
+      <section className="px-4 py-16 max-w-4xl mx-auto space-y-8">
+        <div className="text-center space-y-2 max-w-md mx-auto">
+          <h2 className="font-display text-3xl text-rf-black">Detrás de Roseface</h2>
+          <p className="text-sm text-rf-charcoal leading-relaxed">
+            Un equipo que se formó para una sola cosa: que salgas de acá mejor que como llegaste.
+          </p>
+        </div>
+
+        <div className="flex gap-5 overflow-x-auto pb-2 px-1 scrollbar-none sm:justify-center sm:flex-wrap">
+          {profesionales.map((prof) => (
+            <Link
+              key={prof.id}
+              to={`/profesionales/${prof.id}`}
+              className="flex flex-col items-center gap-2 shrink-0 w-20"
+            >
+              <img
+                src={prof.fotoUrl}
+                alt={prof.nombre}
+                className="w-16 h-16 rounded-full object-cover border-2 border-rf-gold/70"
+              />
+              <span className="text-xs font-medium text-rf-black text-center">{prof.nombre}</span>
+            </Link>
+          ))}
+        </div>
+
+        <div className="text-center">
+          <Link to="/profesionales">
+            <Button variant="outline" size="sm">
+              Conocer al equipo completo
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* 6. PRUEBA SOCIAL */}
+      <section className="px-4 py-16 max-w-md mx-auto text-center space-y-3">
+        <div className="flex justify-center gap-1">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star key={i} className="w-6 h-6 fill-rf-gold-bright text-rf-gold-bright" />
+          ))}
+        </div>
+        <p className="font-display text-3xl text-rf-black">{resenas.promedio.toFixed(1)} / 5</p>
+        <p className="text-sm text-rf-charcoal">
+          Más de {Math.floor(resenas.total / 100) * 100} reseñas
+        </p>
+      </section>
+
+      {/* 7. RESERVA — facilidad, presentada como beneficio */}
+      <section className="px-4 py-16 max-w-2xl mx-auto space-y-6">
+        <div className="text-center space-y-2">
+          <h2 className="font-display text-2xl sm:text-3xl text-rf-black">
+            Tu turno, sin preocuparte por nada.
+          </h2>
+          <p className="text-sm text-rf-charcoal italic">
+            Reservás → Confirmamos → Te recordamos → Disfrutás.
+          </p>
+        </div>
+        <div className="bg-white rounded-3xl border border-pink-100 p-6">
+          <RitualTimeline estado="completado" />
+        </div>
+      </section>
+
+      {/* 8. UBICACIÓN */}
+      <section className="px-4 py-16 max-w-2xl mx-auto space-y-6">
+        <h2 className="font-display text-2xl sm:text-3xl text-rf-black text-center">
+          Estamos en Caballito.
+        </h2>
+        <PhotoPlaceholder
+          label="Foto real de la fachada o entrada del estudio — reemplazar antes de publicar"
+          aspect="aspect-[16/9]"
+        />
+        <div className="space-y-3 text-sm text-rf-charcoal max-w-sm mx-auto">
+          <div className="flex items-start gap-2">
+            <MapPin className="w-4 h-4 text-rf-rose-deep shrink-0 mt-0.5" />
+            <span>Av. Pedro Goyena 850, Caballito, CABA</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-rf-rose-deep shrink-0" />
+            <span>Lun a Sáb: 09:00 a 19:00 hs</span>
+          </div>
+          <a
+            href={mensajeWhatsApp}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 text-rf-rose-deep font-medium"
+          >
+            <MessageCircle className="w-4 h-4 shrink-0" />
+            <span>Escribinos por WhatsApp</span>
+          </a>
+        </div>
+      </section>
+
+      {/* 9. CTA FINAL */}
+      <section className="px-4 py-16 max-w-md mx-auto text-center space-y-4">
+        <h2 className="font-display text-3xl text-rf-black">¿Nos regalamos un ratito?</h2>
+        <Link to="/reserva">
+          <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-sm">
+            <Calendar className="w-5 h-5" />
+            <span>Reservar mi turno</span>
+          </Button>
+        </Link>
+        <p className="text-xs text-rf-charcoal">Te esperamos en Roseface · Caballito, CABA</p>
       </section>
     </div>
   );
