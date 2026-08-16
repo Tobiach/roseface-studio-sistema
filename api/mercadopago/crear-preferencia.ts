@@ -15,9 +15,11 @@ interface CrearPreferenciaBody {
   servicioId: string;
   servicioNombre: string;
   profesionalId: string;
+  profesionalNombre: string;
   fecha: string;
   hora: string;
   montoSena: number;
+  montoTotal: number;
   clienta: { nombre: string; telefono?: string };
 }
 
@@ -34,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const body = req.body as Partial<CrearPreferenciaBody>;
-  const { turnoId, servicioId, servicioNombre, profesionalId, fecha, hora, montoSena, clienta } = body ?? {};
+  const { turnoId, servicioId, servicioNombre, profesionalId, profesionalNombre, fecha, hora, montoSena, montoTotal, clienta } = body ?? {};
 
   if (!turnoId || !servicioId || !profesionalId || !fecha || !hora || !montoSena || !clienta?.nombre) {
     res.status(400).json({ error: 'Faltan datos de la reserva para crear la preferencia' });
@@ -45,6 +47,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const client = new MercadoPagoConfig({ accessToken });
     const preference = new Preference(client);
     const appUrl = process.env.APP_URL || `https://${req.headers.host}`;
+
+    // Va en la URL de vuelta para poder armar un mensaje de confirmación
+    // personalizado aunque el navegador vuelva desde el dominio externo de
+    // Mercado Pago (ahí se pierde el estado en memoria de la SPA).
+    const resumenParams = new URLSearchParams({
+      turnoId,
+      servicio: servicioNombre || '',
+      profesional: profesionalNombre || '',
+      fecha,
+      hora,
+      montoSena: String(montoSena),
+      montoTotal: String(montoTotal ?? ''),
+      nombre: clienta.nombre,
+    }).toString();
 
     const result = await preference.create({
       body: {
@@ -64,8 +80,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         external_reference: turnoId,
         metadata: { turnoId, servicioId, profesionalId, fecha, hora },
         back_urls: {
-          success: `${appUrl}/reserva/confirmacion`,
-          pending: `${appUrl}/reserva/confirmacion`,
+          success: `${appUrl}/reserva/confirmacion?${resumenParams}&status=approved`,
+          pending: `${appUrl}/reserva/confirmacion?${resumenParams}&status=pending`,
           failure: `${appUrl}/reserva`,
         },
         auto_return: 'approved',

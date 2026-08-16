@@ -71,6 +71,13 @@ export const Reserva: React.FC = () => {
     '18:30',
   ];
 
+  // Monto de seña real del servicio elegido — nunca hardcodeado, sale de
+  // servicio.porcentajeSena (hoy 30% en todos, pero puede variar por servicio)
+  const montoSena = servicioSeleccionado
+    ? Math.round(servicioSeleccionado.precio * (servicioSeleccionado.porcentajeSena / 100))
+    : 0;
+  const saldoRestante = servicioSeleccionado ? servicioSeleccionado.precio - montoSena : 0;
+
   // Handle Mercado Pago payment — Fase 3: intenta crear una preferencia real
   // contra /api/mercadopago/crear-preferencia. Si falla (sin MP_ACCESS_TOKEN
   // configurado, o corriendo local sin funciones serverless), cae al flujo
@@ -80,9 +87,6 @@ export const Reserva: React.FC = () => {
 
     setIsProcessingPayment(true);
 
-    const montoSena = Math.round(
-      servicioSeleccionado.precio * (servicioSeleccionado.porcentajeSena / 100)
-    );
     const clientaExistente = clientas.find((c) => c.nombre.toLowerCase() === nombreClienta.toLowerCase());
     const clientaId = clientaExistente ? clientaExistente.id : 'cli-01';
 
@@ -112,9 +116,11 @@ export const Reserva: React.FC = () => {
           servicioId: servicioSeleccionado.id,
           servicioNombre: servicioSeleccionado.nombre,
           profesionalId: profesionalSeleccionado.id,
+          profesionalNombre: profesionalSeleccionado.nombre,
           fecha: fechaSeleccionada,
           hora: horaSeleccionada,
           montoSena,
+          montoTotal: servicioSeleccionado.precio,
           clienta: { nombre: nombreClienta, telefono: telefonoClienta },
         }),
       });
@@ -208,7 +214,7 @@ export const Reserva: React.FC = () => {
                         {serv.duracionMinutos} min
                       </span>
                       <span className="text-emerald-700 font-semibold">
-                        Seña 30%: {formatCurrency(serv.precio * 0.3)}
+                        Seña {serv.porcentajeSena}%: {formatCurrency(Math.round(serv.precio * (serv.porcentajeSena / 100)))}
                       </span>
                     </div>
                   </div>
@@ -411,13 +417,15 @@ export const Reserva: React.FC = () => {
                     <span className="font-bold text-rf-black">{formatCurrency(servicioSeleccionado.precio)}</span>
                   </div>
                   <div className="flex justify-between text-lg bg-pink-50 p-3 rounded-xl border border-pink-200">
-                    <span className="font-bold text-rf-rose-deep">Seña a Abonar Hoy (30%):</span>
+                    <span className="font-bold text-rf-rose-deep">
+                      Seña a Abonar Hoy ({servicioSeleccionado.porcentajeSena}%):
+                    </span>
                     <span className="font-extrabold text-rf-rose-deep">
-                      {formatCurrency(servicioSeleccionado.precio * 0.3)}
+                      {formatCurrency(montoSena)}
                     </span>
                   </div>
                   <p className="text-[11px] text-rf-charcoal italic">
-                    El saldo restante de {formatCurrency(servicioSeleccionado.precio * 0.7)} se abona en el estudio el día de tu turno.
+                    El saldo restante de {formatCurrency(saldoRestante)} se abona en el estudio el día de tu turno.
                   </p>
                 </div>
               </Card>
@@ -460,7 +468,7 @@ export const Reserva: React.FC = () => {
 
                 <p className="text-xs text-gray-600 leading-relaxed">
                   Vas a abonar la seña de{' '}
-                  <strong className="text-sky-900">{formatCurrency(servicioSeleccionado.precio * 0.3)}</strong> con Mercado Pago. Tu reserva queda confirmada al instante.
+                  <strong className="text-sky-900">{formatCurrency(montoSena)}</strong> con Mercado Pago. Tu reserva queda confirmada al instante.
                 </p>
 
                 <div className="space-y-2 pt-2">
