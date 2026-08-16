@@ -141,9 +141,12 @@ export const Reserva: React.FC = () => {
       <div className="bg-white rounded-3xl p-6 border border-pink-100 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-rf-rose-deep uppercase tracking-wider">
-              Reserva de Turno Online
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-rf-rose-deep uppercase tracking-wider">
+                Reserva de Turno Online
+              </span>
+              <Badge variant="success" size="sm">Disponible 24/7</Badge>
+            </div>
             <h1 className="font-display text-2xl font-bold text-rf-black">
               {step === 1 && 'Paso 1: Seleccioná tu Servicio'}
               {step === 2 && 'Paso 2: Elegí tu Profesional'}

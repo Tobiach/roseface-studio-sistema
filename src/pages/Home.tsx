@@ -208,12 +208,21 @@ export const Home: React.FC = () => {
         </p>
       </section>
 
-      {/* 7. RESERVA — facilidad, presentada como beneficio */}
+      {/* 7. RESERVA — promesa central: independencia y disponibilidad */}
       <section className="px-4 py-16 max-w-2xl mx-auto space-y-6">
-        <div className="text-center space-y-2">
-          <h2 className="font-display text-2xl sm:text-3xl text-rf-black">
+        <div className="text-center space-y-3">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold uppercase tracking-wide">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Disponible 24/7
+          </span>
+          <h2 className="font-display text-2xl sm:text-3xl text-rf-black leading-snug">
             Tu turno, sin preocuparte por nada.
           </h2>
+          <p className="text-sm text-rf-charcoal leading-relaxed max-w-md mx-auto">
+            Los turnos se pueden tomar en cualquier horario. No dependés de que alguien esté
+            conectado para reservar — el sistema organiza la experiencia y el equipo se enfoca en
+            brindar el servicio.
+          </p>
           <p className="text-sm text-rf-charcoal italic">
             Reservás → Confirmamos → Te recordamos → Disfrutás.
           </p>
