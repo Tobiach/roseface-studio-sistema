@@ -100,6 +100,7 @@ export const Reserva: React.FC = () => {
         montoSena,
         senaVerificadaAutomaticamente: true,
         origenReserva: 'web',
+        idTransaccionMP: null,
         notasInternas: `Reserva web cliente: ${nombreClienta} (${telefonoClienta})`,
       });
 

@@ -19,6 +19,8 @@ import { mockBeneficiosVIP, mockClientasEnRiesgo } from '../data/mockFidelizacio
 interface AppContextType {
   rolActivo: RolUsuario;
   setRolActivo: (rol: RolUsuario) => void;
+  profesionalActivoId: string | null;
+  setProfesionalActivoId: (id: string | null) => void;
   turnos: Turno[];
   clientas: Clienta[];
   profesionales: Profesional[];
@@ -37,6 +39,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [rolActivo, setRolActivo] = useState<RolUsuario>('clienta');
+  const [profesionalActivoId, setProfesionalActivoId] = useState<string | null>(null);
   const [turnos, setTurnos] = useState<Turno[]>(mockTurnos);
   const [clientas, setClientas] = useState<Clienta[]>(mockClientas);
   const [profesionales] = useState<Profesional[]>(mockProfesionales);
@@ -115,6 +118,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         rolActivo,
         setRolActivo,
+        profesionalActivoId,
+        setProfesionalActivoId,
         turnos,
         clientas,
         profesionales,

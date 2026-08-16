@@ -20,20 +20,36 @@ import {
   RefreshCw,
   Search,
   MessageSquare,
+  CalendarCheck,
 } from 'lucide-react';
 
+// TODO: Fase de integración OAuth — punto de entrada para conectar la API real de
+// Google Calendar (sync bidireccional de turnos). Hoy es solo un indicador visual.
+// function sincronizarConGoogleCalendar(turno: Turno) { ... }
+
+const VENTANAS_RECORDATORIO = [
+  { value: '48h', label: '48 horas antes' },
+  { value: '24h', label: '24 horas antes' },
+  { value: '4h', label: '4 horas antes' },
+] as const;
+
 export const AdminAgenda: React.FC = () => {
-  const { turnos, clientas, profesionales, servicios, actualizarEstadoTurno, showToast } = useApp();
+  const { turnos, clientas, profesionales, servicios, rolActivo, profesionalActivoId, actualizarEstadoTurno, showToast } = useApp();
+  const esProfesional = rolActivo === 'profesional';
 
   const [fechaFiltro, setFechaFiltro] = useState<string>('2026-08-12');
   const [profesionalFiltro, setProfesionalFiltro] = useState<string>('todos');
   const [turnoSeleccionadoModal, setTurnoSeleccionadoModal] = useState<Turno | null>(null);
+  const [ventanaRecordatorio, setVentanaRecordatorio] = useState<string>('48h');
+
+  // Un profesional solo ve su propia agenda — el filtro queda fijo en su id
+  const profesionalFiltroEfectivo = esProfesional ? profesionalActivoId ?? 'todos' : profesionalFiltro;
 
   // Filter turnos by date and professional
   const turnosFiltrados = turnos.filter((t) => {
     const coincideFecha = t.fecha === fechaFiltro;
     const coincideProf =
-      profesionalFiltro === 'todos' ? true : t.profesionalId === profesionalFiltro;
+      profesionalFiltroEfectivo === 'todos' ? true : t.profesionalId === profesionalFiltroEfectivo;
     return coincideFecha && coincideProf;
   });
 
@@ -56,12 +72,15 @@ export const AdminAgenda: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-pink-100">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="gold">Gestión Diaria</Badge>
             <span className="text-xs text-rf-charcoal font-medium">Control.Evo Engine</span>
+            <Badge variant="success" icon={<CalendarCheck className="w-3 h-3" />}>
+              Sincronizado con Google Calendar
+            </Badge>
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-rf-black mt-1">
-            Agenda del Studio
+            {esProfesional ? 'Mi Agenda' : 'Agenda del Studio'}
           </h1>
         </div>
 
@@ -74,18 +93,24 @@ export const AdminAgenda: React.FC = () => {
             className="px-3.5 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep shadow-2xs"
           />
 
-          <select
-            value={profesionalFiltro}
-            onChange={(e) => setProfesionalFiltro(e.target.value)}
-            className="px-3.5 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep shadow-2xs"
-          >
-            <option value="todos">Todas las Profesionales</option>
-            {profesionales.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre}
-              </option>
-            ))}
-          </select>
+          {esProfesional ? (
+            <span className="px-3.5 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white text-rf-rose-deep">
+              {profesionales.find((p) => p.id === profesionalActivoId)?.nombre ?? 'Mi agenda'}
+            </span>
+          ) : (
+            <select
+              value={profesionalFiltro}
+              onChange={(e) => setProfesionalFiltro(e.target.value)}
+              className="px-3.5 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep shadow-2xs"
+            >
+              <option value="todos">Todas las Profesionales</option>
+              {profesionales.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -183,14 +208,32 @@ export const AdminAgenda: React.FC = () => {
               <span>Automatización Yosy Engine</span>
             </div>
 
+            <p className="text-[11px] text-amber-900/90 italic">
+              Tu sistema te dice a quién tenés que recordar y cuándo.
+            </p>
+
             <div className="space-y-2 text-xs">
-              <p className="font-bold text-rf-black">
-                Próximo envío automático de recordatorios:
-              </p>
+              <label className="font-bold text-rf-black block">
+                Enviar recordatorio a la clienta:
+              </label>
+              <select
+                value={ventanaRecordatorio}
+                onChange={(e) => setVentanaRecordatorio(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-amber-200/80 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep"
+              >
+                {VENTANAS_RECORDATORIO.map((v) => (
+                  <option key={v.value} value={v.value}>
+                    {v.label}
+                  </option>
+                ))}
+              </select>
               <div className="bg-white p-3 rounded-xl border border-amber-200/80 space-y-1">
-                <p className="font-semibold text-rf-rose-deep">Mañana 09:00 hs (WhatsApp)</p>
+                <p className="font-semibold text-rf-rose-deep">
+                  Próximo envío: turnos de {VENTANAS_RECORDATORIO.find((v) => v.value === ventanaRecordatorio)?.label.toLowerCase()} (WhatsApp)
+                </p>
                 <p className="text-[11px] text-rf-charcoal">
-                  Se enviarán 6 recordatorios con link de reconfirmación.
+                  Se envía automáticamente un link de reconfirmación en la ventana elegida.
+                  {/* TODO: envío real pendiente de integración de WhatsApp — hoy es simulado */}
                 </p>
               </div>
             </div>

@@ -7,7 +7,8 @@ import { PhotoPlaceholder } from '../components/ui/PhotoPlaceholder';
 import { RitualTimeline } from '../components/ui/RitualTimeline';
 import { formatCurrency } from '../lib/formatters';
 import { buildWhatsAppUrl } from '../lib/whatsapp';
-import { Calendar, Star, MapPin, Clock, MessageCircle } from 'lucide-react';
+import { FAQ } from '../components/ui/FAQ';
+import { Calendar, Star, MapPin, Clock, MessageCircle, Heart, Sparkles, GraduationCap, Gem } from 'lucide-react';
 import heroYosyEstudio from '../assets/images/home/hero-yosy-estudio.jpg';
 import experienciaClienta from '../assets/images/home/experiencia-clienta.jpg';
 
@@ -155,6 +156,45 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* 5.5 VALORES */}
+      <section className="px-4 py-16 max-w-4xl mx-auto space-y-8 bg-rf-blush/20">
+        <div className="text-center space-y-2 max-w-md mx-auto">
+          <h2 className="font-display text-3xl text-rf-black">Lo que nos mueve</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[
+            {
+              icon: Heart,
+              titulo: 'Atención personalizada',
+              texto: 'Cada clienta, un plan pensado para ella.',
+            },
+            {
+              icon: Sparkles,
+              titulo: 'Un ratito solo para vos',
+              texto: 'El tiempo que tanto le das a los demás.',
+            },
+            {
+              icon: GraduationCap,
+              titulo: 'Equipo formado',
+              texto: 'En constante capacitación, técnica por técnica.',
+            },
+            {
+              icon: Gem,
+              titulo: 'Resultados que se notan',
+              texto: 'Que salgas de acá mejor que como llegaste.',
+            },
+          ].map((valor) => (
+            <div key={valor.titulo} className="text-center space-y-2 px-2">
+              <div className="w-11 h-11 mx-auto rounded-full bg-white border border-rf-gold/50 flex items-center justify-center">
+                <valor.icon className="w-5 h-5 text-rf-rose-deep" />
+              </div>
+              <p className="font-display text-sm font-semibold text-rf-black">{valor.titulo}</p>
+              <p className="text-[11px] text-rf-charcoal leading-snug">{valor.texto}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* 6. PRUEBA SOCIAL */}
       <section className="px-4 py-16 max-w-md mx-auto text-center space-y-3">
         <div className="flex justify-center gap-1">
@@ -181,6 +221,14 @@ export const Home: React.FC = () => {
         <div className="bg-white rounded-3xl border border-pink-100 p-6">
           <RitualTimeline estado="completado" />
         </div>
+      </section>
+
+      {/* 7.5 FAQ */}
+      <section className="px-4 py-16 max-w-2xl mx-auto space-y-6">
+        <div className="text-center">
+          <h2 className="font-display text-3xl text-rf-black">Preguntas frecuentes</h2>
+        </div>
+        <FAQ />
       </section>
 
       {/* 8. UBICACIÓN */}

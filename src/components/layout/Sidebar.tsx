@@ -14,17 +14,19 @@ import {
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
-  const { setRolActivo } = useApp();
+  const { rolActivo, setRolActivo, profesionales, profesionalActivoId } = useApp();
+  const esProfesional = rolActivo === 'profesional';
+  const profesionalActivo = profesionales.find((p) => p.id === profesionalActivoId);
 
-  const navItems = [
+  const navItemsCompletos = [
     {
-      label: 'Agenda',
+      label: esProfesional ? 'Mi Agenda' : 'Agenda',
       path: '/admin/agenda',
       icon: CalendarDays,
       description: 'Gestión diaria y turnos',
     },
     {
-      label: 'Comisiones',
+      label: esProfesional ? 'Mis Comisiones' : 'Comisiones',
       path: '/admin/comisiones',
       icon: CircleDollarSign,
       description: 'Cierre semanal del equipo',
@@ -43,6 +45,11 @@ export const Sidebar: React.FC = () => {
     },
   ];
 
+  // Un profesional ve solo su agenda y sus comisiones — Caja y VIP son vista exclusiva de la dueña
+  const navItems = esProfesional
+    ? navItemsCompletos.filter((item) => item.path === '/admin/agenda' || item.path === '/admin/comisiones')
+    : navItemsCompletos;
+
   return (
     <aside className="w-64 bg-white border-r border-pink-100 flex flex-col justify-between shrink-0 h-screen sticky top-0 shadow-xs z-30">
       <div>
@@ -53,7 +60,7 @@ export const Sidebar: React.FC = () => {
           </Link>
           <div className="mt-3 flex items-center justify-between bg-rf-blush/40 px-3 py-1.5 rounded-lg border border-pink-200/50">
             <span className="text-[11px] font-semibold text-rf-rose-deep tracking-wide uppercase">
-              Panel Administrativo
+              {esProfesional ? 'Panel de Profesional' : 'Panel Administrativo'}
             </span>
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           </div>
@@ -97,13 +104,24 @@ export const Sidebar: React.FC = () => {
       <div className="p-4 border-t border-pink-100/80 bg-rf-cream/50 space-y-3">
         {/* Active Profile Badge */}
         <div className="flex items-center gap-3 p-2 rounded-xl bg-white border border-pink-100">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-rf-gold to-rf-gold-bright flex items-center justify-center text-rf-black font-bold text-sm shadow-xs border border-white">
-            Y
-          </div>
+          {esProfesional && profesionalActivo ? (
+            <img
+              src={profesionalActivo.fotoUrl}
+              alt={profesionalActivo.nombre}
+              className="w-9 h-9 rounded-full object-cover border border-white shadow-xs"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-rf-gold to-rf-gold-bright flex items-center justify-center text-rf-black font-bold text-sm shadow-xs border border-white">
+              Y
+            </div>
+          )}
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-rf-black truncate">Yosy Studio</span>
+            <span className="text-xs font-bold text-rf-black truncate">
+              {esProfesional && profesionalActivo ? profesionalActivo.nombre : 'Yosy Studio'}
+            </span>
             <span className="text-[10px] text-rf-charcoal flex items-center gap-1 font-medium">
-              <Sparkles className="w-2.5 h-2.5 text-rf-gold" /> Dueña & Admin
+              <Sparkles className="w-2.5 h-2.5 text-rf-gold" />
+              {esProfesional ? 'Profesional' : 'Dueña & Admin'}
             </span>
           </div>
         </div>

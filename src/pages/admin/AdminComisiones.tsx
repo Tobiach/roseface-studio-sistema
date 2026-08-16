@@ -19,11 +19,17 @@ import {
 } from 'lucide-react';
 
 export const AdminComisiones: React.FC = () => {
-  const { profesionales, turnos, showToast } = useApp();
+  const { profesionales, turnos, rolActivo, profesionalActivoId, showToast } = useApp();
+  const esProfesional = rolActivo === 'profesional';
   const [semanaSeleccionada, setSemanaSeleccionada] = useState<string>('2026-08-04 a 2026-08-10');
 
-  // Compute closure for all professionals
-  const cierres = profesionales.map((prof) =>
+  // Un profesional solo ve su propio cierre — no el del resto del equipo
+  const profesionalesVisibles = esProfesional
+    ? profesionales.filter((p) => p.id === profesionalActivoId)
+    : profesionales;
+
+  // Compute closure for visible professionals
+  const cierres = profesionalesVisibles.map((prof) =>
     calcularCierreSemanal(prof, turnos, '2026-08-04', '2026-08-10')
   );
 
@@ -46,7 +52,7 @@ export const AdminComisiones: React.FC = () => {
             <span className="text-xs text-rf-charcoal font-medium">Control.Evo Engine</span>
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-rf-black mt-1">
-            Cierre Semanal de Comisiones
+            {esProfesional ? 'Mi Cierre Semanal' : 'Cierre Semanal de Comisiones'}
           </h1>
         </div>
 
@@ -70,7 +76,8 @@ export const AdminComisiones: React.FC = () => {
         </div>
       </div>
 
-      {/* Consolidated Summary Banner */}
+      {/* Consolidated Summary Banner — solo la dueña ve la facturación total del estudio */}
+      {!esProfesional && (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <Card className="bg-gradient-to-br from-pink-50 to-white space-y-2 border border-pink-200">
           <div className="flex items-center justify-between text-rf-charcoal text-xs font-semibold">
@@ -103,12 +110,15 @@ export const AdminComisiones: React.FC = () => {
           <p className="text-[11px] text-emerald-700">Comisiones estudio + alquileres fijos</p>
         </Card>
       </div>
+      )}
 
       {/* Cards per Professional */}
       <div className="space-y-4">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-rf-charcoal">
-          Detalle por Profesional ({profesionales.length})
-        </h2>
+        {!esProfesional && (
+          <h2 className="text-sm font-bold uppercase tracking-wider text-rf-charcoal">
+            Detalle por Profesional ({profesionalesVisibles.length})
+          </h2>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {cierres.map((cierre) => {

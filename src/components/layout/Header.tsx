@@ -4,11 +4,18 @@ import { Link, useLocation } from 'react-router-dom';
 import { Logo } from '../ui/Logo';
 import { Button } from '../ui/Button';
 import { useApp } from '../../context/AppContext';
-import { Calendar, Shield, Sparkles } from 'lucide-react';
+import { Calendar, Shield, Sparkles, UserCog } from 'lucide-react';
 
 export const Header: React.FC = () => {
-  const { rolActivo, setRolActivo } = useApp();
+  const { rolActivo, setRolActivo, profesionales, profesionalActivoId, setProfesionalActivoId } = useApp();
   const location = useLocation();
+
+  const entrarComoProfesional = () => {
+    setRolActivo('profesional');
+    if (!profesionalActivoId && profesionales[0]) {
+      setProfesionalActivoId(profesionales[0].id);
+    }
+  };
 
   const navLinks = [
     { label: 'Inicio', path: '/' },
@@ -53,6 +60,17 @@ export const Header: React.FC = () => {
               Clienta
             </button>
             <button
+              onClick={entrarComoProfesional}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1 ${
+                rolActivo === 'profesional'
+                  ? 'bg-white text-rf-rose-deep shadow-xs font-semibold'
+                  : 'text-rf-charcoal hover:text-rf-black'
+              }`}
+            >
+              <UserCog className="w-3 h-3" />
+              Profesional
+            </button>
+            <button
               onClick={() => setRolActivo('admin')}
               className={`px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1 ${
                 rolActivo === 'admin'
@@ -65,12 +83,34 @@ export const Header: React.FC = () => {
             </button>
           </div>
 
-          {/* Conditional Admin Quick Access or Booking CTA */}
+          {/* Professional picker — only visible in Profesional role */}
+          {rolActivo === 'profesional' && (
+            <select
+              value={profesionalActivoId ?? ''}
+              onChange={(e) => setProfesionalActivoId(e.target.value)}
+              className="hidden sm:block px-2.5 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep"
+            >
+              {profesionales.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Conditional Admin/Profesional Quick Access or Booking CTA */}
           {rolActivo === 'admin' ? (
             <Link to="/admin/agenda">
               <Button variant="gold" size="sm" className="gap-1.5">
                 <Shield className="w-4 h-4" />
                 <span>Panel Yosy</span>
+              </Button>
+            </Link>
+          ) : rolActivo === 'profesional' ? (
+            <Link to="/admin/agenda">
+              <Button variant="gold" size="sm" className="gap-1.5">
+                <UserCog className="w-4 h-4" />
+                <span>Mi Panel</span>
               </Button>
             </Link>
           ) : (

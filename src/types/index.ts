@@ -77,6 +77,7 @@ export interface Turno {
   senaVerificadaAutomaticamente: boolean;
   fechaCreacion: string;
   origenReserva: 'web' | 'asistente' | 'manual';
+  idTransaccionMP: string | null;
   notasInternas?: string;
 }
 

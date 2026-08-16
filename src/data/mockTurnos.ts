@@ -17,6 +17,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-08T10:20:00Z',
     origenReserva: 'asistente',
+    idTransaccionMP: null,
     notasInternas: 'Súper puntual. Le gusta volumen tupido.',
   },
   {
@@ -33,6 +34,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-09T14:15:00Z',
     origenReserva: 'web',
+    idTransaccionMP: null,
   },
   {
     id: 'tur-003',
@@ -48,6 +50,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: false,
     fechaCreacion: '2026-08-11T18:00:00Z',
     origenReserva: 'web',
+    idTransaccionMP: null,
     notasInternas: 'Esperando comprobante por WhatsApp.',
   },
   {
@@ -64,6 +67,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-05T09:00:00Z',
     origenReserva: 'asistente',
+    idTransaccionMP: null,
   },
 
   // TURNO DE MAÑANA Y PRÓXIMOS DÍAS
@@ -81,6 +85,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-10T11:00:00Z',
     origenReserva: 'web',
+    idTransaccionMP: null,
   },
   {
     id: 'tur-006',
@@ -96,6 +101,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-07T16:40:00Z',
     origenReserva: 'asistente',
+    idTransaccionMP: null,
   },
   {
     id: 'tur-007',
@@ -111,6 +117,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-11T09:30:00Z',
     origenReserva: 'web',
+    idTransaccionMP: null,
   },
   {
     id: 'tur-008',
@@ -126,6 +133,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-09T19:20:00Z',
     origenReserva: 'asistente',
+    idTransaccionMP: null,
     notasInternas: 'Bono de cumpleaños aplicado: 15% desc.',
   },
 
@@ -144,6 +152,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-01T12:00:00Z',
     origenReserva: 'web',
+    idTransaccionMP: null,
     notasInternas: 'Aviso 4 días antes por viaje. Se refundó seña según política de 48hs.',
   },
   {
@@ -160,6 +169,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-08T20:00:00Z',
     origenReserva: 'asistente',
+    idTransaccionMP: null,
     notasInternas: 'Canceló 5 horas antes del turno. Se retiene la seña de $19.500 según política.',
   },
 
@@ -178,6 +188,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-01T10:00:00Z',
     origenReserva: 'asistente',
+    idTransaccionMP: null,
   },
   {
     id: 'tur-102',
@@ -193,6 +204,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-02T15:00:00Z',
     origenReserva: 'web',
+    idTransaccionMP: null,
   },
   {
     id: 'tur-103',
@@ -208,6 +220,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-03T11:00:00Z',
     origenReserva: 'web',
+    idTransaccionMP: null,
   },
   {
     id: 'tur-104',
@@ -223,6 +236,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-04T12:00:00Z',
     origenReserva: 'asistente',
+    idTransaccionMP: null,
   },
   {
     id: 'tur-105',
@@ -238,6 +252,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-02T18:00:00Z',
     origenReserva: 'web',
+    idTransaccionMP: null,
   },
   {
     id: 'tur-106',
@@ -253,6 +268,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-05T09:30:00Z',
     origenReserva: 'asistente',
+    idTransaccionMP: null,
   },
   {
     id: 'tur-107',
@@ -268,6 +284,7 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-06T14:20:00Z',
     origenReserva: 'web',
+    idTransaccionMP: null,
   },
   {
     id: 'tur-108',
@@ -283,5 +300,6 @@ export const mockTurnos: Turno[] = [
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-09T16:00:00Z',
     origenReserva: 'web',
+    idTransaccionMP: null,
   },
 ];

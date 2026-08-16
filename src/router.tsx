@@ -1,6 +1,6 @@
 // src/router.tsx
 import React from 'react';
-import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { Sidebar } from './components/layout/Sidebar';
@@ -34,6 +34,18 @@ const PublicLayout: React.FC = () => {
 
 // Admin Layout with Sidebar
 const AdminLayout: React.FC = () => {
+  const { rolActivo } = useApp();
+  const location = useLocation();
+
+  // Un profesional solo puede ver su Agenda y sus Comisiones — Caja y VIP son exclusivos de la dueña
+  const rutaRestringidaParaProfesional =
+    rolActivo === 'profesional' &&
+    (location.pathname.startsWith('/admin/caja') || location.pathname.startsWith('/admin/vip'));
+
+  if (rutaRestringidaParaProfesional) {
+    return <Navigate to="/admin/agenda" replace />;
+  }
+
   return (
     <div className="min-h-screen flex bg-rf-cream text-rf-black">
       <Sidebar />
