@@ -24,7 +24,7 @@ import {
 export const Reserva: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { servicios, profesionales, crearTurno, clientas } = useApp();
+  const { servicios, profesionales, crearTurno, actualizarEstadoTurno, clientas } = useApp();
 
   // Step state (1 to 4)
   const [step, setStep] = useState<number>(1);
@@ -71,42 +71,68 @@ export const Reserva: React.FC = () => {
     '18:30',
   ];
 
-  // Handle Mercado Pago simulated payment
-  const handlePagarSena = () => {
+  // Handle Mercado Pago payment — Fase 3: intenta crear una preferencia real
+  // contra /api/mercadopago/crear-preferencia. Si falla (sin MP_ACCESS_TOKEN
+  // configurado, o corriendo local sin funciones serverless), cae al flujo
+  // simulado para no romper la demo.
+  const handlePagarSena = async () => {
     if (!servicioSeleccionado || !profesionalSeleccionado || !horaSeleccionada) return;
 
     setIsProcessingPayment(true);
 
-    setTimeout(() => {
-      // Calculate deposit (30%)
-      const montoSena = Math.round(
-        servicioSeleccionado.precio * (servicioSeleccionado.porcentajeSena / 100)
-      );
+    const montoSena = Math.round(
+      servicioSeleccionado.precio * (servicioSeleccionado.porcentajeSena / 100)
+    );
+    const clientaExistente = clientas.find((c) => c.nombre.toLowerCase() === nombreClienta.toLowerCase());
+    const clientaId = clientaExistente ? clientaExistente.id : 'cli-01';
 
-      // Find clienta ID or use default
-      const clientaExistente = clientas.find(c => c.nombre.toLowerCase() === nombreClienta.toLowerCase());
-      const clientaId = clientaExistente ? clientaExistente.id : 'cli-01';
+    // El turno se crea como 'reservado' (seña pendiente) antes de ir a pagar
+    const turnoReservado = crearTurno({
+      clientaId,
+      profesionalId: profesionalSeleccionado.id,
+      servicioId: servicioSeleccionado.id,
+      fecha: fechaSeleccionada,
+      horaInicio: horaSeleccionada,
+      horaFin: '11:30',
+      estado: 'reservado',
+      montoTotal: servicioSeleccionado.precio,
+      montoSena,
+      senaVerificadaAutomaticamente: false,
+      origenReserva: 'web',
+      idTransaccionMP: null,
+      notasInternas: `Reserva web cliente: ${nombreClienta} (${telefonoClienta})`,
+    });
 
-      // Create appointment
-      const nuevoTurno = crearTurno({
-        clientaId,
-        profesionalId: profesionalSeleccionado.id,
-        servicioId: servicioSeleccionado.id,
-        fecha: fechaSeleccionada,
-        horaInicio: horaSeleccionada,
-        horaFin: '11:30', // approximate
-        estado: 'sena_confirmada',
-        montoTotal: servicioSeleccionado.precio,
-        montoSena,
-        senaVerificadaAutomaticamente: true,
-        origenReserva: 'web',
-        idTransaccionMP: null,
-        notasInternas: `Reserva web cliente: ${nombreClienta} (${telefonoClienta})`,
+    try {
+      const response = await fetch('/api/mercadopago/crear-preferencia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          turnoId: turnoReservado.id,
+          servicioId: servicioSeleccionado.id,
+          servicioNombre: servicioSeleccionado.nombre,
+          profesionalId: profesionalSeleccionado.id,
+          fecha: fechaSeleccionada,
+          hora: horaSeleccionada,
+          montoSena,
+          clienta: { nombre: nombreClienta, telefono: telefonoClienta },
+        }),
       });
 
-      setIsProcessingPayment(false);
-      navigate('/reserva/confirmacion', { state: { turno: nuevoTurno } });
-    }, 2000);
+      if (!response.ok) throw new Error('crear-preferencia respondió con error');
+      const data = await response.json();
+      if (!data.initPoint) throw new Error('crear-preferencia no devolvió initPoint');
+
+      window.location.href = data.initPoint;
+    } catch {
+      // Sin Mercado Pago real disponible todavía — simulamos la confirmación
+      // instantánea como hacía el flujo anterior, para que la demo no se rompa.
+      setTimeout(() => {
+        actualizarEstadoTurno(turnoReservado.id, 'sena_confirmada');
+        setIsProcessingPayment(false);
+        navigate('/reserva/confirmacion', { state: { turno: { ...turnoReservado, estado: 'sena_confirmada' } } });
+      }, 2000);
+    }
   };
 
   return (
