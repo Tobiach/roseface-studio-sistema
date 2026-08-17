@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { PhotoPlaceholder } from '../components/ui/PhotoPlaceholder';
 import { RitualTimeline } from '../components/ui/RitualTimeline';
 import { formatCurrency } from '../lib/formatters';
 import { buildWhatsAppUrl } from '../lib/whatsapp';
@@ -13,7 +12,6 @@ import { Lightbox } from '../components/ui/Lightbox';
 import { urlFor } from '../data/trabajosFotos';
 import { Calendar, Star, MapPin, Clock, MessageCircle, Heart, Sparkles, GraduationCap, Gem, Crown, ExternalLink } from 'lucide-react';
 import heroBannerEstudio from '../assets/images/home/hero-banner-estudio.jpg';
-import logoRoseface from '../assets/images/home/logo-roseface.jpg';
 
 // Trabajos reales destacados en el Home — nombre de técnica = nombre real
 // del archivo (fotos provistas por Yosy, ver trabajosFotos.ts).
@@ -79,18 +77,8 @@ export const Home: React.FC = () => {
           <img
             src={heroBannerEstudio}
             alt="Rose Face Studio — Caballito"
-            className="absolute inset-0 w-full h-full object-cover scale-105 blur-[3px] brightness-[0.8]"
+            className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/20" />
-          <div className="absolute inset-0 flex items-center justify-center p-8">
-            <div className="bg-white rounded-full p-5 sm:p-7 shadow-2xl border-2 border-rf-gold/60">
-              <img
-                src={logoRoseface}
-                alt="Rose Face Studio"
-                className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-full"
-              />
-            </div>
-          </div>
         </div>
         <div className="text-center mt-8 space-y-4">
           <p className="text-xs font-semibold tracking-[0.2em] uppercase text-rf-rose-deep">
@@ -335,15 +323,23 @@ export const Home: React.FC = () => {
         <FAQ />
       </section>
 
-      {/* 8. UBICACIÓN */}
+      {/* 8. UBICACIÓN — video humaniza a Yosy, después la info práctica */}
       <section className="px-4 py-16 max-w-2xl mx-auto space-y-6">
-        <h2 className="font-display text-2xl sm:text-3xl text-rf-black text-center">
-          Estamos en Caballito.
-        </h2>
-        <PhotoPlaceholder
-          label="Foto real de la fachada o entrada del estudio — reemplazar antes de publicar"
-          aspect="aspect-[16/9]"
-        />
+        <div className="text-center space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-rf-rose-deep">Conocé a Yosy</p>
+          <h2 className="font-display text-2xl sm:text-3xl text-rf-black">Estamos en Caballito.</h2>
+        </div>
+
+        <div className="relative w-full aspect-video max-w-md mx-auto rounded-2xl overflow-hidden border border-rf-gold/40 shadow-md bg-black">
+          <iframe
+            src="https://drive.google.com/file/d/1FDZNrYOEwciRTI74sDVlsJj92N2-We2f/preview"
+            title="Un día con Yosy"
+            className="absolute inset-0 w-full h-full"
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+          />
+        </div>
+
         <div className="space-y-3 text-sm text-rf-charcoal max-w-sm mx-auto">
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 text-rf-rose-deep shrink-0 mt-0.5" />
