@@ -7,7 +7,16 @@
 // el turno correspondiente en Supabase.
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import crypto from 'crypto';
-import { getSupabaseAdmin } from '../_lib/supabaseAdmin';
+import { createClient } from '@supabase/supabase-js';
+
+// Vercel no empaqueta carpetas compartidas fuera de cada función individual
+// (probado: api/_lib/ no llega al bundle) — el cliente admin va inline acá.
+function getSupabaseAdmin() {
+  const url = process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
 
 // Documentación de la firma: https://www.mercadopago.com.ar/developers/es/docs/checkout-pro/additional-content/security/signature
 function firmaValida(req: VercelRequest): boolean {
