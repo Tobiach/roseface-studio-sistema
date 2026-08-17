@@ -32,7 +32,7 @@ const TRABAJOS_DESTACADOS = [
   { archivo: 'Medio_Volumen_2.jpg', tecnica: 'Medio Volumen' },
 ].map((t) => ({ ...t, url: urlFor(t.archivo) }));
 
-const UNAS_DESTACADAS = ['Unas_1.jpg', 'Unas_2.jpg', 'Unas_3.jpg'].map((archivo) => ({
+const UNAS_DESTACADAS = ['Unas_1.jpg', 'Unas_4.jpg', 'Unas_8.jpg'].map((archivo) => ({
   archivo,
   tecnica: 'Uñas',
   url: urlFor(archivo),
@@ -74,8 +74,8 @@ export const Home: React.FC = () => {
   return (
     <div className="pb-16">
       {/* 1. HERO — deseo / experiencia */}
-      <section className="px-4 pt-8 sm:pt-14 max-w-3xl mx-auto">
-        <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden border border-rf-gold/40">
+      <section className="px-4 pt-8 sm:pt-14 max-w-4xl mx-auto">
+        <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-rf-gold/40">
           <img
             src={heroBannerEstudio}
             alt="Rose Face Studio — Caballito"
@@ -87,26 +87,26 @@ export const Home: React.FC = () => {
               <img
                 src={logoRoseface}
                 alt="Rose Face Studio"
-                className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-full"
+                className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-full"
               />
             </div>
           </div>
         </div>
         <div className="text-center mt-8 space-y-4">
           <p className="text-xs font-semibold tracking-[0.2em] uppercase text-rf-rose-deep">
-            Roseface · Caballito
+            Rose Face · Caballito
           </p>
           <h1 className="font-display text-4xl sm:text-5xl font-semibold text-rf-black leading-tight">
-            Tu momento para vos.
+            Belleza que se siente
           </h1>
           <p className="text-base text-rf-charcoal font-body max-w-md mx-auto leading-relaxed">
-            Belleza, cuidado y ese ratito que te debías.
+            Pestañas · Uñas · Cabello · Bienestar
           </p>
           <div className="pt-2">
             <Link to="/reserva">
               <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-sm">
                 <Calendar className="w-5 h-5" />
-                <span>Reservar mi turno</span>
+                <span>Reservá tu momento</span>
               </Button>
             </Link>
           </div>
@@ -119,12 +119,19 @@ export const Home: React.FC = () => {
       {/* 2. MARCA — identificación */}
       <section className="px-4 py-16 max-w-xl mx-auto text-center space-y-4">
         <h2 className="font-display text-2xl sm:text-3xl text-rf-black leading-snug">
-          Un espacio pensado para que te sientas tan bien como te ves.
+          Una mirada puede cambiarlo todo.
         </h2>
         <p className="text-sm text-rf-charcoal leading-relaxed font-body max-w-md mx-auto">
-          En Roseface cada detalle está pensado para que desconectes del afuera y te dediques,
-          por una vez, el tiempo que tanto le das a los demás.
+          En Roseface potenciamos lo que ya es tuyo. Especialistas en pestañas y apasionadas por
+          esos pequeños detalles que hacen que salgas sintiéndote increíble.
         </p>
+        <div className="pt-2">
+          <Link to="/#servicios">
+            <Button variant="outline" size="md">
+              Descubrí Roseface
+            </Button>
+          </Link>
+        </div>
       </section>
 
       {/* 3. SERVICIOS */}
@@ -340,7 +347,7 @@ export const Home: React.FC = () => {
         <div className="space-y-3 text-sm text-rf-charcoal max-w-sm mx-auto">
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 text-rf-rose-deep shrink-0 mt-0.5" />
-            <span>Av. Pedro Goyena 850, Caballito, CABA</span>
+            <span>Av. Acoyte 25, C1405BFA Cdad. Autónoma de Buenos Aires</span>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-rf-rose-deep shrink-0" />

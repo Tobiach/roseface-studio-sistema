@@ -167,7 +167,7 @@ export const ReservaConfirmacion: React.FC = () => {
         <MapPin className="w-5 h-5 text-rf-rose-deep shrink-0" />
         <div>
           <span className="font-bold text-rf-black block">¿Dónde estamos?</span>
-          <span>Av. Pedro Goyena 850, Caballito, Buenos Aires (A 2 cuadras de Av. José María Moreno).</span>
+          <span>Av. Acoyte 25, C1405BFA Cdad. Autónoma de Buenos Aires.</span>
         </div>
       </div>
 

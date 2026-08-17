@@ -30,7 +30,7 @@ const FAQ_ITEMS: FAQItem[] = [
   {
     pregunta: '¿Dónde están ubicados y qué días atienden?',
     respuesta:
-      'Av. Pedro Goyena 850, Caballito, CABA. Atendemos de lunes a sábado de 09:00 a 19:00 hs.',
+      'Av. Acoyte 25, C1405BFA Cdad. Autónoma de Buenos Aires. Atendemos de lunes a sábado de 09:00 a 19:00 hs.',
   },
 ];
 
