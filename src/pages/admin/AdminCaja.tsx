@@ -1,20 +1,13 @@
 // src/pages/admin/AdminCaja.tsx
 import React from 'react';
+import { format, parseISO, startOfWeek, endOfWeek, subDays } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { StatusPill } from '../../components/ui/StatusPill';
 import { formatCurrency } from '../../lib/formatters';
-import {
-  DollarSign,
-  TrendingUp,
-  Calendar,
-  AlertCircle,
-  CheckCircle2,
-  XCircle,
-  BarChart3,
-  Wallet,
-} from 'lucide-react';
+import { TrendingUp, TrendingDown, BarChart3, Wallet } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -30,6 +23,12 @@ export const AdminCaja: React.FC = () => {
   const { turnos, profesionales, clientas, servicios } = useApp();
 
   const hoy = new Date().toISOString().slice(0, 10);
+  const hoyDate = parseISO(hoy);
+  const ayer = format(subDays(hoyDate, 1), 'yyyy-MM-dd');
+  const inicioSemana = format(startOfWeek(hoyDate, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+  const finSemana = format(endOfWeek(hoyDate, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+  const mesActual = hoy.slice(0, 7);
+
   const pagosDeHoy = turnos
     .filter((t) => t.fechaCreacion.slice(0, 10) === hoy && t.estado !== 'reservado' && t.estado !== 'cancelado')
     .sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion));
@@ -39,19 +38,47 @@ export const AdminCaja: React.FC = () => {
   const getServicioNombre = (id: string) => servicios.find((s) => s.id === id)?.nombre ?? 'Servicio';
   const getProfesionalNombre = (id: string) => profesionales.find((p) => p.id === id)?.nombre ?? '';
 
-  // Mock 30 days financial timeline data
-  const dataFacturacion30Dias = [
-    { dia: '15 Jul', monto: 35000 },
-    { dia: '18 Jul', monto: 48000 },
-    { dia: '21 Jul', monto: 62000 },
-    { dia: '24 Jul', monto: 50000 },
-    { dia: '27 Jul', monto: 75000 },
-    { dia: '30 Jul', monto: 90000 },
-    { dia: '02 Ago', monto: 82000 },
-    { dia: '05 Ago', monto: 110000 },
-    { dia: '08 Ago', monto: 125000 },
-    { dia: '12 Ago', monto: 117000 },
-  ];
+  // Facturación real: turnos no cancelados, agrupados por ventana de tiempo.
+  // "Facturación" cuenta el valor total del turno (no solo la seña), sea
+  // que ya se haya completado o esté reservado/confirmado para esa fecha.
+  const turnosNoCancelados = turnos.filter((t) => t.estado !== 'cancelado');
+
+  const facturacionHoy = turnosNoCancelados
+    .filter((t) => t.fecha === hoy)
+    .reduce((sum, t) => sum + t.montoTotal, 0);
+
+  const facturacionAyer = turnosNoCancelados
+    .filter((t) => t.fecha === ayer)
+    .reduce((sum, t) => sum + t.montoTotal, 0);
+
+  const variacionVsAyer =
+    facturacionAyer > 0 ? Math.round(((facturacionHoy - facturacionAyer) / facturacionAyer) * 100) : null;
+
+  const facturacionSemana = turnosNoCancelados
+    .filter((t) => t.fecha >= inicioSemana && t.fecha <= finSemana)
+    .reduce((sum, t) => sum + t.montoTotal, 0);
+
+  const turnosDelMes = turnosNoCancelados.filter((t) => t.fecha.startsWith(mesActual));
+  const facturacionMes = turnosDelMes.reduce((sum, t) => sum + t.montoTotal, 0);
+
+  const turnosUltimos30Dias = turnos.filter(
+    (t) => t.fecha >= format(subDays(hoyDate, 29), 'yyyy-MM-dd') && t.fecha <= hoy
+  );
+  const tasaCancelacion =
+    turnosUltimos30Dias.length > 0
+      ? (turnosUltimos30Dias.filter((t) => t.estado === 'cancelado').length / turnosUltimos30Dias.length) * 100
+      : 0;
+  const etiquetaTasaCancelacion =
+    tasaCancelacion < 10 ? 'Baja' : tasaCancelacion < 20 ? 'Moderada' : 'Alta';
+
+  // Evolución real de los últimos 30 días — facturación de turnos completados por día
+  const dataFacturacion30Dias = Array.from({ length: 30 }).map((_, i) => {
+    const diaISO = format(subDays(hoyDate, 29 - i), 'yyyy-MM-dd');
+    const monto = turnos
+      .filter((t) => t.fecha === diaISO && t.estado === 'completado')
+      .reduce((sum, t) => sum + t.montoTotal, 0);
+    return { dia: format(parseISO(diaISO), 'dd MMM', { locale: es }), monto };
+  });
 
   // Ranking per professional
   const rankingProfesionales = profesionales.map((prof) => {
@@ -65,7 +92,9 @@ export const AdminCaja: React.FC = () => {
     };
   });
 
-  const turnosCancelados = turnos.filter((t) => t.estado.startsWith('cancelado'));
+  const turnosCancelados = turnos
+    .filter((t) => t.estado === 'cancelado')
+    .sort((a, b) => b.fecha.localeCompare(a.fecha));
 
   return (
     <div className="space-y-8 font-admin">
@@ -131,30 +160,50 @@ export const AdminCaja: React.FC = () => {
       {/* 4 KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="space-y-2 border-l-4 border-l-rf-rose-deep">
-          <span className="text-xs font-semibold text-rf-charcoal">Facturación Hoy (12 Ago)</span>
-          <p className="text-2xl font-bold text-rf-black">{formatCurrency(117000)}</p>
-          <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" /> +15% vs ayer
+          <span className="text-xs font-semibold text-rf-charcoal">
+            Facturación Hoy ({format(hoyDate, 'dd MMM', { locale: es })})
           </span>
+          <p className="text-2xl font-bold text-rf-black">{formatCurrency(facturacionHoy)}</p>
+          {variacionVsAyer !== null ? (
+            <span
+              className={`text-[10px] font-bold flex items-center gap-1 ${
+                variacionVsAyer >= 0 ? 'text-emerald-700' : 'text-rf-danger'
+              }`}
+            >
+              {variacionVsAyer >= 0 ? (
+                <TrendingUp className="w-3 h-3" />
+              ) : (
+                <TrendingDown className="w-3 h-3" />
+              )}
+              {variacionVsAyer >= 0 ? '+' : ''}
+              {variacionVsAyer}% vs ayer
+            </span>
+          ) : (
+            <span className="text-[10px] text-rf-charcoal">Sin facturación ayer para comparar</span>
+          )}
         </Card>
 
         <Card className="space-y-2 border-l-4 border-l-rf-gold-bright">
           <span className="text-xs font-semibold text-rf-charcoal">Facturación Esta Semana</span>
-          <p className="text-2xl font-bold text-rf-black">{formatCurrency(310000)}</p>
-          <span className="text-[10px] text-rf-charcoal">Semana del 04 al 10 de Agosto</span>
+          <p className="text-2xl font-bold text-rf-black">{formatCurrency(facturacionSemana)}</p>
+          <span className="text-[10px] text-rf-charcoal">
+            Semana del {format(parseISO(inicioSemana), 'dd/MM')} al {format(parseISO(finSemana), 'dd/MM')}
+          </span>
         </Card>
 
         <Card className="space-y-2 border-l-4 border-l-emerald-500">
-          <span className="text-xs font-semibold text-rf-charcoal">Facturación Mes de Agosto</span>
-          <p className="text-2xl font-bold text-rf-black">{formatCurrency(1450000)}</p>
-          <span className="text-[10px] text-emerald-700 font-bold">Proyección en meta</span>
+          <span className="text-xs font-semibold text-rf-charcoal">
+            Facturación {format(hoyDate, 'MMMM', { locale: es })}
+          </span>
+          <p className="text-2xl font-bold text-rf-black">{formatCurrency(facturacionMes)}</p>
+          <span className="text-[10px] text-rf-charcoal">{turnosDelMes.length} turnos en el mes</span>
         </Card>
 
         <Card className="space-y-2 border-l-4 border-l-rf-danger">
-          <span className="text-xs font-semibold text-rf-charcoal">Tasa de Cancelación</span>
-          <p className="text-2xl font-bold text-rf-black">4.2%</p>
-          <span className="text-[10px] text-emerald-700 font-bold">
-            Baja (seña no reembolsable)
+          <span className="text-xs font-semibold text-rf-charcoal">Tasa de Cancelación (30 días)</span>
+          <p className="text-2xl font-bold text-rf-black">{tasaCancelacion.toFixed(1)}%</p>
+          <span className="text-[10px] text-rf-charcoal font-bold">
+            {etiquetaTasaCancelacion} — seña no reembolsable
           </span>
         </Card>
       </div>
@@ -230,34 +279,38 @@ export const AdminCaja: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-rf-cream text-rf-charcoal uppercase font-bold text-[10px] border-b border-pink-100">
-              <tr>
-                <th className="p-3">Turno</th>
-                <th className="p-3">Fecha Cita</th>
-                <th className="p-3">Estado & Política</th>
-                <th className="p-3">Monto Seña</th>
-                <th className="p-3">Notas Internas</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-pink-100">
-              {turnosCancelados.map((t) => (
-                <tr key={t.id} className="hover:bg-pink-50/30">
-                  <td className="p-3 font-semibold text-rf-black">{t.id}</td>
-                  <td className="p-3">{t.fecha}</td>
-                  <td className="p-3">
-                    <StatusPill estado={t.estado} />
-                  </td>
-                  <td className="p-3 font-bold text-rf-black">
-                    {formatCurrency(t.montoSena)}
-                  </td>
-                  <td className="p-3 text-rf-charcoal italic">{t.notasInternas || 'Sin observaciones'}</td>
+        {turnosCancelados.length === 0 ? (
+          <p className="text-xs text-rf-charcoal">No hay turnos cancelados registrados.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead className="bg-rf-cream text-rf-charcoal uppercase font-bold text-[10px] border-b border-pink-100">
+                <tr>
+                  <th className="p-3">Clienta</th>
+                  <th className="p-3">Fecha Cita</th>
+                  <th className="p-3">Estado</th>
+                  <th className="p-3">Monto Seña</th>
+                  <th className="p-3">Notas Internas</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-pink-100">
+                {turnosCancelados.map((t) => (
+                  <tr key={t.id} className="hover:bg-pink-50/30">
+                    <td className="p-3 font-semibold text-rf-black">{getClientaNombre(t.clientaId)}</td>
+                    <td className="p-3">{t.fecha}</td>
+                    <td className="p-3">
+                      <StatusPill estado={t.estado} />
+                    </td>
+                    <td className="p-3 font-bold text-rf-black">
+                      {formatCurrency(t.montoSena)}
+                    </td>
+                    <td className="p-3 text-rf-charcoal italic">{t.notasInternas || 'Sin observaciones'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
     </div>
   );

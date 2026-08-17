@@ -9,13 +9,17 @@ import { Profesional, Turno, CierreComisionSemanal } from '../types';
  */
 export function calcularCierreSemanal(
   profesional: Profesional,
-  turnosDeLaSemana: Turno[],
+  todosLosTurnos: Turno[],
   semanaInicio: string,
   semanaFin: string
 ): CierreComisionSemanal {
-  // Filtrar solo turnos completados de este profesional
-  const turnosCompletados = turnosDeLaSemana.filter(
-    (t) => t.profesionalId === profesional.id && t.estado === 'completado'
+  // Filtrar turnos completados de este profesional, dentro de la semana elegida
+  const turnosCompletados = todosLosTurnos.filter(
+    (t) =>
+      t.profesionalId === profesional.id &&
+      t.estado === 'completado' &&
+      t.fecha >= semanaInicio &&
+      t.fecha <= semanaFin
   );
 
   const turnosRealizados = turnosCompletados.length;

@@ -38,7 +38,7 @@ export const AdminAgenda: React.FC = () => {
   const { turnos, clientas, profesionales, servicios, rolActivo, profesionalActivoId, actualizarEstadoTurno, showToast } = useApp();
   const esProfesional = rolActivo === 'profesional';
 
-  const [fechaFiltro, setFechaFiltro] = useState<string>('2026-08-12');
+  const [fechaFiltro, setFechaFiltro] = useState<string>('2026-08-17');
   const [profesionalFiltro, setProfesionalFiltro] = useState<string>('todos');
   const [turnoSeleccionadoModal, setTurnoSeleccionadoModal] = useState<Turno | null>(null);
   const [ventanaRecordatorio, setVentanaRecordatorio] = useState<string>('48h');

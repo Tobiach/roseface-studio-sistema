@@ -40,7 +40,7 @@ export const Reserva: React.FC = () => {
   // Selected values
   const [servicioSeleccionado, setServicioSeleccionado] = useState<Servicio | null>(null);
   const [profesionalSeleccionado, setProfesionalSeleccionado] = useState<Profesional | null>(null);
-  const [fechaSeleccionada, setFechaSeleccionada] = useState<string>('2026-08-13'); // Default tomorrow
+  const [fechaSeleccionada, setFechaSeleccionada] = useState<string>('2026-08-18'); // Default tomorrow
   const [horaSeleccionada, setHoraSeleccionada] = useState<string>('');
   
   // Client details
@@ -340,7 +340,7 @@ export const Reserva: React.FC = () => {
               </label>
               <input
                 type="date"
-                min="2026-08-12"
+                min="2026-08-17"
                 value={fechaSeleccionada}
                 onChange={(e) => setFechaSeleccionada(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-rf-rose-deep bg-white text-rf-black font-medium"

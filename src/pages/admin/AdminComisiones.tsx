@@ -22,7 +22,8 @@ import {
 export const AdminComisiones: React.FC = () => {
   const { profesionales, turnos, rolActivo, profesionalActivoId, showToast } = useApp();
   const esProfesional = rolActivo === 'profesional';
-  const [semanaSeleccionada, setSemanaSeleccionada] = useState<string>('2026-08-04 a 2026-08-10');
+  const [semanaSeleccionada, setSemanaSeleccionada] = useState<string>('2026-08-17|2026-08-23');
+  const [semanaInicio, semanaFin] = semanaSeleccionada.split('|');
 
   // Un profesional solo ve su propio cierre — no el del resto del equipo
   const profesionalesVisibles = esProfesional
@@ -31,7 +32,7 @@ export const AdminComisiones: React.FC = () => {
 
   // Compute closure for visible professionals
   const cierres = profesionalesVisibles.map((prof) =>
-    calcularCierreSemanal(prof, turnos, '2026-08-04', '2026-08-10')
+    calcularCierreSemanal(prof, turnos, semanaInicio, semanaFin)
   );
 
   // Consolidated totals
@@ -65,8 +66,9 @@ export const AdminComisiones: React.FC = () => {
               onChange={(e) => setSemanaSeleccionada(e.target.value)}
               className="bg-transparent focus:outline-none cursor-pointer"
             >
-              <option value="2026-08-04 a 2026-08-10">Semana: 04/08 a 10/08 (Actual)</option>
-              <option value="2026-07-28 a 2026-08-03">Semana: 28/07 a 03/08</option>
+              <option value="2026-08-17|2026-08-23">Semana: 17/08 a 23/08 (Actual)</option>
+              <option value="2026-08-10|2026-08-16">Semana: 10/08 a 16/08</option>
+              <option value="2026-08-03|2026-08-09">Semana: 03/08 a 09/08</option>
             </select>
           </div>
 
