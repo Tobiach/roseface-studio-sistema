@@ -16,7 +16,7 @@ const FAQ_ITEMS: FAQItem[] = [
   {
     pregunta: '¿Puedo cancelar o cambiar mi turno?',
     respuesta:
-      'Sí. Si cancelás con más de 48hs de anticipación, te devolvemos el 100% de la seña. Con menos de 48hs, la seña queda retenida.',
+      'Podés cancelar cuando quieras, pero la seña no es reembolsable — es lo que confirma tu lugar en la agenda.',
   },
   {
     pregunta: '¿Puedo reservar a cualquier hora?',

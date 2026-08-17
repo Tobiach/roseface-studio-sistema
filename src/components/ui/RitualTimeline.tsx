@@ -32,8 +32,7 @@ function getStepIndex(estado: EstadoTurno): number {
       return 2;
     case 'completado':
       return 3;
-    case 'cancelado_con_devolucion':
-    case 'cancelado_sin_devolucion':
+    case 'cancelado':
       return -1;
     default:
       return 0;
@@ -48,11 +47,7 @@ export const RitualTimeline: React.FC<RitualTimelineProps> = ({ estado, compact 
     return (
       <div className="flex items-center gap-2 bg-red-50 text-rf-danger border border-red-200 px-3 py-1.5 rounded-full text-xs font-medium">
         <XCircle className="w-4 h-4" />
-        <span>
-          {estado === 'cancelado_con_devolucion'
-            ? 'Cancelado (+48hs - Seña Devuelta)'
-            : 'Cancelado (-48hs - Seña Retenida)'}
-        </span>
+        <span>Cancelado</span>
       </div>
     );
   }

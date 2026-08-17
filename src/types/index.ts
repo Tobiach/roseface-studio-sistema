@@ -60,8 +60,7 @@ export type EstadoTurno =
   | 'sena_confirmada'     // pagó la seña
   | 'recordatorio_enviado'
   | 'completado'
-  | 'cancelado_con_devolucion'    // canceló con +48hs
-  | 'cancelado_sin_devolucion';   // canceló con -48hs
+  | 'cancelado';          // la seña no se devuelve, sin importar cuándo cancele
 
 export interface Turno {
   id: string;

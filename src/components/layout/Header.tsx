@@ -35,13 +35,13 @@ export const Header: React.FC = () => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
-            <a
+            <Link
               key={link.label}
-              href={link.path}
+              to={link.path}
               className="text-sm font-medium text-rf-charcoal hover:text-rf-rose-deep transition-colors"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
 

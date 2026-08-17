@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   XCircle,
   BarChart3,
+  Wallet,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -26,7 +27,17 @@ import {
 } from 'recharts';
 
 export const AdminCaja: React.FC = () => {
-  const { turnos, profesionales } = useApp();
+  const { turnos, profesionales, clientas, servicios } = useApp();
+
+  const hoy = new Date().toISOString().slice(0, 10);
+  const pagosDeHoy = turnos
+    .filter((t) => t.fechaCreacion.slice(0, 10) === hoy && t.estado !== 'reservado' && t.estado !== 'cancelado')
+    .sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion));
+  const totalPagosHoy = pagosDeHoy.reduce((sum, t) => sum + t.montoSena, 0);
+
+  const getClientaNombre = (id: string) => clientas.find((c) => c.id === id)?.nombre ?? 'Clienta';
+  const getServicioNombre = (id: string) => servicios.find((s) => s.id === id)?.nombre ?? 'Servicio';
+  const getProfesionalNombre = (id: string) => profesionales.find((p) => p.id === id)?.nombre ?? '';
 
   // Mock 30 days financial timeline data
   const dataFacturacion30Dias = [
@@ -71,6 +82,52 @@ export const AdminCaja: React.FC = () => {
         </div>
       </div>
 
+      {/* Pagos de Hoy — dato real, sale de los turnos con seña efectivamente cobrada hoy */}
+      <Card className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wallet className="w-4 h-4 text-rf-rose-deep" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-rf-black">Pagos de Hoy</h3>
+          </div>
+          <Badge variant="success">{formatCurrency(totalPagosHoy)}</Badge>
+        </div>
+
+        {pagosDeHoy.length === 0 ? (
+          <p className="text-xs text-rf-charcoal">Todavía no se registraron pagos hoy.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead className="bg-rf-cream text-rf-charcoal uppercase font-bold text-[10px] border-b border-pink-100">
+                <tr>
+                  <th className="p-2.5">Hora del pago</th>
+                  <th className="p-2.5">Clienta</th>
+                  <th className="p-2.5">Servicio</th>
+                  <th className="p-2.5">Profesional</th>
+                  <th className="p-2.5">Estado</th>
+                  <th className="p-2.5">Seña cobrada</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-pink-100">
+                {pagosDeHoy.map((t) => (
+                  <tr key={t.id} className="hover:bg-pink-50/30">
+                    <td className="p-2.5 font-semibold text-rf-black">
+                      {t.fechaCreacion.slice(11, 16)} hs
+                    </td>
+                    <td className="p-2.5">{getClientaNombre(t.clientaId)}</td>
+                    <td className="p-2.5">{getServicioNombre(t.servicioId)}</td>
+                    <td className="p-2.5">{getProfesionalNombre(t.profesionalId)}</td>
+                    <td className="p-2.5">
+                      <StatusPill estado={t.estado} />
+                    </td>
+                    <td className="p-2.5 font-bold text-emerald-700">{formatCurrency(t.montoSena)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
       {/* 4 KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="space-y-2 border-l-4 border-l-rf-rose-deep">
@@ -97,7 +154,7 @@ export const AdminCaja: React.FC = () => {
           <span className="text-xs font-semibold text-rf-charcoal">Tasa de Cancelación</span>
           <p className="text-2xl font-bold text-rf-black">4.2%</p>
           <span className="text-[10px] text-emerald-700 font-bold">
-            Baja (Protegida por política 48h)
+            Baja (seña no reembolsable)
           </span>
         </Card>
       </div>
@@ -165,10 +222,10 @@ export const AdminCaja: React.FC = () => {
         <div className="flex items-center justify-between pb-2 border-b border-pink-100">
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-rf-black">
-              Auditoría de Cancelaciones y Política de 48hs
+              Auditoría de Cancelaciones
             </h3>
             <p className="text-xs text-rf-charcoal">
-              Historial de señas devueltas (+48hs) vs retenidas (-48hs)
+              Turnos cancelados — la seña queda retenida en todos los casos
             </p>
           </div>
         </div>

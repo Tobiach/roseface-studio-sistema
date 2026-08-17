@@ -16,6 +16,7 @@ import {
   KeyRound,
   CheckCircle,
   HelpCircle,
+  Info,
 } from 'lucide-react';
 
 export const AdminComisiones: React.FC = () => {
@@ -75,6 +76,30 @@ export const AdminComisiones: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Explicación del cálculo — visible tanto para la dueña como para cada profesional */}
+      <Card className="bg-sky-50/60 border-sky-200 space-y-2">
+        <div className="flex items-center gap-2 text-sky-900 font-bold text-xs uppercase tracking-wider">
+          <Info className="w-4 h-4" />
+          <span>¿Cómo se calcula {esProfesional ? 'tu comisión' : 'la comisión de cada profesional'}?</span>
+        </div>
+        <ul className="text-xs text-sky-950 space-y-1.5 leading-relaxed">
+          <li>
+            • Solo se cuentan los turnos marcados como <strong>Completado</strong> dentro de la semana
+            seleccionada — un turno reservado o cancelado no suma facturación.
+          </li>
+          <li>
+            • <strong>Modelo Porcentaje</strong> (ej. Mili 55%, Sharon 45%): el estudio cobra el turno
+            completo y le paga a la profesional ese % sobre la facturación total generada; el resto
+            queda para el estudio.
+          </li>
+          <li>
+            • <strong>Modelo Alquiler Fijo</strong> (ej. Martina, Sofía, Alexandra, Camila, Valentina):
+            la profesional paga un monto semanal fijo al estudio y se queda con el 100% de lo que
+            factura directamente — el estudio no le retiene comisión sobre sus turnos.
+          </li>
+        </ul>
+      </Card>
 
       {/* Consolidated Summary Banner — solo la dueña ve la facturación total del estudio */}
       {!esProfesional && (
@@ -217,15 +242,17 @@ export const AdminComisiones: React.FC = () => {
                     <CheckCircle className="w-3.5 h-3.5" /> Liquidado
                   </span>
 
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      showToast(`Detalle enviado a ${prof.nombre} por WhatsApp`)
-                    }
-                  >
-                    Enviar Recibo
-                  </Button>
+                  {!esProfesional && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        showToast(`Detalle enviado a ${prof.nombre} por WhatsApp`)
+                      }
+                    >
+                      Enviar Recibo
+                    </Button>
+                  )}
                 </div>
               </Card>
             );

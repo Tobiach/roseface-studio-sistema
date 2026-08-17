@@ -1,5 +1,6 @@
 // src/data/mockProfesionales.ts
 import { Profesional } from '../types';
+import fotoYosy from '../assets/images/profesionales/prof-yosy.jpg';
 import fotoMili from '../assets/images/profesionales/prof-mili.jpg';
 import fotoSharon from '../assets/images/profesionales/prof-sharon.jpg';
 import fotoMartina from '../assets/images/profesionales/prof-martina.jpg';
@@ -10,6 +11,32 @@ import fotoValentina from '../assets/images/profesionales/prof-valentina.jpg';
 import { trabajosPorProfesional } from './trabajosFotos';
 
 export const mockProfesionales: Profesional[] = [
+  {
+    id: 'prof-yosy',
+    nombre: 'Yosy',
+    fotoUrl: fotoYosy,
+    especialidades: ['Pestañas'],
+    bio: 'Fundadora y especialista principal en pestañas de Rose Face Studio. Referente del equipo en técnicas de volumen y diseño de mirada.',
+    aniosExperiencia: 8,
+    // TODO: reemplazar por trabajos reales de Yosy al cerrar la venta —
+    // por ahora reusa fotos ya cargadas de Mili/Sharon (autorizado por Tobias, 17/8).
+    galeria: trabajosPorProfesional['prof-yosy'],
+    calificacionPromedio: 5.0,
+    cantidadResenas: 120,
+    modeloComision: {
+      tipo: 'porcentaje',
+      porcentajeProfesional: 100, // es la dueña — toda la facturación es del estudio
+    },
+    horarioDisponible: {
+      lunes: { desde: '09:00', hasta: '19:00' },
+      martes: { desde: '09:00', hasta: '19:00' },
+      miercoles: { desde: '09:00', hasta: '19:00' },
+      jueves: { desde: '09:00', hasta: '19:00' },
+      viernes: { desde: '09:00', hasta: '19:00' },
+      sabado: { desde: '09:00', hasta: '15:00' },
+      domingo: null,
+    },
+  },
   {
     id: 'prof-mili',
     nombre: 'Mili',

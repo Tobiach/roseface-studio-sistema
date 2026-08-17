@@ -16,6 +16,16 @@ function urlFor(filename: string): string {
 }
 
 export const trabajosPorProfesional: Record<string, string[]> = {
+  // Yosy: trabajos reusados de Mili/Sharon como placeholder (autorizado por
+  // Tobias, 17/8) — reemplazar por fotos reales de Yosy al cerrar la venta.
+  'prof-yosy': [
+    'Clasicas_Lash_1.jpg',
+    'Volumen_Brasilero_4D_3.jpg',
+    'Efecto_Humedo_1.jpg',
+    'Hibrida_Lash_1.jpg',
+    'Medio_Volumen_1.jpg',
+    'Natural_Volumen_1.jpg',
+  ].map(urlFor),
   'prof-mili': [
     'Clasicas_Lash_1.jpg',
     'Efecto_Humedo_1.jpg',

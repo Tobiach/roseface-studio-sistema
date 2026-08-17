@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { StatusPill } from '../../components/ui/StatusPill';
 import { RitualTimeline } from '../../components/ui/RitualTimeline';
+import { CalendarioGrilla } from '../../components/admin/CalendarioGrilla';
 import { formatCurrency, formatDateReadable } from '../../lib/formatters';
 import {
   CalendarDays,
@@ -67,6 +68,13 @@ export const AdminAgenda: React.FC = () => {
     return profesionales.find((p) => p.id === id);
   };
 
+  // Profesionales a mostrar en la grilla del calendario: todas, o solo la
+  // seleccionada/filtrada (o la propia, en el rol Profesional).
+  const profesionalesParaGrilla =
+    profesionalFiltroEfectivo === 'todos'
+      ? profesionales
+      : profesionales.filter((p) => p.id === profesionalFiltroEfectivo);
+
   return (
     <div className="space-y-8 font-admin">
       {/* Header */}
@@ -116,10 +124,23 @@ export const AdminAgenda: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Agenda Timeline (8 cols) */}
-        <div className="lg:col-span-8 space-y-4">
+        <div className="lg:col-span-8 space-y-6">
+          <div className="space-y-3">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-rf-charcoal">
+              Disponibilidad — {formatDateReadable(fechaFiltro)}
+            </h2>
+            <CalendarioGrilla
+              profesionales={profesionalesParaGrilla}
+              fecha={fechaFiltro}
+              turnos={turnos}
+              onSeleccionarTurno={setTurnoSeleccionadoModal}
+              getClientaNombre={getClientaNombre}
+            />
+          </div>
+
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wider text-rf-charcoal">
-              Turnos para {formatDateReadable(fechaFiltro)} ({turnosFiltrados.length})
+              Detalle de turnos ({turnosFiltrados.length})
             </h2>
           </div>
 
@@ -351,23 +372,13 @@ export const AdminAgenda: React.FC = () => {
                 <Button
                   variant="danger"
                   size="sm"
+                  className="col-span-2"
                   onClick={() => {
-                    actualizarEstadoTurno(turnoSeleccionadoModal.id, 'cancelado_con_devolucion');
+                    actualizarEstadoTurno(turnoSeleccionadoModal.id, 'cancelado');
                     setTurnoSeleccionadoModal(null);
                   }}
                 >
-                  <span>Cancelar (+48h refund)</span>
-                </Button>
-
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => {
-                    actualizarEstadoTurno(turnoSeleccionadoModal.id, 'cancelado_sin_devolucion');
-                    setTurnoSeleccionadoModal(null);
-                  }}
-                >
-                  <span>Cancelar (-48h retención)</span>
+                  <span>Cancelar turno (seña no reembolsable)</span>
                 </Button>
               </div>
             </div>

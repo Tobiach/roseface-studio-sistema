@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { formatCurrency } from '../lib/formatters';
+import { Lightbox } from '../components/ui/Lightbox';
 import {
   Star,
   Calendar,
@@ -14,12 +15,14 @@ import {
   ChevronLeft,
   CheckCircle2,
   Info,
+  Expand,
 } from 'lucide-react';
 
 export const PerfilProfesional: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { profesionales, servicios } = useApp();
   const [activeTab, setActiveTab] = useState<string>('todos');
+  const [imagenActiva, setImagenActiva] = useState<number | null>(null);
 
   const prof = profesionales.find((p) => p.id === id);
 
@@ -161,24 +164,36 @@ export const PerfilProfesional: React.FC = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {prof.galeria.map((imgUrl, idx) => (
-              <div
+              <button
                 key={idx}
-                className="rounded-2xl overflow-hidden aspect-square border border-pink-100 shadow-xs relative group bg-pink-50/50"
+                onClick={() => setImagenActiva(idx)}
+                className="rounded-2xl overflow-hidden aspect-square border border-pink-100 shadow-xs relative group bg-pink-50/50 cursor-pointer text-left"
               >
                 <img
                   src={imgUrl}
                   alt={`Trabajo de ${prof.nombre} ${idx + 1}`}
                   className="w-full h-full object-cover filter brightness-[1.02] contrast-[1.03] saturate-[1.05] group-hover:scale-105 transition-transform duration-300"
                 />
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-3">
                   <span className="text-[10px] text-white font-medium bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-xs">
                     {esCamila ? 'Equipamiento Soprano Ice' : `${prof.nombre} — Trabajo real`}
                   </span>
+                  <Expand className="w-4 h-4 text-white shrink-0" />
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
+      )}
+
+      {imagenActiva !== null && (
+        <Lightbox
+          imagenes={prof.galeria}
+          indiceActivo={imagenActiva}
+          onCerrar={() => setImagenActiva(null)}
+          onCambiarIndice={setImagenActiva}
+          alt={`Trabajo de ${prof.nombre}`}
+        />
       )}
     </div>
   );

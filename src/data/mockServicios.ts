@@ -13,7 +13,7 @@ export const mockServicios: Servicio[] = [
     requiereSena: true,
     porcentajeSena: 30,
     puntosVIP: 10,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-yosy', 'prof-mili', 'prof-sharon'],
   },
   {
     id: 'serv-pestanas-hibridas',
@@ -25,7 +25,7 @@ export const mockServicios: Servicio[] = [
     requiereSena: true,
     porcentajeSena: 30,
     puntosVIP: 10,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-yosy', 'prof-mili', 'prof-sharon'],
   },
   {
     id: 'serv-pestanas-natural-volumen',
@@ -37,7 +37,7 @@ export const mockServicios: Servicio[] = [
     requiereSena: true,
     porcentajeSena: 30,
     puntosVIP: 10,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-yosy', 'prof-mili', 'prof-sharon'],
   },
   {
     id: 'serv-pestanas-efecto-humedo',
@@ -49,7 +49,7 @@ export const mockServicios: Servicio[] = [
     requiereSena: true,
     porcentajeSena: 30,
     puntosVIP: 12,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-yosy', 'prof-mili', 'prof-sharon'],
   },
   {
     id: 'serv-pestanas-medio-volumen',
@@ -61,7 +61,7 @@ export const mockServicios: Servicio[] = [
     requiereSena: true,
     porcentajeSena: 30,
     puntosVIP: 12,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-yosy', 'prof-mili', 'prof-sharon'],
   },
   {
     id: 'serv-pestanas-roseface',
@@ -73,7 +73,7 @@ export const mockServicios: Servicio[] = [
     requiereSena: true,
     porcentajeSena: 30,
     puntosVIP: 12,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-yosy', 'prof-mili', 'prof-sharon'],
   },
   {
     id: 'serv-pestanas-volumen-tecnologico',
@@ -85,7 +85,7 @@ export const mockServicios: Servicio[] = [
     requiereSena: true,
     porcentajeSena: 30,
     puntosVIP: 12,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-yosy', 'prof-mili', 'prof-sharon'],
   },
   {
     id: 'serv-pestanas-mega-volumen',
@@ -97,7 +97,7 @@ export const mockServicios: Servicio[] = [
     requiereSena: true,
     porcentajeSena: 30,
     puntosVIP: 15,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-yosy', 'prof-mili', 'prof-sharon'],
   },
   {
     id: 'serv-pestanas-brasileno-4d',
@@ -109,7 +109,7 @@ export const mockServicios: Servicio[] = [
     requiereSena: true,
     porcentajeSena: 30,
     puntosVIP: 15,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-yosy', 'prof-mili', 'prof-sharon'],
   },
   {
     id: 'serv-pestanas-brasileno-6d',
@@ -121,7 +121,7 @@ export const mockServicios: Servicio[] = [
     requiereSena: true,
     porcentajeSena: 30,
     puntosVIP: 15,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-yosy', 'prof-mili', 'prof-sharon'],
   },
   {
     id: 'serv-lifting',
@@ -133,7 +133,7 @@ export const mockServicios: Servicio[] = [
     requiereSena: true,
     porcentajeSena: 30,
     puntosVIP: 10,
-    profesionalesQueLoRealizan: ['prof-mili'],
+    profesionalesQueLoRealizan: ['prof-yosy', 'prof-mili'],
   },
 
   // ===== CEJAS =====

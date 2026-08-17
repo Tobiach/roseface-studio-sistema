@@ -3,13 +3,15 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
 import { PhotoPlaceholder } from '../components/ui/PhotoPlaceholder';
 import { RitualTimeline } from '../components/ui/RitualTimeline';
 import { formatCurrency } from '../lib/formatters';
 import { buildWhatsAppUrl } from '../lib/whatsapp';
 import { FAQ } from '../components/ui/FAQ';
-import { Calendar, Star, MapPin, Clock, MessageCircle, Heart, Sparkles, GraduationCap, Gem } from 'lucide-react';
-import heroYosyEstudio from '../assets/images/home/hero-yosy-estudio.jpg';
+import { Calendar, Star, MapPin, Clock, MessageCircle, Heart, Sparkles, GraduationCap, Gem, Crown } from 'lucide-react';
+import heroBannerEstudio from '../assets/images/home/hero-banner-estudio.jpg';
+import logoRoseface from '../assets/images/home/logo-roseface.jpg';
 import experienciaClienta from '../assets/images/home/experiencia-clienta.jpg';
 
 const CATEGORIA_DESCRIPTOR: Record<string, string> = {
@@ -22,7 +24,7 @@ const CATEGORIA_DESCRIPTOR: Record<string, string> = {
 };
 
 export const Home: React.FC = () => {
-  const { servicios, profesionales } = useApp();
+  const { servicios, profesionales, beneficiosVIP } = useApp();
 
   const categorias = useMemo(() => {
     const nombres = Array.from(new Set(servicios.map((s) => s.categoria)));
@@ -46,11 +48,23 @@ export const Home: React.FC = () => {
     <div className="pb-16">
       {/* 1. HERO — deseo / experiencia */}
       <section className="px-4 pt-8 sm:pt-14 max-w-3xl mx-auto">
-        <img
-          src={heroYosyEstudio}
-          alt="Yosy en Roseface Studio"
-          className="w-full aspect-[4/5] object-cover rounded-2xl border border-rf-gold/40"
-        />
+        <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden border border-rf-gold/40">
+          <img
+            src={heroBannerEstudio}
+            alt="Rose Face Studio — Caballito"
+            className="absolute inset-0 w-full h-full object-cover scale-105 blur-[3px] brightness-[0.8]"
+          />
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute inset-0 flex items-center justify-center p-8">
+            <div className="bg-white rounded-full p-5 sm:p-7 shadow-2xl border-2 border-rf-gold/60">
+              <img
+                src={logoRoseface}
+                alt="Rose Face Studio"
+                className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-full"
+              />
+            </div>
+          </div>
+        </div>
         <div className="text-center mt-8 space-y-4">
           <p className="text-xs font-semibold tracking-[0.2em] uppercase text-rf-rose-deep">
             Roseface · Caballito
@@ -190,6 +204,32 @@ export const Home: React.FC = () => {
               </div>
               <p className="font-display text-sm font-semibold text-rf-black">{valor.titulo}</p>
               <p className="text-[11px] text-rf-charcoal leading-snug">{valor.texto}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 5.75 FIDELIZACIÓN VIP */}
+      <section id="vip" className="px-4 py-16 max-w-4xl mx-auto space-y-8">
+        <div className="text-center max-w-md mx-auto space-y-2">
+          <Badge variant="gold" icon={<Crown className="w-3.5 h-3.5" />}>Fidelización VIP</Badge>
+          <h2 className="font-display text-3xl text-rf-black">Cada visita suma</h2>
+          <p className="text-sm text-rf-charcoal leading-relaxed">
+            Acumulás puntos con cada servicio y los canjeás por beneficios reales.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {beneficiosVIP.slice(0, 3).map((ben) => (
+            <div
+              key={ben.id}
+              className="rounded-2xl border border-pink-100 bg-white p-5 space-y-2 text-center"
+            >
+              <span className="inline-block text-[11px] font-bold text-rf-rose-deep bg-pink-50 px-2.5 py-1 rounded-full">
+                {ben.puntosNecesarios} pts
+              </span>
+              <p className="font-display text-sm font-semibold text-rf-black">{ben.nombre}</p>
+              <p className="text-[11px] text-rf-charcoal leading-snug">{ben.descripcion}</p>
             </div>
           ))}
         </div>

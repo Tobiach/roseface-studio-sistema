@@ -146,14 +146,14 @@ export const mockTurnos: Turno[] = [
     fecha: '2026-08-11',
     horaInicio: '15:00',
     horaFin: '15:40',
-    estado: 'cancelado_con_devolucion', // Canceló con +48hs
+    estado: 'cancelado', // Cancelado / seña no reembolsable
     montoTotal: 45000,
     montoSena: 13500,
     senaVerificadaAutomaticamente: true,
     fechaCreacion: '2026-08-01T12:00:00Z',
     origenReserva: 'web',
     idTransaccionMP: null,
-    notasInternas: 'Aviso 4 días antes por viaje. Se refundó seña según política de 48hs.',
+    notasInternas: 'Aviso 4 días antes por viaje. Seña no reembolsable, queda retenida.',
   },
   {
     id: 'tur-010',
@@ -163,7 +163,7 @@ export const mockTurnos: Turno[] = [
     fecha: '2026-08-10',
     horaInicio: '10:00',
     horaFin: '13:00',
-    estado: 'cancelado_sin_devolucion', // Canceló con -48hs
+    estado: 'cancelado', // Cancelado / seña no reembolsable
     montoTotal: 65000,
     montoSena: 19500,
     senaVerificadaAutomaticamente: true,

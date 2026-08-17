@@ -24,11 +24,18 @@ import {
 
 export const Reserva: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { servicios, profesionales, turnos, crearTurno, actualizarEstadoTurno, buscarOCrearClienta, showToast } = useApp();
 
-  // Step state (1 to 4)
-  const [step, setStep] = useState<number>(1);
+  // El paso vive en la URL (?paso=N) para que el botón atrás del navegador
+  // (o el gesto del celular) retroceda de a un paso, en vez de sacarte de
+  // /reserva directamente.
+  const step = Number(searchParams.get('paso')) || 1;
+  const irAPaso = (n: number) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('paso', String(n));
+    setSearchParams(next);
+  };
 
   // Selected values
   const [servicioSeleccionado, setServicioSeleccionado] = useState<Servicio | null>(null);
@@ -44,13 +51,14 @@ export const Reserva: React.FC = () => {
   // Auto select service if passed in URL query
   useEffect(() => {
     const servId = searchParams.get('servicioId');
-    if (servId) {
+    if (servId && step === 1) {
       const found = servicios.find((s) => s.id === servId);
       if (found) {
         setServicioSeleccionado(found);
-        setStep(2);
+        irAPaso(2);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, servicios]);
 
   // Filter professionals for selected service
@@ -110,7 +118,7 @@ export const Reserva: React.FC = () => {
         showToast('❌ Ese horario ya no está disponible — elegí otro.');
         setIsProcessingPayment(false);
         setHoraSeleccionada('');
-        setStep(3);
+        irAPaso(3);
         return;
       }
       if (!response.ok) throw new Error('crear-preferencia respondió con error');
@@ -191,7 +199,7 @@ export const Reserva: React.FC = () => {
                 hoverable
                 onClick={() => {
                   setServicioSeleccionado(serv);
-                  setStep(2);
+                  irAPaso(2);
                 }}
                 className={`transition-all ${
                   servicioSeleccionado?.id === serv.id
@@ -262,7 +270,7 @@ export const Reserva: React.FC = () => {
                   hoverable
                   onClick={() => {
                     setProfesionalSeleccionado(prof);
-                    setStep(3);
+                    irAPaso(3);
                   }}
                   className={`transition-all ${
                     profesionalSeleccionado?.id === prof.id
@@ -313,7 +321,7 @@ export const Reserva: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between pt-4">
-            <Button variant="ghost" onClick={() => setStep(1)}>
+            <Button variant="ghost" onClick={() => irAPaso(1)}>
               <ChevronLeft className="w-4 h-4" /> Volver a servicios
             </Button>
           </div>
@@ -374,14 +382,14 @@ export const Reserva: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between pt-6 border-t border-pink-100">
-            <Button variant="ghost" onClick={() => setStep(2)}>
+            <Button variant="ghost" onClick={() => irAPaso(2)}>
               <ChevronLeft className="w-4 h-4" /> Volver a profesional
             </Button>
 
             <Button
               variant="primary"
               disabled={!horaSeleccionada}
-              onClick={() => setStep(4)}
+              onClick={() => irAPaso(4)}
             >
               <span>Continuar a confirmación</span>
               <ChevronRight className="w-4 h-4" />
@@ -507,8 +515,8 @@ export const Reserva: React.FC = () => {
 
                 <div className="pt-4 border-t border-sky-100 space-y-2 text-[11px] text-gray-500">
                   <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Política +48hs: devolución 100% de la seña si cancelás con anticipación.</span>
+                    <ShieldCheck className="w-4 h-4 text-rf-rose-deep shrink-0" />
+                    <span>La seña confirma tu turno y no es reembolsable ante cancelación.</span>
                   </div>
                 </div>
               </div>
@@ -516,7 +524,7 @@ export const Reserva: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between pt-4">
-            <Button variant="ghost" onClick={() => setStep(3)}>
+            <Button variant="ghost" onClick={() => irAPaso(3)}>
               <ChevronLeft className="w-4 h-4" /> Volver a horario
             </Button>
           </div>

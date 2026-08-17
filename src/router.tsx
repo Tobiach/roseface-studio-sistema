@@ -1,6 +1,6 @@
 // src/router.tsx
-import React from 'react';
-import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { createBrowserRouter, Navigate, Outlet, ScrollRestoration, useLocation } from 'react-router-dom';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { Sidebar } from './components/layout/Sidebar';
@@ -18,8 +18,26 @@ import { AdminComisiones } from './pages/admin/AdminComisiones';
 import { AdminCaja } from './pages/admin/AdminCaja';
 import { AdminVIP } from './pages/admin/AdminVIP';
 
+// Después de cada navegación, si la URL trae #ancla (ej. /#servicios) hace
+// scroll suave hasta esa sección, descontando el alto del header sticky.
+function useScrollAHash() {
+  const location = useLocation();
+  useEffect(() => {
+    if (!location.hash) return;
+    const id = location.hash.slice(1);
+    const el = document.getElementById(id);
+    if (!el) return;
+    requestAnimationFrame(() => {
+      const HEADER_OFFSET = 96;
+      const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+      window.scrollTo({ top, behavior: 'smooth' });
+    });
+  }, [location.pathname, location.hash]);
+}
+
 // Public Layout with Header and Footer
 const PublicLayout: React.FC = () => {
+  useScrollAHash();
   return (
     <div className="min-h-screen flex flex-col bg-rf-cream text-rf-black">
       <Header />
@@ -28,6 +46,7 @@ const PublicLayout: React.FC = () => {
       </main>
       <Footer />
       <FloatingWhatsAppButton />
+      <ScrollRestoration />
     </div>
   );
 };
@@ -52,6 +71,7 @@ const AdminLayout: React.FC = () => {
       <main className="flex-1 p-6 sm:p-10 overflow-y-auto max-w-7xl">
         <Outlet />
       </main>
+      <ScrollRestoration />
     </div>
   );
 };

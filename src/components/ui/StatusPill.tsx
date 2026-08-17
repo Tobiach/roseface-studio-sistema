@@ -29,14 +29,9 @@ export const StatusPill: React.FC<StatusPillProps> = ({ estado }) => {
       bg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
       icon: Check,
     },
-    cancelado_con_devolucion: {
-      label: 'Cancelado (+48h Seña devuelta)',
+    cancelado: {
+      label: 'Cancelado (seña no reembolsable)',
       bg: 'bg-red-50 text-red-700 border-red-200',
-      icon: XCircle,
-    },
-    cancelado_sin_devolucion: {
-      label: 'Cancelado (-48h Seña retención)',
-      bg: 'bg-red-100 text-red-900 border-red-300',
       icon: XCircle,
     },
   }[estado];

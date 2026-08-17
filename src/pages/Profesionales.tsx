@@ -18,6 +18,7 @@ export const Profesionales: React.FC = () => {
   // 5. Masajes y Faciales (Sofia)
   // 6. Depilación Láser (Camila shown once)
   const ordenDeseado = [
+    'prof-yosy',
     'prof-mili',
     'prof-sharon',
     'prof-camila',
@@ -51,7 +52,10 @@ export const Profesionales: React.FC = () => {
         {profesionalesOrdenados.map((prof) => (
           <Card key={prof.id} hoverable className="space-y-5 flex flex-col justify-between">
             <div className="space-y-4">
-              <div className="relative rounded-2xl overflow-hidden border border-pink-100 shadow-xs group">
+              <Link
+                to={`/profesionales/${prof.id}`}
+                className="relative rounded-2xl overflow-hidden border border-pink-100 shadow-xs group block"
+              >
                 <img
                   src={prof.fotoUrl}
                   alt={prof.nombre}
@@ -67,7 +71,7 @@ export const Profesionales: React.FC = () => {
                     ({prof.cantidadResenas})
                   </span>
                 </div>
-              </div>
+              </Link>
 
               <div>
                 <h2 className="font-display font-bold text-xl text-rf-black">

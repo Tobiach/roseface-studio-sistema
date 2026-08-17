@@ -1,7 +1,7 @@
 // src/lib/disponibilidad.ts
 import { Profesional, Turno } from '../types';
 
-const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'] as const;
+export const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'] as const;
 
 export function sumarMinutos(hora: string, minutos: number): string {
   const [h, m] = hora.split(':').map(Number);
@@ -42,4 +42,47 @@ export function calcularHorariosDisponibles(
   }
 
   return slots;
+}
+
+// Franjas de 30 min entre dos horas, para dibujar la grilla del calendario.
+export function generarFranjas(desde: string, hasta: string, intervaloMin = 30): string[] {
+  const franjas: string[] = [];
+  let cursor = desde;
+  while (cursor < hasta) {
+    franjas.push(cursor);
+    cursor = sumarMinutos(cursor, intervaloMin);
+  }
+  return franjas;
+}
+
+export type EstadoFranja =
+  | { tipo: 'fuera-horario' }
+  | { tipo: 'libre' }
+  | { tipo: 'ocupado'; turno: Turno };
+
+// Para cada franja del día, dice si la profesional no trabaja ese horario,
+// si está libre, o si tiene un turno tomado ahí — la base de la grilla visual.
+export function estadoDeFranja(
+  profesional: Profesional,
+  fecha: string,
+  horaFranja: string,
+  turnosExistentes: Turno[]
+): EstadoFranja {
+  const diaSemana = DIAS_SEMANA[new Date(`${fecha}T12:00:00`).getDay()];
+  const jornada = profesional.horarioDisponible[diaSemana];
+
+  if (!jornada || horaFranja < jornada.desde || horaFranja >= jornada.hasta) {
+    return { tipo: 'fuera-horario' };
+  }
+
+  const turno = turnosExistentes.find(
+    (t) =>
+      t.profesionalId === profesional.id &&
+      t.fecha === fecha &&
+      !t.estado.startsWith('cancelado') &&
+      horaFranja >= t.horaInicio &&
+      horaFranja < t.horaFin
+  );
+
+  return turno ? { tipo: 'ocupado', turno } : { tipo: 'libre' };
 }
