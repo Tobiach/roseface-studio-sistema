@@ -1,14 +1,19 @@
 // src/components/layout/Header.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Logo } from '../ui/Logo';
 import { Button } from '../ui/Button';
 import { useApp } from '../../context/AppContext';
-import { Calendar, Shield, Sparkles, UserCog } from 'lucide-react';
+import { Calendar, Shield, Sparkles, UserCog, Menu, X } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const { rolActivo, setRolActivo, profesionales, profesionalActivoId, setProfesionalActivoId } = useApp();
   const location = useLocation();
+  const [menuAbierto, setMenuAbierto] = useState(false);
+
+  useEffect(() => {
+    setMenuAbierto(false);
+  }, [location.pathname]);
 
   const entrarComoProfesional = () => {
     setRolActivo('profesional');
@@ -121,8 +126,87 @@ export const Header: React.FC = () => {
               </Button>
             </Link>
           )}
+
+          {/* Mobile menu toggle */}
+          <button
+            onClick={() => setMenuAbierto((v) => !v)}
+            aria-label="Menú"
+            className="md:hidden p-2 -mr-2 text-rf-rose-deep cursor-pointer"
+          >
+            {menuAbierto ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile panel: nav + acceso, todo lo que en desktop vive en la barra */}
+      {menuAbierto && (
+        <div className="md:hidden border-t border-pink-100 bg-white px-4 py-4 space-y-4">
+          <nav className="flex flex-col gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.label}
+                to={link.path}
+                onClick={() => setMenuAbierto(false)}
+                className="px-2 py-2.5 rounded-lg text-sm font-medium text-rf-charcoal hover:bg-rf-cream hover:text-rf-rose-deep transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="pt-3 border-t border-pink-100 space-y-2">
+            <span className="text-[10px] uppercase font-bold text-rf-charcoal tracking-wide">Acceso</span>
+            <div className="flex items-center gap-1.5 bg-rf-cream p-1 rounded-xl border border-pink-200/60 text-xs">
+              <button
+                onClick={() => setRolActivo('clienta')}
+                className={`flex-1 px-2 py-2 rounded-lg font-medium transition-all ${
+                  rolActivo === 'clienta'
+                    ? 'bg-white text-rf-rose-deep shadow-xs font-semibold'
+                    : 'text-rf-charcoal'
+                }`}
+              >
+                Clienta
+              </button>
+              <button
+                onClick={entrarComoProfesional}
+                className={`flex-1 px-2 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1 ${
+                  rolActivo === 'profesional'
+                    ? 'bg-white text-rf-rose-deep shadow-xs font-semibold'
+                    : 'text-rf-charcoal'
+                }`}
+              >
+                <UserCog className="w-3 h-3" />
+                Profesional
+              </button>
+              <button
+                onClick={() => setRolActivo('admin')}
+                className={`flex-1 px-2 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1 ${
+                  rolActivo === 'admin'
+                    ? 'bg-rf-rose-deep text-white shadow-xs font-semibold'
+                    : 'text-rf-charcoal'
+                }`}
+              >
+                <Shield className="w-3 h-3" />
+                Admin
+              </button>
+            </div>
+
+            {rolActivo === 'profesional' && (
+              <select
+                value={profesionalActivoId ?? ''}
+                onChange={(e) => setProfesionalActivoId(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border border-pink-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep"
+              >
+                {profesionales.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 };

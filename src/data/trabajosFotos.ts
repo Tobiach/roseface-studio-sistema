@@ -7,7 +7,7 @@ const modules = import.meta.glob('../assets/images/trabajos/*.jpg', {
   import: 'default',
 }) as Record<string, string>;
 
-function urlFor(filename: string): string {
+export function urlFor(filename: string): string {
   const entry = Object.entries(modules).find(([path]) => path.endsWith(`/${filename}`));
   if (!entry) {
     throw new Error(`Foto de trabajo no encontrada: ${filename}`);

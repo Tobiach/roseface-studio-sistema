@@ -1,9 +1,11 @@
 // src/router.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createBrowserRouter, Navigate, Outlet, ScrollRestoration, useLocation } from 'react-router-dom';
+import { Menu } from 'lucide-react';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { Sidebar } from './components/layout/Sidebar';
+import { Logo } from './components/ui/Logo';
 import { FloatingWhatsAppButton } from './components/ui/FloatingWhatsAppButton';
 import { useApp } from './context/AppContext';
 
@@ -51,10 +53,16 @@ const PublicLayout: React.FC = () => {
   );
 };
 
-// Admin Layout with Sidebar
+// Admin Layout with Sidebar — la sidebar es un drawer que se desliza en
+// mobile (con hamburguesa + fondo oscuro) y queda fija como antes en desktop.
 const AdminLayout: React.FC = () => {
   const { rolActivo } = useApp();
   const location = useLocation();
+  const [sidebarAbierta, setSidebarAbierta] = useState(false);
+
+  useEffect(() => {
+    setSidebarAbierta(false);
+  }, [location.pathname]);
 
   // Un profesional solo puede ver su Agenda y sus Comisiones — Caja y VIP son exclusivos de la dueña
   const rutaRestringidaParaProfesional =
@@ -67,10 +75,24 @@ const AdminLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen flex bg-rf-cream text-rf-black">
-      <Sidebar />
-      <main className="flex-1 p-6 sm:p-10 overflow-y-auto max-w-7xl">
-        <Outlet />
-      </main>
+      <Sidebar abierta={sidebarAbierta} onCerrar={() => setSidebarAbierta(false)} />
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Barra superior — solo mobile */}
+        <div className="md:hidden sticky top-0 z-20 bg-white border-b border-pink-100 px-4 h-16 flex items-center justify-between">
+          <button
+            onClick={() => setSidebarAbierta(true)}
+            aria-label="Abrir menú"
+            className="p-2 -ml-2 text-rf-rose-deep cursor-pointer"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <Logo size="sm" />
+          <span className="w-10" />
+        </div>
+        <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto max-w-7xl w-full min-w-0">
+          <Outlet />
+        </main>
+      </div>
       <ScrollRestoration />
     </div>
   );

@@ -1,5 +1,5 @@
 // src/pages/Home.tsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
@@ -9,10 +9,36 @@ import { RitualTimeline } from '../components/ui/RitualTimeline';
 import { formatCurrency } from '../lib/formatters';
 import { buildWhatsAppUrl } from '../lib/whatsapp';
 import { FAQ } from '../components/ui/FAQ';
-import { Calendar, Star, MapPin, Clock, MessageCircle, Heart, Sparkles, GraduationCap, Gem, Crown } from 'lucide-react';
+import { Lightbox } from '../components/ui/Lightbox';
+import { urlFor } from '../data/trabajosFotos';
+import { Calendar, Star, MapPin, Clock, MessageCircle, Heart, Sparkles, GraduationCap, Gem, Crown, ExternalLink } from 'lucide-react';
 import heroBannerEstudio from '../assets/images/home/hero-banner-estudio.jpg';
 import logoRoseface from '../assets/images/home/logo-roseface.jpg';
-import experienciaClienta from '../assets/images/home/experiencia-clienta.jpg';
+
+// Trabajos reales destacados en el Home — nombre de técnica = nombre real
+// del archivo (fotos provistas por Yosy, ver trabajosFotos.ts).
+const TRABAJOS_DESTACADOS = [
+  { archivo: 'Clasicas_Lash_1.jpg', tecnica: 'Clásicas Lash' },
+  { archivo: 'Hibrida_Lash_1.jpg', tecnica: 'Híbrida Lash' },
+  { archivo: 'Natural_Volumen_1.jpg', tecnica: 'Natural Volumen' },
+  { archivo: 'Efecto_Humedo_1.jpg', tecnica: 'Efecto Húmedo' },
+  { archivo: 'Medio_Volumen_1.jpg', tecnica: 'Medio Volumen' },
+  { archivo: 'Lash_Rose_Face_1.jpg', tecnica: 'Lash Rose Face' },
+  { archivo: 'Volumen_Brasilero_4D_1.jpg', tecnica: 'Volumen Brasileño 4D' },
+  { archivo: 'Lash_Lifting_1.jpg', tecnica: 'Lash Lifting' },
+  { archivo: 'Volumen_Tecnologico_1.jpg', tecnica: 'Volumen Tecnológico' },
+  { archivo: 'Hibrida_Lash_2.jpg', tecnica: 'Híbrida Lash' },
+  { archivo: 'Volumen_Brasilero_6D_1.jpg', tecnica: 'Volumen Brasileño 6D' },
+  { archivo: 'Medio_Volumen_2.jpg', tecnica: 'Medio Volumen' },
+].map((t) => ({ ...t, url: urlFor(t.archivo) }));
+
+const UNAS_DESTACADAS = ['Unas_1.jpg', 'Unas_2.jpg', 'Unas_3.jpg'].map((archivo) => ({
+  archivo,
+  tecnica: 'Uñas',
+  url: urlFor(archivo),
+}));
+
+const GALERIA_HOME = [...TRABAJOS_DESTACADOS, ...UNAS_DESTACADAS];
 
 const CATEGORIA_DESCRIPTOR: Record<string, string> = {
   Pestañas: 'Miradas con carácter',
@@ -25,6 +51,7 @@ const CATEGORIA_DESCRIPTOR: Record<string, string> = {
 
 export const Home: React.FC = () => {
   const { servicios, profesionales, beneficiosVIP } = useApp();
+  const [imagenActiva, setImagenActiva] = useState<number | null>(null);
 
   const categorias = useMemo(() => {
     const nombres = Array.from(new Set(servicios.map((s) => s.categoria)));
@@ -123,14 +150,35 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. EXPERIENCIA */}
-      <section className="px-4 py-16 max-w-3xl mx-auto space-y-6">
-        <img
-          src={experienciaClienta}
-          alt="Resultado real en una clienta de Roseface"
-          className="w-full aspect-[4/5] object-cover rounded-2xl border border-rf-gold/40"
-        />
-        <p className="text-center font-display text-xl sm:text-2xl text-rf-black italic">
+      {/* 4. TRABAJOS REALIZADOS — genera confianza mostrando resultados reales */}
+      <section className="px-4 py-16 max-w-5xl mx-auto space-y-6">
+        <div className="text-center space-y-2 max-w-md mx-auto">
+          <h2 className="font-display text-3xl text-rf-black">Trabajos reales, resultados reales</h2>
+          <p className="text-sm text-rf-charcoal">Una muestra de lo que hacemos todos los días en Roseface.</p>
+        </div>
+
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+          {GALERIA_HOME.map((trabajo, idx) => (
+            <button
+              key={trabajo.archivo}
+              onClick={() => setImagenActiva(idx)}
+              className="group text-left cursor-pointer space-y-1"
+            >
+              <div className="aspect-square rounded-xl overflow-hidden border border-pink-100 bg-pink-50/50">
+                <img
+                  src={trabajo.url}
+                  alt={trabajo.tecnica}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <p className="text-[9px] sm:text-[10px] font-semibold text-rf-charcoal text-center leading-tight truncate">
+                {trabajo.tecnica}
+              </p>
+            </button>
+          ))}
+        </div>
+
+        <p className="text-center font-display text-xl sm:text-2xl text-rf-black italic pt-2">
           Más que un turno, un momento para vos.
         </p>
       </section>
@@ -310,6 +358,28 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* 8.5 RESEÑAS REALES */}
+      <section className="px-4 py-16 max-w-md mx-auto text-center space-y-4">
+        <div className="flex justify-center gap-1">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star key={i} className="w-6 h-6 fill-rf-gold-bright text-rf-gold-bright" />
+          ))}
+        </div>
+        <h2 className="font-display text-2xl text-rf-black">Lo que dicen de nosotras</h2>
+        <p className="text-sm text-rf-charcoal">
+          Mirá las reseñas reales de clientas en nuestra ficha de Google.
+        </p>
+        <a
+          href="https://maps.app.goo.gl/8f4PV4y6jJg8mTFh8"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-rf-gold text-rf-black text-sm font-semibold hover:bg-rf-cream transition-colors"
+        >
+          <span>Ver reseñas en Google Maps</span>
+          <ExternalLink className="w-4 h-4" />
+        </a>
+      </section>
+
       {/* 9. CTA FINAL */}
       <section className="px-4 py-16 max-w-md mx-auto text-center space-y-4">
         <h2 className="font-display text-3xl text-rf-black">¿Nos regalamos un ratito?</h2>
@@ -321,6 +391,16 @@ export const Home: React.FC = () => {
         </Link>
         <p className="text-xs text-rf-charcoal">Te esperamos en Roseface · Caballito, CABA</p>
       </section>
+
+      {imagenActiva !== null && (
+        <Lightbox
+          imagenes={GALERIA_HOME.map((t) => t.url)}
+          indiceActivo={imagenActiva}
+          onCerrar={() => setImagenActiva(null)}
+          onCambiarIndice={setImagenActiva}
+          alt="Trabajo realizado en Rose Face Studio"
+        />
+      )}
     </div>
   );
 };

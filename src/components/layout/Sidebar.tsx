@@ -11,9 +11,15 @@ import {
   Eye,
   LogOut,
   Sparkles,
+  X,
 } from 'lucide-react';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  abierta?: boolean;
+  onCerrar?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ abierta = false, onCerrar }) => {
   const { rolActivo, setRolActivo, profesionales, profesionalActivoId } = useApp();
   const esProfesional = rolActivo === 'profesional';
   const profesionalActivo = profesionales.find((p) => p.id === profesionalActivoId);
@@ -51,14 +57,36 @@ export const Sidebar: React.FC = () => {
     : navItemsCompletos;
 
   return (
-    <aside className="w-64 bg-white border-r border-pink-100 flex flex-col justify-between shrink-0 h-screen sticky top-0 shadow-xs z-30">
-      <div>
-        {/* Header Logo */}
-        <div className="p-6 border-b border-pink-100/60">
-          <Link to="/">
-            <Logo size="sm" />
-          </Link>
-          <div className="mt-3 flex items-center justify-between bg-rf-blush/40 px-3 py-1.5 rounded-lg border border-pink-200/50">
+    <>
+      {/* Fondo oscuro — solo mientras el drawer está abierto en mobile */}
+      {abierta && (
+        <div
+          onClick={onCerrar}
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+        />
+      )}
+
+      <aside
+        className={`fixed md:sticky top-0 left-0 h-screen w-72 md:w-64 bg-white border-r border-pink-100 flex flex-col justify-between shrink-0 shadow-2xl md:shadow-xs z-50 md:z-30 transition-transform duration-300 ${
+          abierta ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0`}
+      >
+        <div>
+        <div className="p-6 border-b border-pink-100/60 space-y-3">
+          {/* Header Logo */}
+          <div className="flex items-center justify-between">
+            <Link to="/">
+              <Logo size="sm" />
+            </Link>
+            <button
+              onClick={onCerrar}
+              aria-label="Cerrar menú"
+              className="md:hidden p-1.5 text-rf-charcoal hover:text-rf-black cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex items-center justify-between bg-rf-blush/40 px-3 py-1.5 rounded-lg border border-pink-200/50">
             <span className="text-[11px] font-semibold text-rf-rose-deep tracking-wide uppercase">
               {esProfesional ? 'Panel de Profesional' : 'Panel Administrativo'}
             </span>
@@ -98,7 +126,7 @@ export const Sidebar: React.FC = () => {
             );
           })}
         </nav>
-      </div>
+        </div>
 
       {/* Footer User Info & Role Switch */}
       <div className="p-4 border-t border-pink-100/80 bg-rf-cream/50 space-y-3">
@@ -136,5 +164,6 @@ export const Sidebar: React.FC = () => {
         </button>
       </div>
     </aside>
+    </>
   );
 };

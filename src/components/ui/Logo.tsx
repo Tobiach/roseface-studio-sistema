@@ -1,45 +1,27 @@
 // src/components/ui/Logo.tsx
 import React from 'react';
-import logoImg from '../../assets/images/roseface_logo_1786547752720.jpg';
+import logoImg from '../../assets/images/home/logo-roseface.jpg';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
-  showSubtitle?: boolean;
   className?: string;
 }
 
-export const Logo: React.FC<LogoProps> = ({
-  size = 'md',
-  showSubtitle = true,
-  className = '',
-}) => {
+export const Logo: React.FC<LogoProps> = ({ size = 'md', className = '' }) => {
   const sizeClasses = {
-    sm: { img: 'h-10 w-auto', text: 'text-2xl', sub: 'text-[9px]' },
-    md: { img: 'h-12 sm:h-14 w-auto', text: 'text-3xl', sub: 'text-[10px]' },
-    lg: { img: 'h-16 sm:h-20 w-auto', text: 'text-4xl', sub: 'text-xs' },
-    xl: { img: 'h-24 sm:h-28 w-auto', text: 'text-5xl', sub: 'text-sm' },
+    sm: 'h-11 w-11',
+    md: 'h-12 sm:h-14 w-12 sm:w-14',
+    lg: 'h-16 sm:h-20 w-16 sm:w-20',
+    xl: 'h-24 sm:h-28 w-24 sm:w-28',
   }[size];
 
   return (
-    <div className={`flex items-center gap-3 select-none group ${className}`}>
-      <div className="relative overflow-hidden rounded-xl bg-pink-50/50 p-0.5 border border-pink-200/80 shadow-2xs group-hover:border-rf-gold transition-all">
-        <img
-          src={logoImg}
-          alt="Roseface By Yosy - Studio Estético"
-          className={`${sizeClasses.img} object-contain rounded-lg transition-transform duration-300 group-hover:scale-105`}
-          referrerPolicy="no-referrer"
-        />
-      </div>
-      <div className="flex flex-col">
-        <span className={`font-script text-rf-black leading-none ${sizeClasses.text}`}>
-          Roseface
-        </span>
-        {showSubtitle && (
-          <span className={`italic font-serif text-rf-gold font-semibold tracking-wider mt-0.5 ${sizeClasses.sub}`}>
-            By Yosy • Studio Estético
-          </span>
-        )}
-      </div>
+    <div className={`select-none group ${className}`}>
+      <img
+        src={logoImg}
+        alt="Rose Face Studio by Yosy"
+        className={`${sizeClasses} object-cover rounded-full border-2 border-rf-gold/60 shadow-xs transition-transform duration-300 group-hover:scale-105`}
+      />
     </div>
   );
 };
