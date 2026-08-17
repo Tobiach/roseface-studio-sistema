@@ -8,6 +8,7 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { RitualTimeline } from '../components/ui/RitualTimeline';
 import { formatCurrency, formatDateReadable } from '../lib/formatters';
+import { calcularHorariosDisponibles, sumarMinutos } from '../lib/disponibilidad';
 import {
   Clock,
   Star,
@@ -24,7 +25,7 @@ import {
 export const Reserva: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { servicios, profesionales, crearTurno, actualizarEstadoTurno, clientas } = useApp();
+  const { servicios, profesionales, turnos, crearTurno, actualizarEstadoTurno, buscarOCrearClienta, showToast } = useApp();
 
   // Step state (1 to 4)
   const [step, setStep] = useState<number>(1);
@@ -59,72 +60,59 @@ export const Reserva: React.FC = () => {
       )
     : profesionales;
 
-  // Mock available hours for date
-  const horariosDisponibles = [
-    '09:30',
-    '10:30',
-    '11:30',
-    '14:00',
-    '15:00',
-    '16:30',
-    '17:30',
-    '18:30',
-  ];
+  // Horarios reales: horario semanal de la profesional para ese día, menos
+  // los turnos que ya tiene ocupados esa fecha (ya no es una lista fija).
+  const horariosDisponibles =
+    profesionalSeleccionado && servicioSeleccionado
+      ? calcularHorariosDisponibles(
+          profesionalSeleccionado,
+          fechaSeleccionada,
+          servicioSeleccionado.duracionMinutos,
+          turnos
+        )
+      : [];
 
   // Monto de seña real del servicio elegido — nunca hardcodeado, sale de
-  // servicio.porcentajeSena (hoy 30% en todos, pero puede variar por servicio)
+  // servicio.porcentajeSena (hoy 30% en todos, pero puede variar por servicio).
+  // Solo para mostrar en pantalla — el monto que efectivamente se cobra lo
+  // recalcula el servidor en /api/mercadopago/crear-preferencia.
   const montoSena = servicioSeleccionado
     ? Math.round(servicioSeleccionado.precio * (servicioSeleccionado.porcentajeSena / 100))
     : 0;
   const saldoRestante = servicioSeleccionado ? servicioSeleccionado.precio - montoSena : 0;
 
-  // Handle Mercado Pago payment — Fase 3: intenta crear una preferencia real
-  // contra /api/mercadopago/crear-preferencia. Si falla (sin MP_ACCESS_TOKEN
-  // configurado, o corriendo local sin funciones serverless), cae al flujo
+  // Handle Mercado Pago payment — intenta crear una preferencia real contra
+  // /api/mercadopago/crear-preferencia (el turno se crea del lado del
+  // servidor, con el monto recalculado ahí). Si falla (sin MP configurado
+  // todavía, o corriendo local sin funciones serverless), cae al flujo
   // simulado para no romper la demo.
   const handlePagarSena = async () => {
     if (!servicioSeleccionado || !profesionalSeleccionado || !horaSeleccionada) return;
 
     setIsProcessingPayment(true);
-
-    const clientaExistente = clientas.find((c) => c.nombre.toLowerCase() === nombreClienta.toLowerCase());
-    const clientaId = clientaExistente ? clientaExistente.id : 'cli-01';
-
-    // El turno se crea como 'reservado' (seña pendiente) antes de ir a pagar
-    const turnoReservado = crearTurno({
-      clientaId,
-      profesionalId: profesionalSeleccionado.id,
-      servicioId: servicioSeleccionado.id,
-      fecha: fechaSeleccionada,
-      horaInicio: horaSeleccionada,
-      horaFin: '11:30',
-      estado: 'reservado',
-      montoTotal: servicioSeleccionado.precio,
-      montoSena,
-      senaVerificadaAutomaticamente: false,
-      origenReserva: 'web',
-      idTransaccionMP: null,
-      notasInternas: `Reserva web cliente: ${nombreClienta} (${telefonoClienta})`,
-    });
+    const horaFin = sumarMinutos(horaSeleccionada, servicioSeleccionado.duracionMinutos);
 
     try {
       const response = await fetch('/api/mercadopago/crear-preferencia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          turnoId: turnoReservado.id,
           servicioId: servicioSeleccionado.id,
-          servicioNombre: servicioSeleccionado.nombre,
           profesionalId: profesionalSeleccionado.id,
-          profesionalNombre: profesionalSeleccionado.nombre,
           fecha: fechaSeleccionada,
           hora: horaSeleccionada,
-          montoSena,
-          montoTotal: servicioSeleccionado.precio,
+          horaFin,
           clienta: { nombre: nombreClienta, telefono: telefonoClienta },
         }),
       });
 
+      if (response.status === 409) {
+        showToast('❌ Ese horario ya no está disponible — elegí otro.');
+        setIsProcessingPayment(false);
+        setHoraSeleccionada('');
+        setStep(3);
+        return;
+      }
       if (!response.ok) throw new Error('crear-preferencia respondió con error');
       const data = await response.json();
       if (!data.initPoint) throw new Error('crear-preferencia no devolvió initPoint');
@@ -133,8 +121,25 @@ export const Reserva: React.FC = () => {
     } catch {
       // Sin Mercado Pago real disponible todavía — simulamos la confirmación
       // instantánea como hacía el flujo anterior, para que la demo no se rompa.
-      setTimeout(() => {
-        actualizarEstadoTurno(turnoReservado.id, 'sena_confirmada');
+      const clientaId = await buscarOCrearClienta(nombreClienta, telefonoClienta);
+      const turnoReservado = await crearTurno({
+        clientaId,
+        profesionalId: profesionalSeleccionado.id,
+        servicioId: servicioSeleccionado.id,
+        fecha: fechaSeleccionada,
+        horaInicio: horaSeleccionada,
+        horaFin,
+        estado: 'reservado',
+        montoTotal: servicioSeleccionado.precio,
+        montoSena,
+        senaVerificadaAutomaticamente: false,
+        origenReserva: 'web',
+        idTransaccionMP: null,
+        notasInternas: `Reserva web cliente: ${nombreClienta} (${telefonoClienta})`,
+      });
+
+      setTimeout(async () => {
+        await actualizarEstadoTurno(turnoReservado.id, 'sena_confirmada');
         setIsProcessingPayment(false);
         navigate('/reserva/confirmacion', { state: { turno: { ...turnoReservado, estado: 'sena_confirmada' } } });
       }, 2000);
@@ -344,21 +349,27 @@ export const Reserva: React.FC = () => {
                 <span>Horarios Disponibles para {profesionalSeleccionado?.nombre}</span>
               </label>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {horariosDisponibles.map((hora) => (
-                  <button
-                    key={hora}
-                    onClick={() => setHoraSeleccionada(hora)}
-                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                      horaSeleccionada === hora
-                        ? 'bg-rf-rose-deep text-white border-rf-rose-deep shadow-xs'
-                        : 'bg-white text-rf-black border-pink-100 hover:border-rf-rose'
-                    }`}
-                  >
-                    {hora} hs
-                  </button>
-                ))}
-              </div>
+              {horariosDisponibles.length === 0 ? (
+                <p className="text-xs text-rf-charcoal bg-rf-cream border border-pink-100 rounded-xl p-3">
+                  {profesionalSeleccionado?.nombre} no atiende ese día, o ya no quedan horarios libres. Probá con otra fecha.
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {horariosDisponibles.map((hora) => (
+                    <button
+                      key={hora}
+                      onClick={() => setHoraSeleccionada(hora)}
+                      className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                        horaSeleccionada === hora
+                          ? 'bg-rf-rose-deep text-white border-rf-rose-deep shadow-xs'
+                          : 'bg-white text-rf-black border-pink-100 hover:border-rf-rose'
+                      }`}
+                    >
+                      {hora} hs
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
