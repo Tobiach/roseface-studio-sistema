@@ -3,11 +3,17 @@
 // Rose Face Studio — Grupo 1 del roadmap (persistencia real).
 // El servidor es la única fuente de verdad del monto: el navegador solo
 // manda qué servicio/profesional/fecha/hora eligió la clienta, nunca un
-// monto. El precio y el porcentaje de seña se leen de Supabase acá mismo.
+// monto. El precio se lee de Supabase acá mismo. La seña es un monto fijo
+// (ver MONTO_SENA_FIJO más abajo), no un porcentaje del servicio.
 // El turno se crea en este paso (estado 'reservado'), no en el navegador.
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { createClient } from '@supabase/supabase-js';
+
+// Duplicado a propósito de src/lib/pricing.ts: Vercel no empaqueta código
+// compartido fuera de cada función individual (mismo motivo por el que
+// getSupabaseAdmin va inline acá abajo).
+const MONTO_SENA_FIJO = 20000;
 
 // Vercel no empaqueta carpetas compartidas fuera de cada función individual
 // (probado: api/_lib/ no llega al bundle) — el cliente admin va inline acá.
@@ -27,7 +33,7 @@ interface CrearPreferenciaBody {
   clienta: { nombre: string; telefono?: string };
 }
 
-const ESTADOS_CANCELADOS = ['cancelado_con_devolucion', 'cancelado_sin_devolucion'];
+const ESTADO_CANCELADO = 'cancelado';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -76,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const montoTotal = Number(servicio.precio);
-    const montoSena = Math.round(montoTotal * (servicio.porcentaje_sena / 100));
+    const montoSena = MONTO_SENA_FIJO;
 
     // Confirmar que el horario sigue libre — el índice único de la base es
     // la última barrera, esto evita pegarle a Mercado Pago innecesariamente.
@@ -92,7 +98,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const seSuperpone = (turnosDelDia ?? [])
-      .filter((t) => !ESTADOS_CANCELADOS.includes(t.estado))
+      .filter((t) => t.estado !== ESTADO_CANCELADO)
       .some((t) => hora < String(t.hora_fin).slice(0, 5) && horaFin > String(t.hora_inicio).slice(0, 5));
 
     if (seSuperpone) {

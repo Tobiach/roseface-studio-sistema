@@ -9,6 +9,7 @@ import { Badge } from '../components/ui/Badge';
 import { RitualTimeline } from '../components/ui/RitualTimeline';
 import { formatCurrency, formatDateReadable } from '../lib/formatters';
 import { calcularHorariosDisponibles, sumarMinutos } from '../lib/disponibilidad';
+import { MONTO_SENA_FIJO } from '../lib/pricing';
 import {
   Clock,
   Star,
@@ -80,14 +81,12 @@ export const Reserva: React.FC = () => {
         )
       : [];
 
-  // Monto de seña real del servicio elegido — nunca hardcodeado, sale de
-  // servicio.porcentajeSena (hoy 30% en todos, pero puede variar por servicio).
-  // Solo para mostrar en pantalla — el monto que efectivamente se cobra lo
-  // recalcula el servidor en /api/mercadopago/crear-preferencia.
-  const montoSena = servicioSeleccionado
-    ? Math.round(servicioSeleccionado.precio * (servicioSeleccionado.porcentajeSena / 100))
-    : 0;
-  const saldoRestante = servicioSeleccionado ? servicioSeleccionado.precio - montoSena : 0;
+  // Seña fija de $20.000 para todos los servicios (regla de negocio real,
+  // no un porcentaje). Solo para mostrar en pantalla — el monto que
+  // efectivamente se cobra lo recalcula el servidor en
+  // /api/mercadopago/crear-preferencia.
+  const montoSena = servicioSeleccionado ? MONTO_SENA_FIJO : 0;
+  const saldoRestante = servicioSeleccionado ? Math.max(0, servicioSeleccionado.precio - montoSena) : 0;
 
   // Handle Mercado Pago payment — intenta crear una preferencia real contra
   // /api/mercadopago/crear-preferencia (el turno se crea del lado del
@@ -227,7 +226,7 @@ export const Reserva: React.FC = () => {
                         {serv.duracionMinutos} min
                       </span>
                       <span className="text-emerald-700 font-semibold">
-                        Seña {serv.porcentajeSena}%: {formatCurrency(Math.round(serv.precio * (serv.porcentajeSena / 100)))}
+                        Seña: {formatCurrency(MONTO_SENA_FIJO)}
                       </span>
                     </div>
                   </div>
@@ -437,14 +436,16 @@ export const Reserva: React.FC = () => {
                   </div>
                   <div className="flex justify-between text-lg bg-pink-50 p-3 rounded-xl border border-pink-200">
                     <span className="font-bold text-rf-rose-deep">
-                      Seña a Abonar Hoy ({servicioSeleccionado.porcentajeSena}%):
+                      Seña a Abonar Hoy:
                     </span>
                     <span className="font-extrabold text-rf-rose-deep">
                       {formatCurrency(montoSena)}
                     </span>
                   </div>
                   <p className="text-[11px] text-rf-charcoal italic">
-                    El saldo restante de {formatCurrency(saldoRestante)} se abona en el estudio el día de tu turno.
+                    {saldoRestante > 0
+                      ? `El saldo restante de ${formatCurrency(saldoRestante)} se abona en el estudio el día de tu turno.`
+                      : 'La seña cubre el total del servicio. No queda saldo pendiente en el estudio.'}
                   </p>
                 </div>
               </Card>

@@ -103,7 +103,6 @@ export function servicioFromRow(row: any): Servicio {
     duracionMinutos: row.duracion_minutos,
     precio: Number(row.precio),
     requiereSena: true,
-    porcentajeSena: row.porcentaje_sena,
     puntosVIP: row.puntos_vip,
     profesionalesQueLoRealizan: row.profesionales_que_lo_realizan,
   };

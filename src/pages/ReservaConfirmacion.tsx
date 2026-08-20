@@ -68,8 +68,7 @@ export const ReservaConfirmacion: React.FC = () => {
     : null;
 
   const pagoPendiente = resumen?.estado === 'reservado' && !!turnoIdDesdeMP;
-  const porcentajeSena =
-    resumen && resumen.montoTotal > 0 ? Math.round((resumen.montoSena / resumen.montoTotal) * 100) : null;
+  const saldoRestante = resumen ? Math.max(0, resumen.montoTotal - resumen.montoSena) : 0;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12 space-y-8">
@@ -148,14 +147,13 @@ export const ReservaConfirmacion: React.FC = () => {
             <div>
               <span className="text-gray-400 block">
                 Seña {pagoPendiente ? 'a confirmar' : 'Abonada'}
-                {porcentajeSena !== null ? ` (${porcentajeSena}%)` : ''}
               </span>
               <span className="font-bold text-emerald-700 text-sm">{formatCurrency(resumen.montoSena)}</span>
             </div>
             <div className="text-right">
               <span className="text-gray-400 block">Saldo Restante a abonar en el studio</span>
               <span className="font-bold text-rf-black text-sm">
-                {formatCurrency(resumen.montoTotal - resumen.montoSena)}
+                {formatCurrency(saldoRestante)}
               </span>
             </div>
           </div>

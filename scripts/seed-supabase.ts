@@ -154,7 +154,6 @@ async function seed() {
     descripcion: s.descripcion,
     duracion_minutos: s.duracionMinutos,
     precio: s.precio,
-    porcentaje_sena: s.porcentajeSena,
     puntos_vip: s.puntosVIP,
     profesionales_que_lo_realizan: s.profesionalesQueLoRealizan,
   }));

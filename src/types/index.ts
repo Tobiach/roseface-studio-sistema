@@ -33,7 +33,6 @@ export interface Servicio {
   duracionMinutos: number;
   precio: number;                  // ARS
   requiereSena: boolean;
-  porcentajeSena: number;          // ej 30 = 30%
   puntosVIP: number;               // Puntos VIP otorgados
   profesionalesQueLoRealizan: string[];  // ids de Profesional
 }

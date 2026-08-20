@@ -16,6 +16,7 @@ import { createClient } from '@supabase/supabase-js';
 import { mockServicios } from '../src/data/mockServicios';
 import { mockClientas } from '../src/data/mockClientas';
 import { sumarMinutos, DIAS_SEMANA } from '../src/lib/disponibilidad';
+import { MONTO_SENA_FIJO } from '../src/lib/pricing';
 import type { DisponibilidadSemanal, EstadoTurno } from '../src/types';
 
 const url = process.env.VITE_SUPABASE_URL;
@@ -225,7 +226,7 @@ async function main() {
         }
 
         const montoTotal = servicio.precio;
-        const montoSena = Math.round(montoTotal * (servicio.porcentajeSena / 100));
+        const montoSena = MONTO_SENA_FIJO;
         const clientaId = elegir(clientasIds);
 
         // fecha de creación de la reserva: antes del turno, más lejos si ya pasó
