@@ -62,24 +62,50 @@ export const Reserva: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, servicios]);
 
-  // Filter professionals for selected service
+  // Profesionales que hacen este servicio (universo elegible, sin filtrar
+  // todavía por disponibilidad en un día/hora puntual).
   const profesionalesDisponibles = servicioSeleccionado
     ? profesionales.filter((p) =>
         servicioSeleccionado.profesionalesQueLoRealizan.includes(p.id)
       )
     : profesionales;
 
-  // Horarios reales: horario semanal de la profesional para ese día, menos
-  // los turnos que ya tiene ocupados esa fecha (ya no es una lista fija).
-  const horariosDisponibles =
-    profesionalSeleccionado && servicioSeleccionado
-      ? calcularHorariosDisponibles(
-          profesionalSeleccionado,
-          fechaSeleccionada,
-          servicioSeleccionado.duracionMinutos,
-          turnos
+  // Flujo invertido: primero se elige día y hora (Paso 2), agregando la
+  // disponibilidad de TODAS las profesionales elegibles para el servicio —
+  // un horario aparece disponible si al menos una de ellas está libre ahí.
+  // Recién en el Paso 3 se filtra a las que específicamente pueden ese
+  // horario exacto.
+  const horariosDelDia: string[] = servicioSeleccionado
+    ? Array.from(
+        new Set<string>(
+          profesionalesDisponibles.flatMap((prof) =>
+            calcularHorariosDisponibles(prof, fechaSeleccionada, servicioSeleccionado.duracionMinutos, turnos)
+          )
+        )
+      ).sort()
+    : [];
+
+  const profesionalesEnEseHorario =
+    servicioSeleccionado && horaSeleccionada
+      ? profesionalesDisponibles.filter((p) =>
+          calcularHorariosDisponibles(p, fechaSeleccionada, servicioSeleccionado.duracionMinutos, turnos).includes(
+            horaSeleccionada
+          )
         )
       : [];
+
+  const elegirFecha = (fecha: string) => {
+    setFechaSeleccionada(fecha);
+    setHoraSeleccionada('');
+    setProfesionalSeleccionado(null);
+  };
+
+  const elegirHora = (hora: string) => {
+    setHoraSeleccionada(hora);
+    setProfesionalSeleccionado(null);
+  };
+
+  const volverACalendario = () => irAPaso(2);
 
   // Seña fija de $20.000 para todos los servicios (regla de negocio real,
   // no un porcentaje). Solo para mostrar en pantalla — el monto que
@@ -167,8 +193,8 @@ export const Reserva: React.FC = () => {
             </div>
             <h1 className="font-display text-2xl font-bold text-rf-black">
               {step === 1 && 'Paso 1: Seleccioná tu Servicio'}
-              {step === 2 && 'Paso 2: Elegí tu Profesional'}
-              {step === 3 && 'Paso 3: Seleccioná Fecha y Hora'}
+              {step === 2 && 'Paso 2: Elegí Día y Horario'}
+              {step === 3 && 'Paso 3: Elegí tu Profesional'}
               {step === 4 && 'Paso 4: Confirmación y Seña con Mercado Pago'}
             </h1>
           </div>
@@ -243,92 +269,8 @@ export const Reserva: React.FC = () => {
         </div>
       )}
 
-      {/* STEP 2: ELEGIR PROFESIONAL */}
+      {/* STEP 2: ELEGIR DÍA Y HORA (agregado entre todas las profesionales que hacen el servicio) */}
       {step === 2 && (
-        <div className="space-y-6">
-          <p className="text-sm text-rf-charcoal">
-            Profesionales disponibles para{' '}
-            <strong className="text-rf-black">{servicioSeleccionado?.nombre}</strong>:
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {profesionalesDisponibles.map((prof) => {
-              const esCategoriaCejas = servicioSeleccionado?.categoria === 'Cejas';
-              const tecnicaCejas =
-                prof.id === 'prof-mili'
-                  ? 'Perfilado y diseño'
-                  : prof.id === 'prof-camila'
-                  ? 'Visajismo'
-                  : prof.id === 'prof-valentina'
-                  ? 'Laminado'
-                  : '';
-
-              return (
-                <Card
-                  key={prof.id}
-                  hoverable
-                  onClick={() => {
-                    setProfesionalSeleccionado(prof);
-                    irAPaso(3);
-                  }}
-                  className={`transition-all ${
-                    profesionalSeleccionado?.id === prof.id
-                      ? 'ring-2 ring-rf-rose-deep bg-pink-50/30'
-                      : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={prof.fotoUrl}
-                      alt={prof.nombre}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-rf-gold shrink-0 filter brightness-[1.02]"
-                    />
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <h3 className="font-display font-bold text-base text-rf-black">
-                          {prof.nombre}
-                        </h3>
-                        {/* Google Style Rating */}
-                        <div className="flex items-center gap-1 text-xs font-semibold text-rf-black bg-pink-50 px-2 py-0.5 rounded-full border border-pink-100">
-                          <Star className="w-3 h-3 fill-rf-gold-bright text-rf-gold-bright" />
-                          <span>{prof.calificacionPromedio.toFixed(1)}</span>
-                          <span className="text-[10px] text-rf-charcoal font-normal">
-                            ({prof.cantidadResenas})
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Specific technique badge if Cejas */}
-                      {esCategoriaCejas && tecnicaCejas && (
-                        <div className="pt-0.5">
-                          <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-rf-rose-deep bg-pink-100/70 px-2 py-0.5 rounded-md">
-                            {prof.nombre} — {tecnicaCejas}
-                          </span>
-                        </div>
-                      )}
-
-                      <p className="text-xs text-rf-charcoal line-clamp-2">{prof.bio}</p>
-                      <div className="flex items-center gap-2 pt-1 text-[11px] text-rf-rose-deep font-medium">
-                        <Sparkles className="w-3 h-3 text-rf-gold" />
-                        <span>{prof.aniosExperiencia} años de trayectoria</span>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center justify-between pt-4">
-            <Button variant="ghost" onClick={() => irAPaso(1)}>
-              <ChevronLeft className="w-4 h-4" /> Volver a servicios
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* STEP 3: ELEGIR FECHA Y HORA */}
-      {step === 3 && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             {/* Date selector */}
@@ -341,7 +283,7 @@ export const Reserva: React.FC = () => {
                 type="date"
                 min="2026-08-17"
                 value={fechaSeleccionada}
-                onChange={(e) => setFechaSeleccionada(e.target.value)}
+                onChange={(e) => elegirFecha(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-rf-rose-deep bg-white text-rf-black font-medium"
               />
               <p className="text-xs text-rf-charcoal italic">
@@ -353,19 +295,19 @@ export const Reserva: React.FC = () => {
             <div className="md:col-span-6 space-y-3">
               <label className="text-xs font-bold uppercase tracking-wider text-rf-charcoal flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-rf-rose-deep" />
-                <span>Horarios Disponibles para {profesionalSeleccionado?.nombre}</span>
+                <span>Horarios Disponibles</span>
               </label>
 
-              {horariosDisponibles.length === 0 ? (
+              {horariosDelDia.length === 0 ? (
                 <p className="text-xs text-rf-charcoal bg-rf-cream border border-pink-100 rounded-xl p-3">
-                  {profesionalSeleccionado?.nombre} no atiende ese día, o ya no quedan horarios libres. Probá con otra fecha.
+                  No quedan horarios libres para {servicioSeleccionado?.nombre} ese día. Probá con otra fecha.
                 </p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {horariosDisponibles.map((hora) => (
+                  {horariosDelDia.map((hora) => (
                     <button
                       key={hora}
-                      onClick={() => setHoraSeleccionada(hora)}
+                      onClick={() => elegirHora(hora)}
                       className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                         horaSeleccionada === hora
                           ? 'bg-rf-rose-deep text-white border-rf-rose-deep shadow-xs'
@@ -381,19 +323,111 @@ export const Reserva: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between pt-6 border-t border-pink-100">
-            <Button variant="ghost" onClick={() => irAPaso(2)}>
-              <ChevronLeft className="w-4 h-4" /> Volver a profesional
+            <Button variant="ghost" onClick={() => irAPaso(1)}>
+              <ChevronLeft className="w-4 h-4" /> Volver a servicios
             </Button>
 
             <Button
               variant="primary"
               disabled={!horaSeleccionada}
-              onClick={() => irAPaso(4)}
+              onClick={() => irAPaso(3)}
             >
-              <span>Continuar a confirmación</span>
+              <span>Ver profesionales disponibles</span>
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* STEP 3: ELEGIR PROFESIONAL (solo las que están libres en el día/hora ya elegidos) */}
+      {step === 3 && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-sm text-rf-charcoal">
+              Profesionales disponibles el{' '}
+              <strong className="text-rf-black">
+                {formatDateReadable(fechaSeleccionada)} a las {horaSeleccionada} hs
+              </strong>
+              :
+            </p>
+            <Button variant="ghost" size="sm" onClick={volverACalendario}>
+              <CalendarIcon className="w-3.5 h-3.5" /> Cambiar día u horario
+            </Button>
+          </div>
+
+          {profesionalesEnEseHorario.length === 0 ? (
+            <p className="text-xs text-rf-charcoal bg-rf-cream border border-pink-100 rounded-xl p-3">
+              Ese horario ya no está disponible. Volvé al calendario y elegí otro.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {profesionalesEnEseHorario.map((prof) => {
+                const esCategoriaCejas = servicioSeleccionado?.categoria === 'Cejas';
+                const tecnicaCejas =
+                  prof.id === 'prof-mili'
+                    ? 'Perfilado y diseño'
+                    : prof.id === 'prof-camila'
+                    ? 'Visajismo'
+                    : prof.id === 'prof-valentina'
+                    ? 'Laminado'
+                    : '';
+
+                return (
+                  <Card
+                    key={prof.id}
+                    hoverable
+                    onClick={() => {
+                      setProfesionalSeleccionado(prof);
+                      irAPaso(4);
+                    }}
+                    className={`transition-all ${
+                      profesionalSeleccionado?.id === prof.id
+                        ? 'ring-2 ring-rf-rose-deep bg-pink-50/30'
+                        : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={prof.fotoUrl}
+                        alt={prof.nombre}
+                        className="w-16 h-16 rounded-full object-cover border-2 border-rf-gold shrink-0 filter brightness-[1.02]"
+                      />
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <h3 className="font-display font-bold text-base text-rf-black">
+                            {prof.nombre}
+                          </h3>
+                          {/* Google Style Rating */}
+                          <div className="flex items-center gap-1 text-xs font-semibold text-rf-black bg-pink-50 px-2 py-0.5 rounded-full border border-pink-100">
+                            <Star className="w-3 h-3 fill-rf-gold-bright text-rf-gold-bright" />
+                            <span>{prof.calificacionPromedio.toFixed(1)}</span>
+                            <span className="text-[10px] text-rf-charcoal font-normal">
+                              ({prof.cantidadResenas})
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Specific technique badge if Cejas */}
+                        {esCategoriaCejas && tecnicaCejas && (
+                          <div className="pt-0.5">
+                            <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-rf-rose-deep bg-pink-100/70 px-2 py-0.5 rounded-md">
+                              {prof.nombre} — {tecnicaCejas}
+                            </span>
+                          </div>
+                        )}
+
+                        <p className="text-xs text-rf-charcoal line-clamp-2">{prof.bio}</p>
+                        <div className="flex items-center gap-2 pt-1 text-[11px] text-rf-rose-deep font-medium">
+                          <Sparkles className="w-3 h-3 text-rf-gold" />
+                          <span>{prof.aniosExperiencia} años de trayectoria</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -524,9 +558,12 @@ export const Reserva: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-4">
+          <div className="flex items-center justify-between pt-4 flex-wrap gap-2">
             <Button variant="ghost" onClick={() => irAPaso(3)}>
-              <ChevronLeft className="w-4 h-4" /> Volver a horario
+              <ChevronLeft className="w-4 h-4" /> Volver a profesional
+            </Button>
+            <Button variant="ghost" size="sm" onClick={volverACalendario}>
+              <CalendarIcon className="w-3.5 h-3.5" /> Cambiar día u horario
             </Button>
           </div>
         </div>
