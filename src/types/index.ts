@@ -77,6 +77,11 @@ export interface Turno {
   origenReserva: 'web' | 'asistente' | 'manual';
   idTransaccionMP: string | null;
   notasInternas?: string;
+  // Hold de 15 min mientras la clienta está en el checkout de MP: pasado
+  // este horario, un turno 'reservado' deja de contar como ocupado y el
+  // horario se libera. Solo lo setea crear-preferencia.ts; null/undefined
+  // en cualquier otro turno (seed, simulado, ya confirmado).
+  expiraEn?: string | null;
 }
 
 export interface CierreComisionSemanal {

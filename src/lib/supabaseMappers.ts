@@ -21,6 +21,7 @@ export function turnoFromRow(row: any): Turno {
     origenReserva: row.origen_reserva,
     idTransaccionMP: row.id_transaccion_mp,
     notasInternas: row.notas_internas ?? undefined,
+    expiraEn: row.expira_en ?? null,
   };
 }
 
@@ -39,6 +40,7 @@ export function turnoToInsertRow(data: Omit<Turno, 'id' | 'fechaCreacion'>) {
     origen_reserva: data.origenReserva,
     id_transaccion_mp: data.idTransaccionMP,
     notas_internas: data.notasInternas ?? null,
+    expira_en: data.expiraEn ?? null,
   };
 }
 

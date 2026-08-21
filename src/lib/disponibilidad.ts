@@ -11,6 +11,17 @@ export function sumarMinutos(hora: string, minutos: number): string {
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
 
+// Un turno 'reservado' con hold vencido (clienta abandonó el checkout de MP
+// hace más de 15 min) ya no debe contar como que ocupa el horario — mismo
+// criterio para mostrar disponibilidad que para el chequeo real del server
+// en crear-preferencia.ts (que además es quien libera el horario de verdad
+// en la base, marcándolo 'cancelado').
+export function turnoBloqueaHorario(t: Turno): boolean {
+  if (t.estado.startsWith('cancelado')) return false;
+  if (t.estado === 'reservado' && t.expiraEn && new Date(t.expiraEn) < new Date()) return false;
+  return true;
+}
+
 // Horarios reales disponibles: cruza el horario semanal de la profesional
 // para ese día contra los turnos que ya tiene ocupados esa fecha — ya no es
 // una lista fija, y nunca ofrece un horario que se superponga con otro turno.
@@ -25,10 +36,7 @@ export function calcularHorariosDisponibles(
   if (!jornada) return [];
 
   const ocupados = turnosExistentes.filter(
-    (t) =>
-      t.profesionalId === profesional.id &&
-      t.fecha === fecha &&
-      !t.estado.startsWith('cancelado')
+    (t) => t.profesionalId === profesional.id && t.fecha === fecha && turnoBloqueaHorario(t)
   );
 
   const slots: string[] = [];
@@ -79,7 +87,7 @@ export function estadoDeFranja(
     (t) =>
       t.profesionalId === profesional.id &&
       t.fecha === fecha &&
-      !t.estado.startsWith('cancelado') &&
+      turnoBloqueaHorario(t) &&
       horaFranja >= t.horaInicio &&
       horaFranja < t.horaFin
   );

@@ -91,17 +91,64 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const turnoId = pago.external_reference;
 
     if (pago.status === 'approved' && turnoId) {
-      const { error } = await supabaseAdmin
+      // Caso borde del hold de 15 min: si el pago tarda en confirmarse y el
+      // horario ya se le dio a otra clienta (turno distinto, mismo
+      // profesional/fecha/hora, activo), no pisamos esa reserva — el pago
+      // de esta clienta ya se cobró igual, pero el turno queda marcado para
+      // que Yosy lo resuelva a mano (no hay reembolso automático, fuera de
+      // alcance de este roadmap).
+      const { data: turnoActual } = await supabaseAdmin
         .from('turnos')
-        .update({
-          estado: 'sena_confirmada',
-          sena_verificada_automaticamente: true,
-          id_transaccion_mp: String(paymentId),
-        })
-        .eq('id', turnoId);
+        .select('id, profesional_id, fecha, hora_inicio, estado')
+        .eq('id', turnoId)
+        .single();
 
-      if (error) {
-        console.error('[mercadopago/webhook] Error actualizando turno', turnoId, error);
+      if (!turnoActual) {
+        console.error('[mercadopago/webhook] Turno no encontrado', turnoId);
+        res.status(200).json({ received: true });
+        return;
+      }
+
+      let hayConflicto = false;
+      if (turnoActual.estado !== 'reservado' && turnoActual.estado !== 'sena_confirmada') {
+        const { data: otroActivo } = await supabaseAdmin
+          .from('turnos')
+          .select('id')
+          .eq('profesional_id', turnoActual.profesional_id)
+          .eq('fecha', turnoActual.fecha)
+          .eq('hora_inicio', turnoActual.hora_inicio)
+          .neq('id', turnoId)
+          .neq('estado', 'cancelado')
+          .maybeSingle();
+        hayConflicto = !!otroActivo;
+      }
+
+      if (hayConflicto) {
+        console.error(
+          '[mercadopago/webhook] Pago aprobado pero el horario ya fue tomado por otra reserva — requiere revisión manual',
+          turnoId
+        );
+        await supabaseAdmin
+          .from('turnos')
+          .update({
+            id_transaccion_mp: String(paymentId),
+            notas_internas: '⚠️ Pago aprobado después de que el horario venció y se reasignó — revisar manualmente con la clienta.',
+          })
+          .eq('id', turnoId);
+      } else {
+        const { error } = await supabaseAdmin
+          .from('turnos')
+          .update({
+            estado: 'sena_confirmada',
+            sena_verificada_automaticamente: true,
+            id_transaccion_mp: String(paymentId),
+            expira_en: null,
+          })
+          .eq('id', turnoId);
+
+        if (error) {
+          console.error('[mercadopago/webhook] Error actualizando turno', turnoId, error);
+        }
       }
     }
 

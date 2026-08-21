@@ -15,6 +15,11 @@ import { createClient } from '@supabase/supabase-js';
 // getSupabaseAdmin va inline acá abajo).
 const MONTO_SENA_FIJO = 20000;
 
+// Hold del horario mientras la clienta está en el checkout de MP. Pasado
+// este tiempo sin confirmación de pago, el horario se libera para otra
+// clienta (Fase 3 del roadmap).
+const HOLD_MINUTOS = 15;
+
 // Vercel no empaqueta carpetas compartidas fuera de cada función individual
 // (probado: api/_lib/ no llega al bundle) — el cliente admin va inline acá.
 function getSupabaseAdmin() {
@@ -88,7 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // la última barrera, esto evita pegarle a Mercado Pago innecesariamente.
     const { data: turnosDelDia, error: turnosError } = await supabaseAdmin
       .from('turnos')
-      .select('hora_inicio, hora_fin, estado')
+      .select('id, hora_inicio, hora_fin, estado, expira_en')
       .eq('profesional_id', profesionalId)
       .eq('fecha', fecha);
 
@@ -97,9 +102,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
+    const seSuperponeConHorario = (t: { hora_inicio: string; hora_fin: string }) =>
+      hora < String(t.hora_fin).slice(0, 5) && horaFin > String(t.hora_inicio).slice(0, 5);
+
+    // Un 'reservado' cuyo hold de 15 min ya venció no debe seguir bloqueando
+    // el horario. El índice único de la base solo excluye 'cancelado', así
+    // que para liberar el horario de verdad hay que flipearlo — no alcanza
+    // con ignorarlo acá (el insert de más abajo lo rechazaría igual).
+    const ahora = new Date();
+    const expiradosQueChocan = (turnosDelDia ?? []).filter(
+      (t) =>
+        t.estado === 'reservado' &&
+        t.expira_en &&
+        new Date(t.expira_en) < ahora &&
+        seSuperponeConHorario(t)
+    );
+    if (expiradosQueChocan.length > 0) {
+      await supabaseAdmin
+        .from('turnos')
+        .update({ estado: ESTADO_CANCELADO, notas_internas: 'Cancelado automáticamente: hold de 15 min vencido sin confirmar el pago.' })
+        .in('id', expiradosQueChocan.map((t) => t.id));
+    }
+    const idsLiberados = new Set(expiradosQueChocan.map((t) => t.id));
+
     const seSuperpone = (turnosDelDia ?? [])
-      .filter((t) => t.estado !== ESTADO_CANCELADO)
-      .some((t) => hora < String(t.hora_fin).slice(0, 5) && horaFin > String(t.hora_inicio).slice(0, 5));
+      .filter((t) => t.estado !== ESTADO_CANCELADO && !idsLiberados.has(t.id))
+      .some(seSuperponeConHorario);
 
     if (seSuperpone) {
       res.status(409).json({ error: 'Ese horario ya no está disponible' });
@@ -154,6 +182,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sena_verificada_automaticamente: false,
         origen_reserva: 'web',
         notas_internas: `Reserva web cliente: ${clienta.nombre} (${clienta.telefono ?? ''})`,
+        expira_en: new Date(Date.now() + HOLD_MINUTOS * 60 * 1000).toISOString(),
       })
       .select('id')
       .single();

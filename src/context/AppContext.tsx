@@ -72,6 +72,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let cancelado = false;
 
     (async () => {
+      // Limpieza best-effort de holds vencidos (clienta abandonó el checkout
+      // de MP hace más de 15 min): sin esto, un turno 'reservado' con hold
+      // expirado seguiría apareciendo en los paneles de admin como si
+      // siguiera esperando pago, hasta que alguien intente reservar
+      // exactamente ese mismo horario (que es donde crear-preferencia.ts sí
+      // lo flipea). No afecta la agenda demo sembrada: esos turnos nunca
+      // tienen expira_en seteado.
+      await supabase
+        .from('turnos')
+        .update({ estado: 'cancelado', notas_internas: 'Cancelado automáticamente: hold de 15 min vencido sin confirmar el pago.' })
+        .eq('estado', 'reservado')
+        .not('expira_en', 'is', null)
+        .lt('expira_en', new Date().toISOString());
+
       const [turnosRes, clientasRes, serviciosRes, profesionalesRes] = await Promise.all([
         supabase.from('turnos').select('*').order('fecha_creacion', { ascending: false }),
         supabase.from('clientas').select('*'),
