@@ -1,12 +1,13 @@
 // src/components/admin/CalendarioGrilla.tsx
 import React, { useMemo } from 'react';
-import { Profesional, Turno } from '../../types';
+import { Profesional, Turno, BloqueoHorario } from '../../types';
 import { DIAS_SEMANA, generarFranjas, estadoDeFranja } from '../../lib/disponibilidad';
 
 interface CalendarioGrillaProps {
   profesionales: Profesional[];
   fecha: string;
   turnos: Turno[];
+  bloqueos?: BloqueoHorario[];
   onSeleccionarTurno: (turno: Turno) => void;
   getClientaNombre: (id: string) => string;
 }
@@ -22,6 +23,7 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
   profesionales,
   fecha,
   turnos,
+  bloqueos = [],
   onSeleccionarTurno,
   getClientaNombre,
 }) => {
@@ -69,6 +71,9 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded-sm bg-emerald-100 border border-emerald-300 inline-block" /> Completado
         </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-sm bg-gray-300 border border-gray-400 inline-block" /> Bloqueado
+        </span>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-pink-100">
@@ -95,7 +100,7 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
                 {franja}
               </div>
               {profesionalesDelDia.map((p) => {
-                const estado = estadoDeFranja(p, fecha, franja, turnos);
+                const estado = estadoDeFranja(p, fecha, franja, turnos, bloqueos);
 
                 if (estado.tipo === 'fuera-horario') {
                   return <div key={p.id} className="bg-gray-100 min-h-[28px]" />;
@@ -103,6 +108,18 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
 
                 if (estado.tipo === 'libre') {
                   return <div key={p.id} className="bg-white min-h-[28px]" />;
+                }
+
+                if (estado.tipo === 'bloqueado') {
+                  return (
+                    <div
+                      key={p.id}
+                      title={estado.bloqueo.motivo ?? 'Horario bloqueado'}
+                      className="bg-gray-300 min-h-[28px] flex items-center justify-center"
+                    >
+                      <span className="text-[8px] text-gray-600 font-bold">🚫</span>
+                    </div>
+                  );
                 }
 
                 const esInicio = estado.turno.horaInicio === franja;

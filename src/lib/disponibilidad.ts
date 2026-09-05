@@ -1,5 +1,5 @@
 // src/lib/disponibilidad.ts
-import { Profesional, Turno } from '../types';
+import { Profesional, Turno, BloqueoHorario } from '../types';
 
 export const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'] as const;
 
@@ -22,14 +22,24 @@ export function turnoBloqueaHorario(t: Turno): boolean {
   return true;
 }
 
+// Un bloqueo manual (Fase 6) cubre una franja si es de día completo, o si
+// se superpone con el rango horario del bloqueo.
+function bloqueoCubreFranja(b: BloqueoHorario, horaFranja: string, horaFin: string): boolean {
+  if (b.diaCompleto) return true;
+  if (!b.horaInicio || !b.horaFin) return true; // por las dudas, un bloqueo mal cargado bloquea todo el día
+  return horaFranja < b.horaFin && horaFin > b.horaInicio;
+}
+
 // Horarios reales disponibles: cruza el horario semanal de la profesional
-// para ese día contra los turnos que ya tiene ocupados esa fecha — ya no es
-// una lista fija, y nunca ofrece un horario que se superponga con otro turno.
+// para ese día contra los turnos que ya tiene ocupados esa fecha y contra
+// los bloqueos manuales que haya — ya no es una lista fija, y nunca ofrece
+// un horario que se superponga con otro turno o un bloqueo.
 export function calcularHorariosDisponibles(
   profesional: Profesional,
   fecha: string,
   duracionMinutos: number,
-  turnosExistentes: Turno[]
+  turnosExistentes: Turno[],
+  bloqueos: BloqueoHorario[] = []
 ): string[] {
   const diaSemana = DIAS_SEMANA[new Date(`${fecha}T12:00:00`).getDay()];
   const jornada = profesional.horarioDisponible[diaSemana];
@@ -38,6 +48,7 @@ export function calcularHorariosDisponibles(
   const ocupados = turnosExistentes.filter(
     (t) => t.profesionalId === profesional.id && t.fecha === fecha && turnoBloqueaHorario(t)
   );
+  const bloqueosDelDia = bloqueos.filter((b) => b.profesionalId === profesional.id && b.fecha === fecha);
 
   const slots: string[] = [];
   let cursor = jornada.desde;
@@ -45,7 +56,8 @@ export function calcularHorariosDisponibles(
   while (sumarMinutos(cursor, duracionMinutos) <= jornada.hasta) {
     const finSlot = sumarMinutos(cursor, duracionMinutos);
     const seSuperpone = ocupados.some((t) => cursor < t.horaFin && finSlot > t.horaInicio);
-    if (!seSuperpone) slots.push(cursor);
+    const bloqueado = bloqueosDelDia.some((b) => bloqueoCubreFranja(b, cursor, finSlot));
+    if (!seSuperpone && !bloqueado) slots.push(cursor);
     cursor = sumarMinutos(cursor, 30);
   }
 
@@ -66,15 +78,18 @@ export function generarFranjas(desde: string, hasta: string, intervaloMin = 30):
 export type EstadoFranja =
   | { tipo: 'fuera-horario' }
   | { tipo: 'libre' }
-  | { tipo: 'ocupado'; turno: Turno };
+  | { tipo: 'ocupado'; turno: Turno }
+  | { tipo: 'bloqueado'; bloqueo: BloqueoHorario };
 
 // Para cada franja del día, dice si la profesional no trabaja ese horario,
-// si está libre, o si tiene un turno tomado ahí — la base de la grilla visual.
+// si está libre, si tiene un turno tomado ahí, o si Yosy/ella misma
+// bloqueó ese horario a mano — la base de la grilla visual.
 export function estadoDeFranja(
   profesional: Profesional,
   fecha: string,
   horaFranja: string,
-  turnosExistentes: Turno[]
+  turnosExistentes: Turno[],
+  bloqueos: BloqueoHorario[] = []
 ): EstadoFranja {
   const diaSemana = DIAS_SEMANA[new Date(`${fecha}T12:00:00`).getDay()];
   const jornada = profesional.horarioDisponible[diaSemana];
@@ -91,6 +106,13 @@ export function estadoDeFranja(
       horaFranja >= t.horaInicio &&
       horaFranja < t.horaFin
   );
+  if (turno) return { tipo: 'ocupado', turno };
 
-  return turno ? { tipo: 'ocupado', turno } : { tipo: 'libre' };
+  const horaFinFranja = sumarMinutos(horaFranja, 30);
+  const bloqueo = bloqueos.find(
+    (b) => b.profesionalId === profesional.id && b.fecha === fecha && bloqueoCubreFranja(b, horaFranja, horaFinFranja)
+  );
+  if (bloqueo) return { tipo: 'bloqueado', bloqueo };
+
+  return { tipo: 'libre' };
 }

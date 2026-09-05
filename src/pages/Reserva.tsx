@@ -26,7 +26,7 @@ import {
 export const Reserva: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { servicios, profesionales, turnos, crearTurno, actualizarEstadoTurno, buscarOCrearClienta, showToast } = useApp();
+  const { servicios, profesionales, turnos, bloqueos, crearTurno, actualizarEstadoTurno, buscarOCrearClienta, showToast } = useApp();
 
   // El paso vive en la URL (?paso=N) para que el botón atrás del navegador
   // (o el gesto del celular) retroceda de a un paso, en vez de sacarte de
@@ -79,7 +79,7 @@ export const Reserva: React.FC = () => {
     ? Array.from(
         new Set<string>(
           profesionalesDisponibles.flatMap((prof) =>
-            calcularHorariosDisponibles(prof, fechaSeleccionada, servicioSeleccionado.duracionMinutos, turnos)
+            calcularHorariosDisponibles(prof, fechaSeleccionada, servicioSeleccionado.duracionMinutos, turnos, bloqueos)
           )
         )
       ).sort()
@@ -88,9 +88,13 @@ export const Reserva: React.FC = () => {
   const profesionalesEnEseHorario =
     servicioSeleccionado && horaSeleccionada
       ? profesionalesDisponibles.filter((p) =>
-          calcularHorariosDisponibles(p, fechaSeleccionada, servicioSeleccionado.duracionMinutos, turnos).includes(
-            horaSeleccionada
-          )
+          calcularHorariosDisponibles(
+            p,
+            fechaSeleccionada,
+            servicioSeleccionado.duracionMinutos,
+            turnos,
+            bloqueos
+          ).includes(horaSeleccionada)
         )
       : [];
 

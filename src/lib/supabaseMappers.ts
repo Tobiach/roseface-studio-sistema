@@ -2,7 +2,7 @@
 // Conversión entre las filas de Supabase (snake_case) y los tipos de la app
 // (camelCase, definidos en src/types/index.ts) — para no tener que tocar el
 // resto de la app cuando cambia el origen de los datos.
-import { Turno, Clienta, Servicio, ModeloComision, DisponibilidadSemanal } from '../types';
+import { Turno, Clienta, Servicio, ModeloComision, DisponibilidadSemanal, BloqueoHorario } from '../types';
 
 export function turnoFromRow(row: any): Turno {
   return {
@@ -105,6 +105,31 @@ export function profesionalOperativoFromRow(row: any): ProfesionalOperativo {
     aliasCbu: row.alias_cbu ?? null,
     videoUrl: row.video_url ?? null,
     linkAutoagenda: row.link_autoagenda ?? null,
+  };
+}
+
+export function bloqueoFromRow(row: any): BloqueoHorario {
+  return {
+    id: String(row.id),
+    profesionalId: row.profesional_id,
+    fecha: row.fecha,
+    diaCompleto: row.dia_completo,
+    horaInicio: row.hora_inicio ? String(row.hora_inicio).slice(0, 5) : null,
+    horaFin: row.hora_fin ? String(row.hora_fin).slice(0, 5) : null,
+    motivo: row.motivo ?? null,
+    creadoPor: row.creado_por ?? null,
+  };
+}
+
+export function bloqueoToInsertRow(data: Omit<BloqueoHorario, 'id'>) {
+  return {
+    profesional_id: data.profesionalId,
+    fecha: data.fecha,
+    dia_completo: data.diaCompleto,
+    hora_inicio: data.horaInicio ?? null,
+    hora_fin: data.horaFin ?? null,
+    motivo: data.motivo ?? null,
+    creado_por: data.creadoPor ?? null,
   };
 }
 

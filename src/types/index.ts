@@ -147,3 +147,16 @@ export interface ClientaEnRiesgo {
   ultimoServicio: string;
   flujoRecuperacionActivado: boolean;
 }
+
+// Bloqueo manual de horario (Fase 6): Yosy bloquea para cualquier
+// profesional, cada profesional solo puede bloquear la suya.
+export interface BloqueoHorario {
+  id: string;
+  profesionalId: string;
+  fecha: string;                   // YYYY-MM-DD
+  diaCompleto: boolean;
+  horaInicio?: string | null;      // solo si diaCompleto = false
+  horaFin?: string | null;
+  motivo?: string | null;
+  creadoPor?: string | null;
+}

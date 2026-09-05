@@ -148,6 +148,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
+    // Bloqueo manual (Fase 6) — última barrera server-side, además del
+    // filtro que ya hace el cliente al armar los horarios disponibles.
+    const { data: bloqueosDelDia, error: bloqueosError } = await supabaseAdmin
+      .from('bloqueos_horario')
+      .select('dia_completo, hora_inicio, hora_fin')
+      .eq('profesional_id', profesionalId)
+      .eq('fecha', fecha);
+
+    if (bloqueosError) {
+      res.status(500).json({ error: 'No se pudo verificar bloqueos de horario' });
+      return;
+    }
+
+    const chocaConBloqueo = (bloqueosDelDia ?? []).some((b) => {
+      if (b.dia_completo) return true;
+      if (!b.hora_inicio || !b.hora_fin) return true;
+      return hora < String(b.hora_fin).slice(0, 5) && horaFin > String(b.hora_inicio).slice(0, 5);
+    });
+
+    if (chocaConBloqueo) {
+      res.status(409).json({ error: 'Ese horario está bloqueado' });
+      return;
+    }
+
     // Clienta: buscar por nombre o dar de alta
     let clientaId: string;
     const { data: clientaExistente } = await supabaseAdmin

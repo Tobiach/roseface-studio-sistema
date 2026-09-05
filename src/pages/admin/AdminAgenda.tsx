@@ -24,6 +24,8 @@ import {
   CalendarCheck,
   Landmark,
   FileImage,
+  Ban,
+  Trash2,
 } from 'lucide-react';
 
 // TODO: Fase de integración OAuth — punto de entrada para conectar la API real de
@@ -37,7 +39,20 @@ const VENTANAS_RECORDATORIO = [
 ] as const;
 
 export const AdminAgenda: React.FC = () => {
-  const { turnos, clientas, profesionales, servicios, rolActivo, profesionalActivoId, actualizarEstadoTurno, aprobarComprobante, showToast } = useApp();
+  const {
+    turnos,
+    clientas,
+    profesionales,
+    servicios,
+    bloqueos,
+    rolActivo,
+    profesionalActivoId,
+    actualizarEstadoTurno,
+    aprobarComprobante,
+    crearBloqueo,
+    eliminarBloqueo,
+    showToast,
+  } = useApp();
   const esProfesional = rolActivo === 'profesional';
 
   // Comprobantes de transferencia esperando aprobación — solo la propia
@@ -55,10 +70,30 @@ export const AdminAgenda: React.FC = () => {
         )
       : [];
 
+  // Notificación de pago para Yosy (Fase 6.1) — últimos turnos confirmados.
+  // En el circuito de transferencia no se le muestra monto ni comprobante:
+  // ese pago es entre la clienta y la profesional, Yosy solo sabe que el
+  // turno quedó confirmado.
+  const pagosRecientes = !esProfesional
+    ? turnos
+        .filter((t) => t.estado === 'sena_confirmada')
+        .sort((a, b) => (a.fechaCreacion < b.fechaCreacion ? 1 : -1))
+        .slice(0, 5)
+    : [];
+
   const [fechaFiltro, setFechaFiltro] = useState<string>('2026-08-17');
   const [profesionalFiltro, setProfesionalFiltro] = useState<string>('todos');
   const [turnoSeleccionadoModal, setTurnoSeleccionadoModal] = useState<Turno | null>(null);
   const [ventanaRecordatorio, setVentanaRecordatorio] = useState<string>('48h');
+
+  // Bloqueo manual de horario (Fase 6)
+  const [modalBloqueoAbierto, setModalBloqueoAbierto] = useState(false);
+  const [bloqueoProfesionalId, setBloqueoProfesionalId] = useState<string>('');
+  const [bloqueoFecha, setBloqueoFecha] = useState<string>('2026-08-17');
+  const [bloqueoDiaCompleto, setBloqueoDiaCompleto] = useState(true);
+  const [bloqueoHoraInicio, setBloqueoHoraInicio] = useState('09:00');
+  const [bloqueoHoraFin, setBloqueoHoraFin] = useState('19:00');
+  const [bloqueoMotivo, setBloqueoMotivo] = useState('');
 
   // Un profesional solo ve su propia agenda — el filtro queda fijo en su id
   const profesionalFiltroEfectivo = esProfesional ? profesionalActivoId ?? 'todos' : profesionalFiltro;
@@ -91,6 +126,27 @@ export const AdminAgenda: React.FC = () => {
     profesionalFiltroEfectivo === 'todos'
       ? profesionales
       : profesionales.filter((p) => p.id === profesionalFiltroEfectivo);
+
+  // Una profesional solo puede bloquear su propia agenda — Yosy puede
+  // elegir cualquiera (Fase 6).
+  const profesionalesParaBloqueo = esProfesional
+    ? profesionales.filter((p) => p.id === profesionalActivoId)
+    : profesionales;
+
+  const handleCrearBloqueo = async () => {
+    if (!bloqueoProfesionalId || !bloqueoFecha) return;
+    await crearBloqueo({
+      profesionalId: bloqueoProfesionalId,
+      fecha: bloqueoFecha,
+      diaCompleto: bloqueoDiaCompleto,
+      horaInicio: bloqueoDiaCompleto ? null : bloqueoHoraInicio,
+      horaFin: bloqueoDiaCompleto ? null : bloqueoHoraFin,
+      motivo: bloqueoMotivo || null,
+      creadoPor: esProfesional ? profesionalActivoId : 'yosy',
+    });
+    setModalBloqueoAbierto(false);
+    setBloqueoMotivo('');
+  };
 
   return (
     <div className="space-y-8 font-admin">
@@ -136,6 +192,19 @@ export const AdminAgenda: React.FC = () => {
               ))}
             </select>
           )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setBloqueoProfesionalId(esProfesional ? profesionalActivoId ?? '' : profesionales[0]?.id ?? '');
+              setBloqueoFecha(fechaFiltro);
+              setModalBloqueoAbierto(true);
+            }}
+          >
+            <Ban className="w-3.5 h-3.5 text-rf-rose-deep" />
+            <span>Bloquear horario</span>
+          </Button>
         </div>
       </div>
 
@@ -150,10 +219,42 @@ export const AdminAgenda: React.FC = () => {
               profesionales={profesionalesParaGrilla}
               fecha={fechaFiltro}
               turnos={turnos}
+              bloqueos={bloqueos}
               onSeleccionarTurno={setTurnoSeleccionadoModal}
               getClientaNombre={getClientaNombre}
             />
           </div>
+
+          {/* Bloqueos activos del día — con opción de sacarlos */}
+          {bloqueos.filter((b) => b.fecha === fechaFiltro && (profesionalFiltroEfectivo === 'todos' || b.profesionalId === profesionalFiltroEfectivo)).length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-rf-charcoal">Bloqueos de hoy</h3>
+              <div className="space-y-2">
+                {bloqueos
+                  .filter((b) => b.fecha === fechaFiltro && (profesionalFiltroEfectivo === 'todos' || b.profesionalId === profesionalFiltroEfectivo))
+                  .map((b) => (
+                    <div
+                      key={b.id}
+                      className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs"
+                    >
+                      <span className="text-rf-charcoal">
+                        <strong className="text-rf-black">{getProfesional(b.profesionalId)?.nombre}</strong>
+                        {' — '}
+                        {b.diaCompleto ? 'Todo el día' : `${b.horaInicio} a ${b.horaFin} hs`}
+                        {b.motivo ? ` · ${b.motivo}` : ''}
+                      </span>
+                      <button
+                        onClick={() => eliminarBloqueo(b.id)}
+                        className="text-gray-400 hover:text-rf-danger cursor-pointer p-1"
+                        aria-label="Quitar bloqueo"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wider text-rf-charcoal">
@@ -275,6 +376,33 @@ export const AdminAgenda: React.FC = () => {
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>Aprobar y confirmar turno</span>
                     </Button>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Pagos recientes — feed de notificación de pago para Yosy */}
+          {pagosRecientes.length > 0 && (
+            <Card className="space-y-3">
+              <div className="flex items-center gap-2 text-rf-black font-bold text-sm">
+                <Bell className="w-4 h-4 text-rf-rose-deep" />
+                <span>Pagos Recientes</span>
+              </div>
+              <div className="space-y-2">
+                {pagosRecientes.map((turno) => (
+                  <div key={turno.id} className="flex items-center justify-between text-xs border-b border-pink-50 pb-2 last:border-0 last:pb-0">
+                    <div>
+                      <span className="font-semibold text-rf-black block">{getClientaNombre(turno.clientaId)}</span>
+                      <span className="text-[11px] text-rf-charcoal">
+                        {getProfesional(turno.profesionalId)?.nombre} • {formatDateReadable(turno.fecha)}
+                      </span>
+                    </div>
+                    {turno.circuitoPago === 'transferencia' ? (
+                      <Badge variant="success" size="sm">Turno confirmado</Badge>
+                    ) : (
+                      <span className="font-bold text-emerald-700">{formatCurrency(turno.montoSena)}</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -449,6 +577,109 @@ export const AdminAgenda: React.FC = () => {
                 onClick={() => setTurnoSeleccionadoModal(null)}
               >
                 Cerrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL BLOQUEAR HORARIO */}
+      {modalBloqueoAbierto && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 border border-pink-100 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-pink-100">
+              <h3 className="font-display font-bold text-lg text-rf-black">Bloquear Horario</h3>
+              <button
+                onClick={() => setModalBloqueoAbierto(false)}
+                className="text-gray-400 hover:text-rf-black cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-rf-black block mb-1">Profesional</label>
+                {esProfesional ? (
+                  <span className="block px-3 py-2 rounded-xl border border-pink-200 bg-rf-cream text-rf-charcoal font-semibold">
+                    {profesionalesParaBloqueo[0]?.nombre}
+                  </span>
+                ) : (
+                  <select
+                    value={bloqueoProfesionalId}
+                    onChange={(e) => setBloqueoProfesionalId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
+                  >
+                    {profesionalesParaBloqueo.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.nombre}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div>
+                <label className="font-bold text-rf-black block mb-1">Fecha</label>
+                <input
+                  type="date"
+                  value={bloqueoFecha}
+                  onChange={(e) => setBloqueoFecha(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
+                />
+              </div>
+
+              <label className="flex items-center gap-2 font-semibold text-rf-black">
+                <input
+                  type="checkbox"
+                  checked={bloqueoDiaCompleto}
+                  onChange={(e) => setBloqueoDiaCompleto(e.target.checked)}
+                />
+                Bloquear el día completo
+              </label>
+
+              {!bloqueoDiaCompleto && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-rf-black block mb-1">Desde</label>
+                    <input
+                      type="time"
+                      value={bloqueoHoraInicio}
+                      onChange={(e) => setBloqueoHoraInicio(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-rf-black block mb-1">Hasta</label>
+                    <input
+                      type="time"
+                      value={bloqueoHoraFin}
+                      onChange={(e) => setBloqueoHoraFin(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="font-bold text-rf-black block mb-1">Motivo (opcional)</label>
+                <input
+                  type="text"
+                  value={bloqueoMotivo}
+                  onChange={(e) => setBloqueoMotivo(e.target.value)}
+                  placeholder="Ej: día libre, feriado, capacitación"
+                  className="w-full px-3 py-2 rounded-xl border border-pink-200"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button variant="ghost" size="sm" onClick={() => setModalBloqueoAbierto(false)}>
+                Cancelar
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleCrearBloqueo}>
+                <Ban className="w-3.5 h-3.5" />
+                <span>Bloquear</span>
               </Button>
             </div>
           </div>
