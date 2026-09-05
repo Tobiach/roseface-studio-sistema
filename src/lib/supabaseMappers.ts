@@ -22,6 +22,9 @@ export function turnoFromRow(row: any): Turno {
     idTransaccionMP: row.id_transaccion_mp,
     notasInternas: row.notas_internas ?? undefined,
     expiraEn: row.expira_en ?? null,
+    circuitoPago: row.circuito_pago ?? 'mercado_pago',
+    comprobanteTransferenciaUrl: row.comprobante_transferencia_url ?? null,
+    aprobadoPorProfesional: row.aprobado_por_profesional ?? false,
   };
 }
 
@@ -41,6 +44,9 @@ export function turnoToInsertRow(data: Omit<Turno, 'id' | 'fechaCreacion'>) {
     id_transaccion_mp: data.idTransaccionMP,
     notas_internas: data.notasInternas ?? null,
     expira_en: data.expiraEn ?? null,
+    circuito_pago: data.circuitoPago ?? 'mercado_pago',
+    comprobante_transferencia_url: data.comprobanteTransferenciaUrl ?? null,
+    aprobado_por_profesional: data.aprobadoPorProfesional ?? false,
   };
 }
 
@@ -86,6 +92,9 @@ export interface ProfesionalOperativo {
   id: string;
   modeloComision: ModeloComision;
   horarioDisponible: DisponibilidadSemanal;
+  aliasCbu: string | null;
+  videoUrl: string | null;
+  linkAutoagenda: string | null;
 }
 
 export function profesionalOperativoFromRow(row: any): ProfesionalOperativo {
@@ -93,6 +102,9 @@ export function profesionalOperativoFromRow(row: any): ProfesionalOperativo {
     id: row.id,
     modeloComision: row.modelo_comision,
     horarioDisponible: row.horario_disponible,
+    aliasCbu: row.alias_cbu ?? null,
+    videoUrl: row.video_url ?? null,
+    linkAutoagenda: row.link_autoagenda ?? null,
   };
 }
 
@@ -107,5 +119,6 @@ export function servicioFromRow(row: any): Servicio {
     requiereSena: true,
     puntosVIP: row.puntos_vip,
     profesionalesQueLoRealizan: row.profesionales_que_lo_realizan,
+    cicloRecurrenciaDias: row.ciclo_recurrencia_dias ?? null,
   };
 }

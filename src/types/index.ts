@@ -15,6 +15,12 @@ export interface Profesional {
   cantidadResenas: number;
   modeloComision: ModeloComision;
   horarioDisponible: DisponibilidadSemanal;
+  // Solo se usa para el modelo alquiler_fijo (circuito de pago por
+  // transferencia) — dónde le transfiere la clienta.
+  aliasCbu?: string | null;
+  videoUrl?: string | null;
+  // Link de auto-agendado propio, para el aviso de recurrencia (Fase 8).
+  linkAutoagenda?: string | null;
 }
 
 export type ModeloComision =
@@ -35,6 +41,9 @@ export interface Servicio {
   requiereSena: boolean;
   puntosVIP: number;               // Puntos VIP otorgados
   profesionalesQueLoRealizan: string[];  // ids de Profesional
+  // Cada cuántos días vuelve una clienta típica para este servicio (ej.
+  // retoque de pestañas ~21 días). null = no aplica.
+  cicloRecurrenciaDias?: number | null;
 }
 
 export interface Clienta {
@@ -82,6 +91,13 @@ export interface Turno {
   // horario se libera. Solo lo setea crear-preferencia.ts; null/undefined
   // en cualquier otro turno (seed, simulado, ya confirmado).
   expiraEn?: string | null;
+  // Doble circuito de pago (Fase 5): 'mercado_pago' para modelo porcentaje
+  // (Mili/Sharon), 'transferencia' para alquiler_fijo (Martina, Sofía,
+  // Alexandra, Camila, Valentina) — 1:1 con el modeloComision de la
+  // profesional al momento de reservar.
+  circuitoPago?: 'mercado_pago' | 'transferencia';
+  comprobanteTransferenciaUrl?: string | null;
+  aprobadoPorProfesional?: boolean;
 }
 
 export interface CierreComisionSemanal {

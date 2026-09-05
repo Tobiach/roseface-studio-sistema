@@ -15,10 +15,12 @@ import { createClient } from '@supabase/supabase-js';
 // getSupabaseAdmin va inline acá abajo).
 const MONTO_SENA_FIJO = 20000;
 
-// Hold del horario mientras la clienta está en el checkout de MP. Pasado
-// este tiempo sin confirmación de pago, el horario se libera para otra
-// clienta (Fase 3 del roadmap).
-const HOLD_MINUTOS = 15;
+// Hold del horario mientras la clienta paga. Pasado este tiempo sin
+// confirmación, el horario se libera para otra clienta (Fase 3). El
+// circuito de transferencia tiene más margen porque implica un paso manual
+// (ir al banco/app y volver a subir el comprobante), no un checkout online.
+const HOLD_MINUTOS_MP = 15;
+const HOLD_MINUTOS_TRANSFERENCIA = 60;
 
 // Vercel no empaqueta carpetas compartidas fuera de cada función individual
 // (probado: api/_lib/ no llega al bundle) — el cliente admin va inline acá.
@@ -46,12 +48,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const accessToken = process.env.MP_ACCESS_TOKEN;
-  if (!accessToken) {
-    res.status(500).json({ error: 'MP_ACCESS_TOKEN no configurado en el servidor' });
-    return;
-  }
-
   const supabaseAdmin = getSupabaseAdmin();
   if (!supabaseAdmin) {
     res.status(500).json({ error: 'Supabase no configurado en el servidor' });
@@ -70,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const [{ data: servicio, error: servicioError }, { data: profesional, error: profesionalError }] =
       await Promise.all([
         supabaseAdmin.from('servicios').select('*').eq('id', servicioId).single(),
-        supabaseAdmin.from('profesionales').select('id, nombre').eq('id', profesionalId).single(),
+        supabaseAdmin.from('profesionales').select('id, nombre, modelo_comision, alias_cbu').eq('id', profesionalId).single(),
       ]);
 
     if (servicioError || !servicio) {
@@ -83,6 +79,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (!servicio.profesionales_que_lo_realizan.includes(profesionalId)) {
       res.status(400).json({ error: 'Esa profesional no realiza este servicio' });
+      return;
+    }
+
+    // El circuito de pago sale 1:1 del modelo de comisión de la profesional
+    // (Fase 5): porcentaje → Mercado Pago (a la cuenta del estudio),
+    // alquiler_fijo → transferencia directa a la profesional + comprobante.
+    const circuito: 'mercado_pago' | 'transferencia' =
+      profesional.modelo_comision?.tipo === 'alquiler_fijo' ? 'transferencia' : 'mercado_pago';
+
+    let accessToken: string | undefined;
+    if (circuito === 'mercado_pago') {
+      accessToken = process.env.MP_ACCESS_TOKEN;
+      if (!accessToken) {
+        res.status(500).json({ error: 'MP_ACCESS_TOKEN no configurado en el servidor' });
+        return;
+      }
+    } else if (!profesional.alias_cbu) {
+      res.status(500).json({ error: 'Falta configurar el alias/CBU de esta profesional' });
       return;
     }
 
@@ -182,7 +196,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sena_verificada_automaticamente: false,
         origen_reserva: 'web',
         notas_internas: `Reserva web cliente: ${clienta.nombre} (${clienta.telefono ?? ''})`,
-        expira_en: new Date(Date.now() + HOLD_MINUTOS * 60 * 1000).toISOString(),
+        expira_en: new Date(
+          Date.now() + (circuito === 'mercado_pago' ? HOLD_MINUTOS_MP : HOLD_MINUTOS_TRANSFERENCIA) * 60 * 1000
+        ).toISOString(),
+        circuito_pago: circuito,
       })
       .select('id')
       .single();
@@ -197,7 +214,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
-    const client = new MercadoPagoConfig({ accessToken });
+    if (circuito === 'transferencia') {
+      // Sin Mercado Pago acá: la clienta transfiere por su cuenta y sube el
+      // comprobante en /reserva/transferencia. La profesional aprueba desde
+      // su propio panel — Yosy no ve ni gestiona este pago (Fase 5).
+      res.status(200).json({
+        circuito: 'transferencia',
+        turnoId: String(turno.id),
+        aliasCbu: profesional.alias_cbu,
+        servicio: servicio.nombre,
+        profesional: profesional.nombre,
+        fecha,
+        hora,
+        montoSena: String(montoSena),
+        montoTotal: String(montoTotal),
+        nombre: clienta.nombre,
+      });
+      return;
+    }
+
+    const client = new MercadoPagoConfig({ accessToken: accessToken! });
     const preference = new Preference(client);
     const appUrl = process.env.APP_URL || `https://${req.headers.host}`;
 

@@ -22,6 +22,8 @@ import {
   Search,
   MessageSquare,
   CalendarCheck,
+  Landmark,
+  FileImage,
 } from 'lucide-react';
 
 // TODO: Fase de integración OAuth — punto de entrada para conectar la API real de
@@ -35,8 +37,23 @@ const VENTANAS_RECORDATORIO = [
 ] as const;
 
 export const AdminAgenda: React.FC = () => {
-  const { turnos, clientas, profesionales, servicios, rolActivo, profesionalActivoId, actualizarEstadoTurno, showToast } = useApp();
+  const { turnos, clientas, profesionales, servicios, rolActivo, profesionalActivoId, actualizarEstadoTurno, aprobarComprobante, showToast } = useApp();
   const esProfesional = rolActivo === 'profesional';
+
+  // Comprobantes de transferencia esperando aprobación — solo la propia
+  // profesional de alquiler fijo los ve, nunca Yosy (Fase 5).
+  const profesionalActivo = profesionales.find((p) => p.id === profesionalActivoId);
+  const esAlquilerFijo = profesionalActivo?.modeloComision.tipo === 'alquiler_fijo';
+  const comprobantesPendientes =
+    esProfesional && esAlquilerFijo
+      ? turnos.filter(
+          (t) =>
+            t.profesionalId === profesionalActivoId &&
+            t.circuitoPago === 'transferencia' &&
+            !!t.comprobanteTransferenciaUrl &&
+            !t.aprobadoPorProfesional
+        )
+      : [];
 
   const [fechaFiltro, setFechaFiltro] = useState<string>('2026-08-17');
   const [profesionalFiltro, setProfesionalFiltro] = useState<string>('todos');
@@ -222,6 +239,48 @@ export const AdminAgenda: React.FC = () => {
 
         {/* Sidebar Widgets (4 cols) */}
         <div className="lg:col-span-4 space-y-6">
+          {/* Comprobantes de transferencia a aprobar — solo la propia profesional */}
+          {comprobantesPendientes.length > 0 && (
+            <Card className="bg-gradient-to-b from-sky-50/60 via-white to-white space-y-4 border border-sky-200">
+              <div className="flex items-center gap-2 text-sky-900 font-bold text-sm">
+                <Landmark className="w-4 h-4" />
+                <span>Comprobantes a Revisar ({comprobantesPendientes.length})</span>
+              </div>
+
+              <div className="space-y-3">
+                {comprobantesPendientes.map((turno) => (
+                  <div key={turno.id} className="bg-white rounded-xl border border-sky-200 p-3 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-rf-black">{getClientaNombre(turno.clientaId)}</span>
+                      <span className="font-bold text-emerald-700">{formatCurrency(turno.montoSena)}</span>
+                    </div>
+                    <p className="text-[11px] text-rf-charcoal">
+                      {getServicioNombre(turno.servicioId)} • {formatDateReadable(turno.fecha)} {turno.horaInicio} hs
+                    </p>
+                    <a
+                      href={turno.comprobanteTransferenciaUrl ?? '#'}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1.5 text-sky-700 font-semibold hover:underline"
+                    >
+                      <FileImage className="w-3.5 h-3.5" />
+                      <span>Ver comprobante</span>
+                    </a>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      fullWidth
+                      onClick={() => aprobarComprobante(turno.id)}
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Aprobar y confirmar turno</span>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
           {/* Automated Reminders Widget */}
           <Card className="bg-gradient-to-b from-amber-50/60 via-white to-white space-y-4 border border-amber-200">
             <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">

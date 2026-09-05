@@ -148,6 +148,22 @@ export const Reserva: React.FC = () => {
       }
       if (!response.ok) throw new Error('crear-preferencia respondió con error');
       const data = await response.json();
+
+      if (data.circuito === 'transferencia') {
+        const params = new URLSearchParams({
+          turnoId: data.turnoId,
+          aliasCbu: data.aliasCbu ?? '',
+          servicio: data.servicio,
+          profesional: data.profesional,
+          fecha: data.fecha,
+          hora: data.hora,
+          montoSena: data.montoSena,
+          nombre: data.nombre,
+        }).toString();
+        navigate(`/reserva/transferencia?${params}`);
+        return;
+      }
+
       if (!data.initPoint) throw new Error('crear-preferencia no devolvió initPoint');
 
       window.location.href = data.initPoint;

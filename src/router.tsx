@@ -13,6 +13,7 @@ import { useApp } from './context/AppContext';
 import { Home } from './pages/Home';
 import { Reserva } from './pages/Reserva';
 import { ReservaConfirmacion } from './pages/ReservaConfirmacion';
+import { ReservaTransferencia } from './pages/ReservaTransferencia';
 import { Profesionales } from './pages/Profesionales';
 import { PerfilProfesional } from './pages/PerfilProfesional';
 import { AdminAgenda } from './pages/admin/AdminAgenda';
@@ -106,6 +107,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: 'reserva', element: <Reserva /> },
       { path: 'reserva/confirmacion', element: <ReservaConfirmacion /> },
+      { path: 'reserva/transferencia', element: <ReservaTransferencia /> },
       { path: 'profesionales', element: <Profesionales /> },
       { path: 'profesionales/:id', element: <PerfilProfesional /> },
     ],

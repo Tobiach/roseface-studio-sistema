@@ -40,6 +40,8 @@ interface AppContextType {
   showToast: (msg: string) => void;
   crearTurno: (data: Omit<Turno, 'id' | 'fechaCreacion'>) => Promise<Turno>;
   actualizarEstadoTurno: (id: string, nuevoEstado: EstadoTurno, notasInternas?: string) => Promise<void>;
+  subirComprobante: (turnoId: string, file: File) => Promise<void>;
+  aprobarComprobante: (turnoId: string) => Promise<void>;
   buscarOCrearClienta: (nombre: string, telefono: string) => Promise<string>;
   activarFlujoRecuperacion: (clientaId: string) => void;
   canjearBeneficio: (clientaId: string, beneficio: BeneficioVIP) => boolean;
@@ -107,7 +109,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           prev.map((p) => {
             const operativo = operativoPorId.get(p.id);
             return operativo
-              ? { ...p, modeloComision: operativo.modeloComision, horarioDisponible: operativo.horarioDisponible }
+              ? {
+                  ...p,
+                  modeloComision: operativo.modeloComision,
+                  horarioDisponible: operativo.horarioDisponible,
+                  aliasCbu: operativo.aliasCbu,
+                  videoUrl: operativo.videoUrl,
+                  linkAutoagenda: operativo.linkAutoagenda,
+                }
               : p;
           })
         );
@@ -168,6 +177,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
     );
     showToast(`Estado de turno actualizado a: ${nuevoEstado.replace('_', ' ')}`);
+  };
+
+  // Circuito de transferencia (Fase 5): la clienta sube su comprobante
+  // directo a Supabase Storage y lo asocia al turno — todavía no confirma
+  // el turno, eso lo hace la profesional al aprobarlo.
+  const subirComprobante = async (turnoId: string, file: File): Promise<void> => {
+    if (!supabaseEnabled || !supabase) {
+      showToast('📎 Comprobante recibido (modo demo, no se guardó el archivo).');
+      return;
+    }
+
+    const path = `${turnoId}-${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabase.storage.from('comprobantes').upload(path, file);
+    if (uploadError) {
+      showToast('❌ No se pudo subir el comprobante. Probá de nuevo.');
+      throw uploadError;
+    }
+
+    const { data: publicUrlData } = supabase.storage.from('comprobantes').getPublicUrl(path);
+    const { error: updateError } = await supabase
+      .from('turnos')
+      .update({ comprobante_transferencia_url: publicUrlData.publicUrl })
+      .eq('id', turnoId);
+
+    if (updateError) {
+      showToast('❌ No se pudo guardar el comprobante en el turno.');
+      throw updateError;
+    }
+
+    setTurnos((prev) =>
+      prev.map((t) => (t.id === turnoId ? { ...t, comprobanteTransferenciaUrl: publicUrlData.publicUrl } : t))
+    );
+    showToast('📎 Comprobante enviado — la profesional lo va a revisar.');
+  };
+
+  // La profesional (nunca Yosy) aprueba el comprobante y recién ahí el
+  // turno pasa a confirmado — mismo efecto que el webhook de MP, pero
+  // disparado a mano.
+  const aprobarComprobante = async (turnoId: string): Promise<void> => {
+    if (supabaseEnabled && supabase) {
+      const { error } = await supabase
+        .from('turnos')
+        .update({ estado: 'sena_confirmada', aprobado_por_profesional: true })
+        .eq('id', turnoId);
+      if (error) {
+        showToast('❌ No se pudo aprobar el comprobante.');
+        return;
+      }
+    }
+
+    setTurnos((prev) =>
+      prev.map((t) => (t.id === turnoId ? { ...t, estado: 'sena_confirmada', aprobadoPorProfesional: true } : t))
+    );
+    showToast('✅ Comprobante aprobado — turno confirmado.');
   };
 
   // Busca una clienta por nombre entre las ya cargadas; si no existe, la crea
@@ -250,6 +313,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showToast,
         crearTurno,
         actualizarEstadoTurno,
+        subirComprobante,
+        aprobarComprobante,
         buscarOCrearClienta,
         activarFlujoRecuperacion,
         canjearBeneficio,
