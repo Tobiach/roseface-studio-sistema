@@ -91,14 +91,14 @@ export const AdminComisiones: React.FC = () => {
             seleccionada — un turno reservado o cancelado no suma facturación.
           </li>
           <li>
-            • <strong>Modelo Porcentaje</strong> (ej. Mili 55%, Sharon 45%): el estudio cobra el turno
+            • <strong>Modelo Porcentaje</strong> (ej. Mili 55%, Sharon 45%): Rose Face cobra el turno
             completo y le paga a la profesional ese % sobre la facturación total generada; el resto
-            queda para el estudio.
+            queda para Rose Face.
           </li>
           <li>
             • <strong>Modelo Alquiler Fijo</strong> (ej. Martina, Sofía, Alexandra, Camila, Valentina):
-            la profesional paga un monto semanal fijo al estudio y se queda con el 100% de lo que
-            factura directamente — el estudio no le retiene comisión sobre sus turnos.
+            la profesional paga un monto semanal fijo y se queda con el 100% de lo que
+            factura directamente — no se le retiene comisión sobre sus turnos.
           </li>
         </ul>
       </Card>
@@ -192,7 +192,9 @@ export const AdminComisiones: React.FC = () => {
                   {/* Calculations Details */}
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between py-1 border-b border-pink-50">
-                      <span className="text-rf-charcoal">Facturación Generada:</span>
+                      <span className="text-rf-charcoal">
+                        {esProfesional ? 'Total de tus turnos:' : 'Facturación Generada:'}
+                      </span>
                       <span className="font-semibold text-rf-black">
                         {formatCurrency(cierre.facturacionTotal)}
                       </span>
@@ -202,7 +204,9 @@ export const AdminComisiones: React.FC = () => {
                       <>
                         <div className="flex justify-between py-1 border-b border-pink-50 bg-pink-50/50 px-2 rounded-lg">
                           <span className="font-semibold text-rf-rose-deep">
-                            A Pagar a {prof.nombre} ({prof.modeloComision.porcentajeProfesional}%):
+                            {esProfesional
+                              ? `Tu monto a liquidar (${prof.modeloComision.porcentajeProfesional}%):`
+                              : `A Pagar a ${prof.nombre} (${prof.modeloComision.porcentajeProfesional}%):`}
                           </span>
                           <span className="font-bold text-rf-rose-deep">
                             {formatCurrency(cierre.montoComisionProfesional)}
@@ -210,7 +214,7 @@ export const AdminComisiones: React.FC = () => {
                         </div>
                         <div className="flex justify-between py-1 border-b border-pink-50">
                           <span className="text-rf-charcoal">
-                            Estudio ({100 - prof.modeloComision.porcentajeProfesional}%):
+                            Rose Face ({100 - prof.modeloComision.porcentajeProfesional}%):
                           </span>
                           <span className="font-bold text-emerald-800">
                             {formatCurrency(cierre.montoParaEstudio)}
@@ -227,10 +231,12 @@ export const AdminComisiones: React.FC = () => {
                             {formatCurrency(prof.modeloComision.montoSemanal)}
                           </span>
                         </div>
-                        <div className="flex justify-between py-1">
-                          <span className="text-rf-charcoal">Ingreso Neto para Estudio:</span>
-                          <span className="font-bold text-emerald-800">
-                            {formatCurrency(cierre.montoParaEstudio)}
+                        <div className="flex justify-between py-1 bg-pink-50/50 px-2 rounded-lg">
+                          <span className="font-semibold text-rf-rose-deep">
+                            {esProfesional ? 'Tu monto a liquidar:' : 'Ingreso Neto para Rose Face:'}
+                          </span>
+                          <span className="font-bold text-rf-rose-deep">
+                            {formatCurrency(esProfesional ? cierre.facturacionTotal : cierre.montoParaEstudio)}
                           </span>
                         </div>
                       </>
