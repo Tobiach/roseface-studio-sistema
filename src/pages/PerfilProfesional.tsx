@@ -98,7 +98,7 @@ export const PerfilProfesional: React.FC = () => {
             </div>
 
             <div className="pt-2">
-              <Link to={`/reserva`}>
+              <Link to={`/reserva?profesionalId=${prof.id}`}>
                 <Button variant="primary" size="md">
                   <Calendar className="w-4 h-4" />
                   <span>Reservar turno con {prof.nombre}</span>
@@ -130,7 +130,7 @@ export const PerfilProfesional: React.FC = () => {
                 </p>
               </div>
 
-              <Link to={`/reserva?servicioId=${serv.id}`}>
+              <Link to={`/reserva?servicioId=${serv.id}&profesionalId=${prof.id}`}>
                 <Button variant="secondary" size="sm">
                   <span>Reservar</span>
                 </Button>

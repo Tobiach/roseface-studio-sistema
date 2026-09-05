@@ -37,7 +37,7 @@ interface CrearPreferenciaBody {
   fecha: string;
   hora: string;
   horaFin: string;
-  clienta: { nombre: string; telefono?: string };
+  clienta: { nombre: string; telefono?: string; email?: string };
 }
 
 const ESTADO_CANCELADO = 'cancelado';
@@ -190,6 +190,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           id: `cli-${Date.now()}`,
           nombre: clienta.nombre,
           telefono: clienta.telefono ?? '',
+          email: clienta.email || null,
           fecha_registro: new Date().toISOString().slice(0, 10),
           es_vip: false,
           nivel_vip: 'Clienta',

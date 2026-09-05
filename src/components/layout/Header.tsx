@@ -26,7 +26,6 @@ export const Header: React.FC = () => {
     { label: 'Inicio', path: '/' },
     { label: 'Servicios', path: '/#servicios' },
     { label: 'Equipo', path: '/profesionales' },
-    { label: 'Fidelización VIP', path: '/#vip' },
   ];
 
   return (

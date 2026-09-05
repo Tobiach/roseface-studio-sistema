@@ -49,6 +49,12 @@ cargar y dónde impacta.
 - **Alias o CBU de cada profesional de alquiler fijo** (Martina, Sofía,
   Alexandra, Camila, Valentina) — necesario para mostrarle a la clienta
   dónde transferir en el circuito de pago por transferencia.
+  ⚠️ **Ahora mismo tienen un alias FALSO cargado a propósito**
+  (`martina.pendiente-cargar.mp`, etc. — 5/9/2026) solo para poder ver la
+  estructura del flujo de transferencia + comprobante antes de tener los
+  datos reales. Hay que reemplazarlos por los alias/CBU reales antes de
+  dejar el sistema operativo para clientas de verdad — si no, alguien
+  podría intentar transferir a un alias que no existe.
 
 ## Recordatorios y recurrencia (Páginas 6 y 7)
 

@@ -15,17 +15,11 @@ import {
   Share2,
   Sparkles,
   CheckCircle2,
+  Lock,
 } from 'lucide-react';
 
 export const AdminVIP: React.FC = () => {
-  const {
-    clientas,
-    beneficiosVIP,
-    clientasEnRiesgo,
-    activarFlujoRecuperacion,
-    canjearBeneficio,
-    showToast,
-  } = useApp();
+  const { clientas, beneficiosVIP, clientasEnRiesgo, showToast } = useApp();
 
   const clientasVIP = clientas.filter((c) => c.esVIP);
 
@@ -36,6 +30,9 @@ export const AdminVIP: React.FC = () => {
     const c = clientas.find((cli) => cli.id === id);
     return c ? c.nombre : 'Clienta';
   };
+
+  const avisoNoIncluido = () =>
+    showToast('🔒 Fidelización VIP no está incluida en tu plan actual — consultá con Control.Evo para sumarla.');
 
   return (
     <div className="space-y-8 font-admin">
@@ -52,6 +49,16 @@ export const AdminVIP: React.FC = () => {
             Ecosistema VIP & Retención
           </h1>
         </div>
+      </div>
+
+      {/* Aviso: esto es una muestra, no una función activa del plan actual */}
+      <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+        <Lock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-900 leading-relaxed">
+          <strong>Esto es una muestra.</strong> La Fidelización VIP no está incluida en tu plan
+          actual — así se vería si más adelante la sumás. Los números y acciones de esta pantalla
+          son de demostración, no afectan datos reales.
+        </p>
       </div>
 
       {/* KPI Cards */}
@@ -114,18 +121,9 @@ export const AdminVIP: React.FC = () => {
                       WhatsApp: {clienta.telefono}
                     </span>
 
-                    <Button
-                      variant={riesgo.flujoRecuperacionActivado ? 'outline' : 'gold'}
-                      size="sm"
-                      disabled={riesgo.flujoRecuperacionActivado}
-                      onClick={() => activarFlujoRecuperacion(riesgo.clientaId)}
-                    >
+                    <Button variant="outline" size="sm" onClick={avisoNoIncluido}>
                       <Send className="w-3.5 h-3.5" />
-                      <span>
-                        {riesgo.flujoRecuperacionActivado
-                          ? 'Mensaje Enviado ✓'
-                          : 'Activar Recuperación'}
-                      </span>
+                      <span>Activar Recuperación</span>
                     </Button>
                   </div>
                 </Card>
@@ -167,13 +165,7 @@ export const AdminVIP: React.FC = () => {
                     Beneficio automático enviado por WhatsApp
                   </span>
 
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      showToast(`🎂 Saludo de cumpleaños enviado a ${clienta.nombre}`)
-                    }
-                  >
+                  <Button variant="secondary" size="sm" onClick={avisoNoIncluido}>
                     <span>Enviar Saludo</span>
                   </Button>
                 </div>

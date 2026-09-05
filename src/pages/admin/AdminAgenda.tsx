@@ -9,6 +9,7 @@ import { StatusPill } from '../../components/ui/StatusPill';
 import { RitualTimeline } from '../../components/ui/RitualTimeline';
 import { CalendarioGrilla } from '../../components/admin/CalendarioGrilla';
 import { formatCurrency, formatDateReadable } from '../../lib/formatters';
+import { mensajeRecordatorio, buildWhatsAppUrlPara } from '../../lib/whatsapp';
 import {
   CalendarDays,
   Clock,
@@ -617,29 +618,58 @@ export const AdminAgenda: React.FC = () => {
               </div>
             </div>
 
-            {/* Yosy Recordatorios por turno (Fase 7) — solo Yosy los activa */}
+            {/* Yosy Recordatorios por turno (Fase 7) — 2 clicks: activar acá
+                abre WhatsApp con el mensaje ya armado, listo para enviar. */}
             {!esProfesional && (
               <div className="space-y-2 pt-2 border-t border-pink-100">
                 <label className="text-xs font-bold text-rf-black block">Recordatorios de este turno:</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-2">
                   {VENTANAS_RECORDATORIO.map((v) => {
                     const config = recordatoriosConfig.find(
                       (r) => r.turnoId === turnoSeleccionadoModal.id && r.plantilla === v.value
                     );
                     const activado = config?.activado ?? false;
+                    const clienta = clientas.find((c) => c.id === turnoSeleccionadoModal.clientaId);
+                    const mensaje = mensajeRecordatorio(v.value, {
+                      nombreClienta: clienta?.nombre ?? 'clienta',
+                      servicio: getServicioNombre(turnoSeleccionadoModal.servicioId),
+                      fecha: formatDateReadable(turnoSeleccionadoModal.fecha),
+                      hora: turnoSeleccionadoModal.horaInicio,
+                    });
+
+                    const enviarPorWhatsApp = () => {
+                      toggleRecordatorio(turnoSeleccionadoModal.id, v.value, true);
+                      if (clienta) {
+                        window.open(buildWhatsAppUrlPara(clienta.telefono, mensaje), '_blank');
+                      } else {
+                        showToast('❌ No encontramos el teléfono de la clienta.');
+                      }
+                    };
+
                     return (
-                      <button
+                      <div
                         key={v.value}
-                        onClick={() => toggleRecordatorio(turnoSeleccionadoModal.id, v.value, !activado)}
-                        className={`px-2 py-2 rounded-xl text-[11px] font-bold border cursor-pointer transition-all ${
-                          activado
-                            ? 'bg-emerald-100 border-emerald-300 text-emerald-800'
-                            : 'bg-white border-pink-200 text-rf-charcoal hover:border-rf-rose-deep'
+                        className={`rounded-xl border p-2.5 space-y-1.5 ${
+                          activado ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-pink-200'
                         }`}
                       >
-                        {activado ? '✓ ' : ''}
-                        {v.value}
-                      </button>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-rf-black">{v.label}</span>
+                          {activado && (
+                            <button
+                              onClick={() => toggleRecordatorio(turnoSeleccionadoModal.id, v.value, false)}
+                              className="text-[10px] text-gray-400 hover:text-rf-danger cursor-pointer"
+                            >
+                              Desactivar
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-rf-charcoal italic line-clamp-2">{mensaje}</p>
+                        <Button variant={activado ? 'outline' : 'primary'} size="sm" fullWidth onClick={enviarPorWhatsApp}>
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>{activado ? '✓ Activado — reenviar por WhatsApp' : 'Activar y enviar por WhatsApp'}</span>
+                        </Button>
+                      </div>
                     );
                   })}
                 </div>

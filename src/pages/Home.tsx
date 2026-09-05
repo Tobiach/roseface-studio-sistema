@@ -10,7 +10,7 @@ import { buildWhatsAppUrl } from '../lib/whatsapp';
 import { FAQ } from '../components/ui/FAQ';
 import { Lightbox } from '../components/ui/Lightbox';
 import { urlFor } from '../data/trabajosFotos';
-import { Calendar, Star, MapPin, Clock, MessageCircle, Heart, Sparkles, GraduationCap, Gem, Crown, ExternalLink } from 'lucide-react';
+import { Calendar, Star, MapPin, Clock, MessageCircle, Heart, Sparkles, GraduationCap, Gem, ExternalLink } from 'lucide-react';
 import heroBannerEstudio from '../assets/images/home/hero-banner-estudio.jpg';
 
 // Trabajos reales destacados en el Home — nombre de técnica = nombre real
@@ -48,7 +48,7 @@ const CATEGORIA_DESCRIPTOR: Record<string, string> = {
 };
 
 export const Home: React.FC = () => {
-  const { servicios, profesionales, beneficiosVIP } = useApp();
+  const { servicios, profesionales } = useApp();
   const [imagenActiva, setImagenActiva] = useState<number | null>(null);
 
   const categorias = useMemo(() => {
@@ -247,32 +247,6 @@ export const Home: React.FC = () => {
               </div>
               <p className="font-display text-sm font-semibold text-rf-black">{valor.titulo}</p>
               <p className="text-[11px] text-rf-charcoal leading-snug">{valor.texto}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 5.75 FIDELIZACIÓN VIP */}
-      <section id="vip" className="px-4 py-16 max-w-4xl mx-auto space-y-8">
-        <div className="text-center max-w-md mx-auto space-y-2">
-          <Badge variant="gold" icon={<Crown className="w-3.5 h-3.5" />}>Fidelización VIP</Badge>
-          <h2 className="font-display text-3xl text-rf-black">Cada visita suma</h2>
-          <p className="text-sm text-rf-charcoal leading-relaxed">
-            Acumulás puntos con cada servicio y los canjeás por beneficios reales.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {beneficiosVIP.slice(0, 3).map((ben) => (
-            <div
-              key={ben.id}
-              className="rounded-2xl border border-pink-100 bg-white p-5 space-y-2 text-center"
-            >
-              <span className="inline-block text-[11px] font-bold text-rf-rose-deep bg-pink-50 px-2.5 py-1 rounded-full">
-                {ben.puntosNecesarios} pts
-              </span>
-              <p className="font-display text-sm font-semibold text-rf-black">{ben.nombre}</p>
-              <p className="text-[11px] text-rf-charcoal leading-snug">{ben.descripcion}</p>
             </div>
           ))}
         </div>

@@ -10,6 +10,7 @@ import { RitualTimeline } from '../components/ui/RitualTimeline';
 import { formatCurrency, formatDateReadable } from '../lib/formatters';
 import { calcularHorariosDisponibles, sumarMinutos } from '../lib/disponibilidad';
 import { MONTO_SENA_FIJO } from '../lib/pricing';
+import { leerClienteRecordado, guardarClienteRecordado } from '../lib/clienteRecordado';
 import {
   Clock,
   Star,
@@ -44,10 +45,20 @@ export const Reserva: React.FC = () => {
   const [fechaSeleccionada, setFechaSeleccionada] = useState<string>('2026-08-18'); // Default tomorrow
   const [horaSeleccionada, setHoraSeleccionada] = useState<string>('');
   
-  // Client details
-  const [nombreClienta, setNombreClienta] = useState<string>('Sofia Martínez');
-  const [telefonoClienta, setTelefonoClienta] = useState<string>('+54 9 11 4589-1234');
+  // Client details — si el navegador ya reservó antes acá, se auto-completa
+  // con esos datos (guardados en localStorage) en vez de arrancar en blanco.
+  const clienteRecordado = leerClienteRecordado();
+  const [nombreClienta, setNombreClienta] = useState<string>(clienteRecordado?.nombre ?? '');
+  const [telefonoClienta, setTelefonoClienta] = useState<string>(clienteRecordado?.telefono ?? '');
+  const [emailClienta, setEmailClienta] = useState<string>(clienteRecordado?.email ?? '');
   const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
+
+  // Si se viene del perfil de una profesional puntual ("Reservar turno con
+  // X"), toda la reserva queda acotada a ella — nunca se le ofrecen otras.
+  const profesionalIdParam = searchParams.get('profesionalId');
+  const profesionalPreseleccionada = profesionalIdParam
+    ? profesionales.find((p) => p.id === profesionalIdParam) ?? null
+    : null;
 
   // Auto select service if passed in URL query
   useEffect(() => {
@@ -62,13 +73,20 @@ export const Reserva: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, servicios]);
 
+  // Servicios a elegir en el Paso 1: todos, o solo los que hace la
+  // profesional preseleccionada.
+  const serviciosParaElegir = profesionalPreseleccionada
+    ? servicios.filter((s) => s.profesionalesQueLoRealizan.includes(profesionalPreseleccionada.id))
+    : servicios;
+
   // Profesionales que hacen este servicio (universo elegible, sin filtrar
-  // todavía por disponibilidad en un día/hora puntual).
-  const profesionalesDisponibles = servicioSeleccionado
-    ? profesionales.filter((p) =>
-        servicioSeleccionado.profesionalesQueLoRealizan.includes(p.id)
-      )
-    : profesionales;
+  // todavía por disponibilidad en un día/hora puntual) — acotado a la
+  // preseleccionada si vino de su perfil.
+  const profesionalesDisponibles = (
+    servicioSeleccionado
+      ? profesionales.filter((p) => servicioSeleccionado.profesionalesQueLoRealizan.includes(p.id))
+      : profesionales
+  ).filter((p) => !profesionalPreseleccionada || p.id === profesionalPreseleccionada.id);
 
   // Flujo invertido: primero se elige día y hora (Paso 2), agregando la
   // disponibilidad de TODAS las profesionales elegibles para el servicio —
@@ -106,7 +124,15 @@ export const Reserva: React.FC = () => {
 
   const elegirHora = (hora: string) => {
     setHoraSeleccionada(hora);
-    setProfesionalSeleccionado(null);
+    // Si viene acotado a una sola profesional (desde su perfil), ese
+    // horario ya salió de calcularle disponibilidad solo a ella — no hace
+    // falta mostrarle el Paso 3 para "elegir" entre una sola opción.
+    if (profesionalPreseleccionada) {
+      setProfesionalSeleccionado(profesionalPreseleccionada);
+      irAPaso(4);
+    } else {
+      setProfesionalSeleccionado(null);
+    }
   };
 
   const volverACalendario = () => irAPaso(2);
@@ -129,6 +155,9 @@ export const Reserva: React.FC = () => {
     setIsProcessingPayment(true);
     const horaFin = sumarMinutos(horaSeleccionada, servicioSeleccionado.duracionMinutos);
 
+    // Recordar estos datos en este navegador para la próxima visita.
+    guardarClienteRecordado({ nombre: nombreClienta, telefono: telefonoClienta, email: emailClienta });
+
     try {
       const response = await fetch('/api/mercadopago/crear-preferencia', {
         method: 'POST',
@@ -139,7 +168,7 @@ export const Reserva: React.FC = () => {
           fecha: fechaSeleccionada,
           hora: horaSeleccionada,
           horaFin,
-          clienta: { nombre: nombreClienta, telefono: telefonoClienta },
+          clienta: { nombre: nombreClienta, telefono: telefonoClienta, email: emailClienta },
         }),
       });
 
@@ -174,7 +203,7 @@ export const Reserva: React.FC = () => {
     } catch {
       // Sin Mercado Pago real disponible todavía — simulamos la confirmación
       // instantánea como hacía el flujo anterior, para que la demo no se rompa.
-      const clientaId = await buscarOCrearClienta(nombreClienta, telefonoClienta);
+      const clientaId = await buscarOCrearClienta(nombreClienta, telefonoClienta, emailClienta);
       const turnoReservado = await crearTurno({
         clientaId,
         profesionalId: profesionalSeleccionado.id,
@@ -234,11 +263,25 @@ export const Reserva: React.FC = () => {
         </div>
       </div>
 
+      {profesionalPreseleccionada && (
+        <div className="flex items-center gap-3 bg-pink-50 border border-pink-200 rounded-2xl px-4 py-3">
+          <img
+            src={profesionalPreseleccionada.fotoUrl}
+            alt={profesionalPreseleccionada.nombre}
+            className="w-10 h-10 rounded-full object-cover border-2 border-rf-gold shrink-0"
+          />
+          <p className="text-xs text-rf-charcoal">
+            Estás reservando directo con{' '}
+            <strong className="text-rf-black">{profesionalPreseleccionada.nombre}</strong>.
+          </p>
+        </div>
+      )}
+
       {/* STEP 1: ELEGIR SERVICIO */}
       {step === 1 && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {servicios.map((serv) => (
+            {serviciosParaElegir.map((serv) => (
               <Card
                 key={serv.id}
                 hoverable
@@ -257,9 +300,6 @@ export const Reserva: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <Badge variant="rose" size="sm">
                         {serv.categoria}
-                      </Badge>
-                      <Badge variant="gold" size="sm">
-                        +{serv.puntosVIP} pts VIP
                       </Badge>
                     </div>
                     <h3 className="font-display font-bold text-base text-rf-black">
@@ -509,6 +549,11 @@ export const Reserva: React.FC = () => {
                 <h4 className="text-xs font-bold uppercase tracking-wider text-rf-black">
                   Tus Datos de Contacto
                 </h4>
+                {clienteRecordado && (
+                  <p className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5">
+                    ✓ Completamos tus datos de la última vez — revisalos y corregí lo que haga falta.
+                  </p>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-rf-charcoal block mb-1">Nombre completo</label>
@@ -516,6 +561,7 @@ export const Reserva: React.FC = () => {
                       type="text"
                       value={nombreClienta}
                       onChange={(e) => setNombreClienta(e.target.value)}
+                      placeholder="Ej: Sofía Martínez"
                       className="w-full px-3 py-2 rounded-xl border border-pink-200 text-xs font-medium"
                     />
                   </div>
@@ -525,6 +571,17 @@ export const Reserva: React.FC = () => {
                       type="text"
                       value={telefonoClienta}
                       onChange={(e) => setTelefonoClienta(e.target.value)}
+                      placeholder="Ej: +54 9 11 4589-1234"
+                      className="w-full px-3 py-2 rounded-xl border border-pink-200 text-xs font-medium"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs text-rf-charcoal block mb-1">Mail (opcional)</label>
+                    <input
+                      type="email"
+                      value={emailClienta}
+                      onChange={(e) => setEmailClienta(e.target.value)}
+                      placeholder="Ej: sofia@mail.com"
                       className="w-full px-3 py-2 rounded-xl border border-pink-200 text-xs font-medium"
                     />
                   </div>
@@ -550,7 +607,7 @@ export const Reserva: React.FC = () => {
                     variant="primary"
                     fullWidth
                     size="lg"
-                    disabled={isProcessingPayment}
+                    disabled={isProcessingPayment || !nombreClienta.trim() || !telefonoClienta.trim()}
                     onClick={handlePagarSena}
                     className="bg-[#009EE3] hover:bg-[#0089C7] text-white border-none shadow-md py-4"
                   >

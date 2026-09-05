@@ -47,7 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ abierta = false, onCerrar }) =
       label: 'Fidelización VIP',
       path: '/admin/vip',
       icon: Crown,
-      description: 'Clientas VIP y recuperación',
+      description: 'Muestra — no incluido en tu plan',
     },
   ];
 
@@ -118,7 +118,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ abierta = false, onCerrar }) =
                       }`}
                     />
                     <div className="flex flex-col">
-                      <span>{item.label}</span>
+                      <span className="flex items-center gap-1.5">
+                        {item.label}
+                        {item.path === '/admin/vip' && (
+                          <span
+                            className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
+                              isActive ? 'bg-white/25 text-white' : 'bg-amber-100 text-amber-700'
+                            }`}
+                          >
+                            Muestra
+                          </span>
+                        )}
+                      </span>
                     </div>
                   </>
                 )}

@@ -52,7 +52,7 @@ interface AppContextType {
   crearBloqueo: (data: Omit<BloqueoHorario, 'id'>) => Promise<void>;
   eliminarBloqueo: (id: string) => Promise<void>;
   toggleRecordatorio: (turnoId: string, plantilla: '48h' | '24h' | '4h', activar: boolean) => Promise<void>;
-  buscarOCrearClienta: (nombre: string, telefono: string) => Promise<string>;
+  buscarOCrearClienta: (nombre: string, telefono: string, email?: string) => Promise<string>;
   activarFlujoRecuperacion: (clientaId: string) => void;
   canjearBeneficio: (clientaId: string, beneficio: BeneficioVIP) => boolean;
 }
@@ -322,7 +322,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // en Supabase. Antes de esto, una reserva de alguien nuevo se anotaba
   // siempre bajo la clienta demo 'cli-01' — con persistencia real hay que
   // dar de alta a la clienta de verdad.
-  const buscarOCrearClienta = async (nombre: string, telefono: string): Promise<string> => {
+  const buscarOCrearClienta = async (nombre: string, telefono: string, email?: string): Promise<string> => {
     const existente = clientas.find((c) => c.nombre.toLowerCase() === nombre.toLowerCase());
     if (existente) return existente.id;
 
@@ -331,6 +331,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: `cli-${Date.now()}`,
         nombre,
         telefono,
+        email: email || undefined,
         fechaRegistro: new Date().toISOString().slice(0, 10),
         esVIP: false,
         nivelVIP: 'Clienta',
