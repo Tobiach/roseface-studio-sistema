@@ -55,13 +55,38 @@ interface AppContextType {
   buscarOCrearClienta: (nombre: string, telefono: string, email?: string) => Promise<string>;
   activarFlujoRecuperacion: (clientaId: string) => void;
   canjearBeneficio: (clientaId: string, beneficio: BeneficioVIP) => boolean;
+  // Gate por PIN (parche liviano, no es login real) para entrar como Yosy
+  // o como una profesional puntual.
+  pinModalRol: 'admin' | 'profesional' | null;
+  abrirPinModal: (rol: 'admin' | 'profesional') => void;
+  cerrarPinModal: () => void;
+  verificarPin: (pin: string) => Promise<boolean>;
+  cambiarUsuario: () => void;
 }
+
+const CLAVE_ACCESO = 'roseface_acceso';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Se lee una sola vez, de forma síncrona, ANTES del primer render — si esto
+// viviera en un useEffect, AdminLayout alcanzaría a redirigir a "/" en el
+// primer render (rolActivo todavía 'clienta') antes de que el efecto
+// restaure el acceso guardado, rompiendo el bookmark directo a /admin.
+function leerAccesoGuardado(): { rol: RolUsuario; profesionalId: string | null } {
+  try {
+    const raw = localStorage.getItem(CLAVE_ACCESO);
+    if (!raw) return { rol: 'clienta', profesionalId: null };
+    const guardado = JSON.parse(raw) as { rol?: RolUsuario; profesionalId?: string };
+    return { rol: guardado.rol ?? 'clienta', profesionalId: guardado.profesionalId ?? null };
+  } catch {
+    return { rol: 'clienta', profesionalId: null };
+  }
+}
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [rolActivo, setRolActivo] = useState<RolUsuario>('clienta');
-  const [profesionalActivoId, setProfesionalActivoId] = useState<string | null>(null);
+  const [accesoInicial] = useState(leerAccesoGuardado);
+  const [rolActivo, setRolActivo] = useState<RolUsuario>(accesoInicial.rol);
+  const [profesionalActivoId, setProfesionalActivoId] = useState<string | null>(accesoInicial.profesionalId);
   // Arranca con los mocks (dev sin Supabase configurado, o mientras carga el
   // fetch real) y se reemplaza por datos reales apenas responde Supabase.
   const [turnos, setTurnos] = useState<Turno[]>(mockTurnos);
@@ -73,12 +98,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [beneficiosVIP] = useState<BeneficioVIP[]>(mockBeneficiosVIP);
   const [clientasEnRiesgo, setClientasEnRiesgo] = useState<ClientaEnRiesgo[]>(mockClientasEnRiesgo);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [pinModalRol, setPinModalRol] = useState<'admin' | 'profesional' | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(null);
     }, 4000);
+  };
+
+  const abrirPinModal = (rol: 'admin' | 'profesional') => setPinModalRol(rol);
+  const cerrarPinModal = () => setPinModalRol(null);
+
+  const verificarPin = async (pin: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/verificar-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin }),
+      });
+      const data = await response.json();
+      if (!data.ok) return false;
+
+      setRolActivo(data.rol);
+      if (data.profesionalId) setProfesionalActivoId(data.profesionalId);
+      try {
+        localStorage.setItem(
+          CLAVE_ACCESO,
+          JSON.stringify({ rol: data.rol, profesionalId: data.profesionalId ?? undefined })
+        );
+      } catch {
+        // no crítico si no se puede persistir
+      }
+      setPinModalRol(null);
+      showToast(data.nombre ? `Bienvenida, ${data.nombre} 👋` : '✓ Acceso concedido');
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // Único modo de pasar a OTRA profesional/admin en el mismo dispositivo:
+  // limpia el acceso guardado y vuelve a pedir PIN — así nadie cambia de
+  // identidad sin el código de la otra persona.
+  const cambiarUsuario = () => {
+    setRolActivo('clienta');
+    setProfesionalActivoId(null);
+    try {
+      localStorage.removeItem(CLAVE_ACCESO);
+    } catch {
+      // no crítico
+    }
   };
 
   useEffect(() => {
@@ -409,6 +479,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         buscarOCrearClienta,
         activarFlujoRecuperacion,
         canjearBeneficio,
+        pinModalRol,
+        abrirPinModal,
+        cerrarPinModal,
+        verificarPin,
+        cambiarUsuario,
       }}
     >
       {children}

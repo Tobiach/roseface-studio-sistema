@@ -7,6 +7,7 @@ import { Footer } from './components/layout/Footer';
 import { Sidebar } from './components/layout/Sidebar';
 import { Logo } from './components/ui/Logo';
 import { FloatingWhatsAppButton } from './components/ui/FloatingWhatsAppButton';
+import { PinModal } from './components/ui/PinModal';
 import { useApp } from './context/AppContext';
 
 // Pages
@@ -50,6 +51,7 @@ const PublicLayout: React.FC = () => {
       <Footer />
       <FloatingWhatsAppButton />
       <ScrollRestoration />
+      <PinModal />
     </div>
   );
 };
@@ -64,6 +66,13 @@ const AdminLayout: React.FC = () => {
   useEffect(() => {
     setSidebarAbierta(false);
   }, [location.pathname]);
+
+  // Sin PIN verificado (rolActivo sigue en 'clienta'), /admin/* no se
+  // renderiza ni por URL directa — sin esto, el gate de los botones del
+  // Header/Footer era decorativo, cualquiera podía entrar tipeando la URL.
+  if (rolActivo === 'clienta') {
+    return <Navigate to="/" replace />;
+  }
 
   // Un profesional solo puede ver su Agenda y sus Comisiones — Caja y VIP son exclusivos de la dueña
   const rutaRestringidaParaProfesional =
@@ -95,6 +104,7 @@ const AdminLayout: React.FC = () => {
         </main>
       </div>
       <ScrollRestoration />
+      <PinModal />
     </div>
   );
 };

@@ -133,6 +133,10 @@ export const ReservaTransferencia: React.FC = () => {
             <span className="text-xs text-sky-900">Monto a transferir</span>
             <span className="font-extrabold text-sky-900 text-lg">{formatCurrency(montoSena)}</span>
           </div>
+          <p className="text-[11px] text-sky-800/80 italic">
+            Podés transferir desde cualquier banco o billetera virtual — no hace falta que sea
+            Mercado Pago.
+          </p>
         </div>
 
         <div className="space-y-2">

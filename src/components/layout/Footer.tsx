@@ -6,7 +6,7 @@ import { MapPin, Clock, Instagram, Heart, Shield, MessageCircle } from 'lucide-r
 import { buildWhatsAppUrl } from '../../lib/whatsapp';
 
 export const Footer: React.FC = () => {
-  const { rolActivo, setRolActivo } = useApp();
+  const { rolActivo, setRolActivo, abrirPinModal } = useApp();
 
   return (
     <footer className="bg-white border-t border-pink-100/80 pt-12 pb-8 mt-20">
@@ -74,7 +74,7 @@ export const Footer: React.FC = () => {
               Cambiá de vista para explorar el panel administrativo de Yosy o la experiencia de la clienta.
             </p>
             <button
-              onClick={() => setRolActivo(rolActivo === 'admin' ? 'clienta' : 'admin')}
+              onClick={() => (rolActivo === 'admin' ? setRolActivo('clienta') : abrirPinModal('admin'))}
               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-white border border-rf-gold text-rf-black hover:bg-rf-blush transition-all cursor-pointer shadow-2xs"
             >
               <Shield className="w-3.5 h-3.5 text-rf-gold" />

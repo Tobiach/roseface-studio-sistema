@@ -7,20 +7,14 @@ import { useApp } from '../../context/AppContext';
 import { Calendar, Shield, Sparkles, UserCog, Menu, X } from 'lucide-react';
 
 export const Header: React.FC = () => {
-  const { rolActivo, setRolActivo, profesionales, profesionalActivoId, setProfesionalActivoId } = useApp();
+  const { rolActivo, setRolActivo, profesionales, profesionalActivoId, abrirPinModal, cambiarUsuario } = useApp();
   const location = useLocation();
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const profesionalActiva = profesionales.find((p) => p.id === profesionalActivoId);
 
   useEffect(() => {
     setMenuAbierto(false);
   }, [location.pathname]);
-
-  const entrarComoProfesional = () => {
-    setRolActivo('profesional');
-    if (!profesionalActivoId && profesionales[0]) {
-      setProfesionalActivoId(profesionales[0].id);
-    }
-  };
 
   const navLinks = [
     { label: 'Inicio', path: '/' },
@@ -64,7 +58,7 @@ export const Header: React.FC = () => {
               Clienta
             </button>
             <button
-              onClick={entrarComoProfesional}
+              onClick={() => (rolActivo === 'profesional' ? null : abrirPinModal('profesional'))}
               className={`px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1 ${
                 rolActivo === 'profesional'
                   ? 'bg-white text-rf-rose-deep shadow-xs font-semibold'
@@ -72,10 +66,10 @@ export const Header: React.FC = () => {
               }`}
             >
               <UserCog className="w-3 h-3" />
-              Profesional
+              {rolActivo === 'profesional' && profesionalActiva ? profesionalActiva.nombre : 'Profesional'}
             </button>
             <button
-              onClick={() => setRolActivo('admin')}
+              onClick={() => (rolActivo === 'admin' ? null : abrirPinModal('admin'))}
               className={`px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1 ${
                 rolActivo === 'admin'
                   ? 'bg-rf-rose-deep text-white shadow-xs font-semibold'
@@ -87,19 +81,15 @@ export const Header: React.FC = () => {
             </button>
           </div>
 
-          {/* Professional picker — only visible in Profesional role */}
-          {rolActivo === 'profesional' && (
-            <select
-              value={profesionalActivoId ?? ''}
-              onChange={(e) => setProfesionalActivoId(e.target.value)}
-              className="hidden sm:block px-2.5 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep"
+          {/* Cambiar de identidad — pide PIN de nuevo, para que un dispositivo
+              compartido no permita saltar a otra profesional sin su código */}
+          {(rolActivo === 'profesional' || rolActivo === 'admin') && (
+            <button
+              onClick={cambiarUsuario}
+              className="hidden sm:block text-[11px] text-gray-400 hover:text-rf-rose-deep underline"
             >
-              {profesionales.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
+              Cambiar usuario
+            </button>
           )}
 
           {/* Conditional Admin/Profesional Quick Access or Booking CTA */}
@@ -167,7 +157,7 @@ export const Header: React.FC = () => {
                 Clienta
               </button>
               <button
-                onClick={entrarComoProfesional}
+                onClick={() => (rolActivo === 'profesional' ? null : abrirPinModal('profesional'))}
                 className={`flex-1 px-2 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1 ${
                   rolActivo === 'profesional'
                     ? 'bg-white text-rf-rose-deep shadow-xs font-semibold'
@@ -175,10 +165,10 @@ export const Header: React.FC = () => {
                 }`}
               >
                 <UserCog className="w-3 h-3" />
-                Profesional
+                {rolActivo === 'profesional' && profesionalActiva ? profesionalActiva.nombre : 'Profesional'}
               </button>
               <button
-                onClick={() => setRolActivo('admin')}
+                onClick={() => (rolActivo === 'admin' ? null : abrirPinModal('admin'))}
                 className={`flex-1 px-2 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1 ${
                   rolActivo === 'admin'
                     ? 'bg-rf-rose-deep text-white shadow-xs font-semibold'
@@ -190,18 +180,10 @@ export const Header: React.FC = () => {
               </button>
             </div>
 
-            {rolActivo === 'profesional' && (
-              <select
-                value={profesionalActivoId ?? ''}
-                onChange={(e) => setProfesionalActivoId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-pink-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep"
-              >
-                {profesionales.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nombre}
-                  </option>
-                ))}
-              </select>
+            {(rolActivo === 'profesional' || rolActivo === 'admin') && (
+              <button onClick={cambiarUsuario} className="text-[11px] text-gray-400 underline">
+                Cambiar usuario
+              </button>
             )}
           </div>
         </div>

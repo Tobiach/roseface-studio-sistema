@@ -48,9 +48,13 @@ cargar y dónde impacta.
 
 - **Alias o CBU de cada profesional de alquiler fijo** (Martina, Sofía,
   Alexandra, Camila, Valentina) — necesario para mostrarle a la clienta
-  dónde transferir en el circuito de pago por transferencia.
+  dónde transferir en el circuito de pago por transferencia. **Es
+  transferencia bancaria genérica (cualquier banco o billetera), no un
+  alias de Mercado Pago específicamente** — el copy de la pantalla ya lo
+  aclara así.
   ⚠️ **Ahora mismo tienen un alias FALSO cargado a propósito**
-  (`martina.pendiente-cargar.mp`, etc. — 5/9/2026) solo para poder ver la
+  (`martina.pendiente-cargar`, etc. — 5/9/2026, sin sufijo `.mp` a
+  propósito para no sugerir que es un alias de MP) solo para poder ver la
   estructura del flujo de transferencia + comprobante antes de tener los
   datos reales. Hay que reemplazarlos por los alias/CBU reales antes de
   dejar el sistema operativo para clientas de verdad — si no, alguien

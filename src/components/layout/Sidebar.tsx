@@ -20,7 +20,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ abierta = false, onCerrar }) => {
-  const { rolActivo, setRolActivo, profesionales, profesionalActivoId } = useApp();
+  const { rolActivo, setRolActivo, profesionales, profesionalActivoId, cambiarUsuario } = useApp();
   const esProfesional = rolActivo === 'profesional';
   const profesionalActivo = profesionales.find((p) => p.id === profesionalActivoId);
 
@@ -172,6 +172,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ abierta = false, onCerrar }) =
         >
           <Eye className="w-3.5 h-3.5" />
           <span>Ver como Clienta</span>
+        </button>
+        <button
+          onClick={cambiarUsuario}
+          className="w-full text-center text-[11px] text-gray-400 hover:text-rf-rose-deep underline cursor-pointer"
+        >
+          Cambiar usuario (pedir otro PIN)
         </button>
       </div>
     </aside>
