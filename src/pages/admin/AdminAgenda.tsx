@@ -1,7 +1,7 @@
 // src/pages/admin/AdminAgenda.tsx
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Turno, EstadoTurno } from '../../types';
+import { Turno, EstadoTurno, Clienta, Servicio, Profesional } from '../../types';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -26,6 +26,8 @@ import {
   FileImage,
   Ban,
   Trash2,
+  Repeat,
+  Link as LinkIcon,
 } from 'lucide-react';
 
 // TODO: Fase de integración OAuth — punto de entrada para conectar la API real de
@@ -45,12 +47,14 @@ export const AdminAgenda: React.FC = () => {
     profesionales,
     servicios,
     bloqueos,
+    recordatoriosConfig,
     rolActivo,
     profesionalActivoId,
     actualizarEstadoTurno,
     aprobarComprobante,
     crearBloqueo,
     eliminarBloqueo,
+    toggleRecordatorio,
     showToast,
   } = useApp();
   const esProfesional = rolActivo === 'profesional';
@@ -81,10 +85,46 @@ export const AdminAgenda: React.FC = () => {
         .slice(0, 5)
     : [];
 
+  // Aviso de recurrencia (Fase 8): clientas cuyo último turno completado de
+  // un servicio con ciclo conocido (ej. retoque de pestañas ~21 días) ya
+  // superó ese ciclo. Yosy decide si le manda el link de auto-agendado de
+  // la profesional habitual. Mientras cicloRecurrenciaDias no esté cargado
+  // (pendiente del formulario de Yosy) esta lista queda vacía a propósito.
+  const avisosRecurrencia = !esProfesional
+    ? (() => {
+        const hoy = new Date();
+        const ultimoPorClientaYServicio = new Map<string, Turno>();
+        for (const t of turnos) {
+          if (t.estado !== 'completado') continue;
+          const key = `${t.clientaId}|${t.servicioId}`;
+          const actual = ultimoPorClientaYServicio.get(key);
+          if (!actual || t.fecha > actual.fecha) ultimoPorClientaYServicio.set(key, t);
+        }
+
+        const resultados: { clienta: Clienta; servicio: Servicio; profesional?: Profesional; diasSinVisitar: number }[] = [];
+        for (const [, turno] of ultimoPorClientaYServicio) {
+          const servicio = servicios.find((s) => s.id === turno.servicioId);
+          if (!servicio?.cicloRecurrenciaDias) continue;
+          const diasSinVisitar = Math.floor(
+            (hoy.getTime() - new Date(`${turno.fecha}T12:00:00`).getTime()) / (1000 * 60 * 60 * 24)
+          );
+          if (diasSinVisitar < servicio.cicloRecurrenciaDias) continue;
+          const clienta = clientas.find((c) => c.id === turno.clientaId);
+          if (!clienta) continue;
+          resultados.push({
+            clienta,
+            servicio,
+            profesional: profesionales.find((p) => p.id === turno.profesionalId),
+            diasSinVisitar,
+          });
+        }
+        return resultados.sort((a, b) => b.diasSinVisitar - a.diasSinVisitar).slice(0, 8);
+      })()
+    : [];
+
   const [fechaFiltro, setFechaFiltro] = useState<string>('2026-08-17');
   const [profesionalFiltro, setProfesionalFiltro] = useState<string>('todos');
   const [turnoSeleccionadoModal, setTurnoSeleccionadoModal] = useState<Turno | null>(null);
-  const [ventanaRecordatorio, setVentanaRecordatorio] = useState<string>('48h');
 
   // Bloqueo manual de horario (Fase 6)
   const [modalBloqueoAbierto, setModalBloqueoAbierto] = useState(false);
@@ -409,53 +449,60 @@ export const AdminAgenda: React.FC = () => {
             </Card>
           )}
 
-          {/* Automated Reminders Widget */}
-          <Card className="bg-gradient-to-b from-amber-50/60 via-white to-white space-y-4 border border-amber-200">
-            <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
-              <Sparkles className="w-4 h-4 text-rf-gold-bright" />
-              <span>Automatización Yosy Engine</span>
-            </div>
-
-            <p className="text-[11px] text-amber-900/90 italic">
-              Tu sistema te dice a quién tenés que recordar y cuándo.
-            </p>
-
-            <div className="space-y-2 text-xs">
-              <label className="font-bold text-rf-black block">
-                Enviar recordatorio a la clienta:
-              </label>
-              <select
-                value={ventanaRecordatorio}
-                onChange={(e) => setVentanaRecordatorio(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-amber-200/80 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep"
-              >
-                {VENTANAS_RECORDATORIO.map((v) => (
-                  <option key={v.value} value={v.value}>
-                    {v.label}
-                  </option>
-                ))}
-              </select>
-              <div className="bg-white p-3 rounded-xl border border-amber-200/80 space-y-1">
-                <p className="font-semibold text-rf-rose-deep">
-                  Próximo envío: turnos de {VENTANAS_RECORDATORIO.find((v) => v.value === ventanaRecordatorio)?.label.toLowerCase()} (WhatsApp)
-                </p>
-                <p className="text-[11px] text-rf-charcoal">
-                  Se envía automáticamente un link de reconfirmación en la ventana elegida.
-                  {/* TODO: envío real pendiente de integración de WhatsApp — hoy es simulado */}
-                </p>
+          {/* Aviso de recurrencia (Fase 8) */}
+          {avisosRecurrencia.length > 0 && (
+            <Card className="space-y-3">
+              <div className="flex items-center gap-2 text-rf-black font-bold text-sm">
+                <Repeat className="w-4 h-4 text-rf-rose-deep" />
+                <span>Avisos de Recurrencia ({avisosRecurrencia.length})</span>
               </div>
-            </div>
+              <div className="space-y-3">
+                {avisosRecurrencia.map(({ clienta, servicio, profesional, diasSinVisitar }) => (
+                  <div key={`${clienta.id}-${servicio.id}`} className="bg-rf-cream rounded-xl border border-pink-100 p-3 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-rf-black">{clienta.nombre}</span>
+                      <Badge variant="warning" size="sm">{diasSinVisitar} días</Badge>
+                    </div>
+                    <p className="text-[11px] text-rf-charcoal">
+                      {servicio.nombre} con {profesional?.nombre ?? 'su profesional habitual'}
+                    </p>
+                    {profesional?.linkAutoagenda ? (
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(profesional.linkAutoagenda!);
+                          showToast('🔗 Link de auto-agendado copiado');
+                        }}
+                        className="flex items-center gap-1.5 text-sky-700 font-semibold hover:underline cursor-pointer"
+                      >
+                        <LinkIcon className="w-3 h-3" />
+                        <span>Copiar link de auto-agendado</span>
+                      </button>
+                    ) : (
+                      <p className="text-[10px] text-gray-400 italic">
+                        Falta el link de auto-agendado de {profesional?.nombre ?? 'esta profesional'}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
-            <Button
-              variant="outline"
-              fullWidth
-              size="sm"
-              onClick={() => showToast('📲 Recordatorios de reconfirmación enviados por WhatsApp')}
-            >
-              <Bell className="w-3.5 h-3.5 text-rf-gold" />
-              <span>Ejecutar envío manual ahora</span>
-            </Button>
-          </Card>
+          {/* Yosy Recordatorios (Fase 7): la activación es por turno, desde
+              el modal de cada uno — este card es solo la explicación. */}
+          {!esProfesional && (
+            <Card className="bg-gradient-to-b from-amber-50/60 via-white to-white space-y-2 border border-amber-200">
+              <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
+                <Sparkles className="w-4 h-4 text-rf-gold-bright" />
+                <span>Yosy Recordatorios</span>
+              </div>
+              <p className="text-[11px] text-amber-900/90 leading-relaxed">
+                Tocá un turno para activar sus recordatorios (48h / 24h / 4h antes). Se activan uno
+                por uno, por turno — todavía no manda WhatsApp real, queda registrado como
+                "✓ Activado" para cuando se conecte el envío.
+              </p>
+            </Card>
+          )}
 
           {/* Quick Stats Widget */}
           <Card className="space-y-3">
@@ -569,6 +616,35 @@ export const AdminAgenda: React.FC = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Yosy Recordatorios por turno (Fase 7) — solo Yosy los activa */}
+            {!esProfesional && (
+              <div className="space-y-2 pt-2 border-t border-pink-100">
+                <label className="text-xs font-bold text-rf-black block">Recordatorios de este turno:</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {VENTANAS_RECORDATORIO.map((v) => {
+                    const config = recordatoriosConfig.find(
+                      (r) => r.turnoId === turnoSeleccionadoModal.id && r.plantilla === v.value
+                    );
+                    const activado = config?.activado ?? false;
+                    return (
+                      <button
+                        key={v.value}
+                        onClick={() => toggleRecordatorio(turnoSeleccionadoModal.id, v.value, !activado)}
+                        className={`px-2 py-2 rounded-xl text-[11px] font-bold border cursor-pointer transition-all ${
+                          activado
+                            ? 'bg-emerald-100 border-emerald-300 text-emerald-800'
+                            : 'bg-white border-pink-200 text-rf-charcoal hover:border-rf-rose-deep'
+                        }`}
+                      >
+                        {activado ? '✓ ' : ''}
+                        {v.value}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="pt-2 text-right">
               <Button

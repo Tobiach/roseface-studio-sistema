@@ -148,6 +148,16 @@ export interface ClientaEnRiesgo {
   flujoRecuperacionActivado: boolean;
 }
 
+// Recordatorio por turno (Fase 7): Yosy activa cada plantilla
+// individualmente por turno, no hay un selector global. Sigue sin mandar
+// WhatsApp real — solo queda registrado como activado.
+export interface RecordatorioConfig {
+  turnoId: string;
+  plantilla: '48h' | '24h' | '4h';
+  activado: boolean;
+  activadoEn?: string | null;
+}
+
 // Bloqueo manual de horario (Fase 6): Yosy bloquea para cualquier
 // profesional, cada profesional solo puede bloquear la suya.
 export interface BloqueoHorario {

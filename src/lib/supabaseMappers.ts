@@ -2,7 +2,7 @@
 // Conversión entre las filas de Supabase (snake_case) y los tipos de la app
 // (camelCase, definidos en src/types/index.ts) — para no tener que tocar el
 // resto de la app cuando cambia el origen de los datos.
-import { Turno, Clienta, Servicio, ModeloComision, DisponibilidadSemanal, BloqueoHorario } from '../types';
+import { Turno, Clienta, Servicio, ModeloComision, DisponibilidadSemanal, BloqueoHorario, RecordatorioConfig } from '../types';
 
 export function turnoFromRow(row: any): Turno {
   return {
@@ -130,6 +130,15 @@ export function bloqueoToInsertRow(data: Omit<BloqueoHorario, 'id'>) {
     hora_fin: data.horaFin ?? null,
     motivo: data.motivo ?? null,
     creado_por: data.creadoPor ?? null,
+  };
+}
+
+export function recordatorioFromRow(row: any): RecordatorioConfig {
+  return {
+    turnoId: String(row.turno_id),
+    plantilla: row.plantilla,
+    activado: row.activado,
+    activadoEn: row.activado_en ?? null,
   };
 }
 

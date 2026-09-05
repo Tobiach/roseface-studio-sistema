@@ -10,6 +10,7 @@ import {
   ClientaEnRiesgo,
   EstadoTurno,
   BloqueoHorario,
+  RecordatorioConfig,
 } from '../types';
 import { mockTurnos } from '../data/mockTurnos';
 import { mockClientas } from '../data/mockClientas';
@@ -26,6 +27,7 @@ import {
   servicioFromRow,
   bloqueoFromRow,
   bloqueoToInsertRow,
+  recordatorioFromRow,
 } from '../lib/supabaseMappers';
 
 interface AppContextType {
@@ -38,6 +40,7 @@ interface AppContextType {
   profesionales: Profesional[];
   servicios: Servicio[];
   bloqueos: BloqueoHorario[];
+  recordatoriosConfig: RecordatorioConfig[];
   beneficiosVIP: BeneficioVIP[];
   clientasEnRiesgo: ClientaEnRiesgo[];
   toastMessage: string | null;
@@ -48,6 +51,7 @@ interface AppContextType {
   aprobarComprobante: (turnoId: string) => Promise<void>;
   crearBloqueo: (data: Omit<BloqueoHorario, 'id'>) => Promise<void>;
   eliminarBloqueo: (id: string) => Promise<void>;
+  toggleRecordatorio: (turnoId: string, plantilla: '48h' | '24h' | '4h', activar: boolean) => Promise<void>;
   buscarOCrearClienta: (nombre: string, telefono: string) => Promise<string>;
   activarFlujoRecuperacion: (clientaId: string) => void;
   canjearBeneficio: (clientaId: string, beneficio: BeneficioVIP) => boolean;
@@ -65,6 +69,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [profesionales, setProfesionales] = useState<Profesional[]>(mockProfesionales);
   const [servicios, setServicios] = useState<Servicio[]>(mockServicios);
   const [bloqueos, setBloqueos] = useState<BloqueoHorario[]>([]);
+  const [recordatoriosConfig, setRecordatoriosConfig] = useState<RecordatorioConfig[]>([]);
   const [beneficiosVIP] = useState<BeneficioVIP[]>(mockBeneficiosVIP);
   const [clientasEnRiesgo, setClientasEnRiesgo] = useState<ClientaEnRiesgo[]>(mockClientasEnRiesgo);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -95,18 +100,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .not('expira_en', 'is', null)
         .lt('expira_en', new Date().toISOString());
 
-      const [turnosRes, clientasRes, serviciosRes, profesionalesRes, bloqueosRes] = await Promise.all([
+      const [turnosRes, clientasRes, serviciosRes, profesionalesRes, bloqueosRes, recordatoriosRes] = await Promise.all([
         supabase.from('turnos').select('*').order('fecha_creacion', { ascending: false }),
         supabase.from('clientas').select('*'),
         supabase.from('servicios').select('*'),
         supabase.from('profesionales').select('*'),
         supabase.from('bloqueos_horario').select('*').order('fecha', { ascending: true }),
+        supabase.from('recordatorios_config').select('*'),
       ]);
       if (cancelado) return;
 
       if (turnosRes.data) setTurnos(turnosRes.data.map(turnoFromRow));
       if (clientasRes.data) setClientas(clientasRes.data.map(clientaFromRow));
       if (bloqueosRes.data) setBloqueos(bloqueosRes.data.map(bloqueoFromRow));
+      if (recordatoriosRes.data) setRecordatoriosConfig(recordatoriosRes.data.map(recordatorioFromRow));
       if (serviciosRes.data && serviciosRes.data.length > 0) {
         setServicios(serviciosRes.data.map(servicioFromRow));
       }
@@ -276,6 +283,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Bloqueo eliminado');
   };
 
+  // Recordatorios por turno (Fase 7) — Yosy activa cada plantilla
+  // individualmente, no hay un selector global. Sigue sin mandar WhatsApp
+  // real, solo queda registrado.
+  const toggleRecordatorio = async (
+    turnoId: string,
+    plantilla: '48h' | '24h' | '4h',
+    activar: boolean
+  ): Promise<void> => {
+    const activadoEn = activar ? new Date().toISOString() : null;
+
+    if (supabaseEnabled && supabase) {
+      const { error } = await supabase
+        .from('recordatorios_config')
+        .upsert(
+          { turno_id: turnoId, plantilla, activado: activar, activado_en: activadoEn },
+          { onConflict: 'turno_id,plantilla' }
+        );
+      if (error) {
+        showToast('❌ No se pudo actualizar el recordatorio.');
+        return;
+      }
+    }
+
+    setRecordatoriosConfig((prev) => {
+      const existe = prev.some((r) => r.turnoId === turnoId && r.plantilla === plantilla);
+      if (existe) {
+        return prev.map((r) =>
+          r.turnoId === turnoId && r.plantilla === plantilla ? { ...r, activado: activar, activadoEn } : r
+        );
+      }
+      return [...prev, { turnoId, plantilla, activado: activar, activadoEn }];
+    });
+    showToast(activar ? `✓ Recordatorio ${plantilla} activado` : `Recordatorio ${plantilla} desactivado`);
+  };
+
   // Busca una clienta por nombre entre las ya cargadas; si no existe, la crea
   // en Supabase. Antes de esto, una reserva de alguien nuevo se anotaba
   // siempre bajo la clienta demo 'cli-01' — con persistencia real hay que
@@ -351,6 +393,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         profesionales,
         servicios,
         bloqueos,
+        recordatoriosConfig,
         beneficiosVIP,
         clientasEnRiesgo,
         toastMessage,
@@ -361,6 +404,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         aprobarComprobante,
         crearBloqueo,
         eliminarBloqueo,
+        toggleRecordatorio,
         buscarOCrearClienta,
         activarFlujoRecuperacion,
         canjearBeneficio,
