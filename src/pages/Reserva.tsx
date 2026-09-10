@@ -8,7 +8,7 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { RitualTimeline } from '../components/ui/RitualTimeline';
 import { formatCurrency, formatDateReadable } from '../lib/formatters';
-import { calcularHorariosDisponibles, sumarMinutos } from '../lib/disponibilidad';
+import { calcularHorariosDisponibles, sumarMinutos, hoyISO, mananaISO } from '../lib/disponibilidad';
 import { MONTO_SENA_FIJO } from '../lib/pricing';
 import { leerClienteRecordado, guardarClienteRecordado } from '../lib/clienteRecordado';
 import {
@@ -42,7 +42,7 @@ export const Reserva: React.FC = () => {
   // Selected values
   const [servicioSeleccionado, setServicioSeleccionado] = useState<Servicio | null>(null);
   const [profesionalSeleccionado, setProfesionalSeleccionado] = useState<Profesional | null>(null);
-  const [fechaSeleccionada, setFechaSeleccionada] = useState<string>('2026-08-18'); // Default tomorrow
+  const [fechaSeleccionada, setFechaSeleccionada] = useState<string>(mananaISO());
   const [horaSeleccionada, setHoraSeleccionada] = useState<string>('');
   
   // Client details — si el navegador ya reservó antes acá, se auto-completa
@@ -173,10 +173,11 @@ export const Reserva: React.FC = () => {
       });
 
       if (response.status === 409) {
-        showToast('❌ Ese horario ya no está disponible — elegí otro.');
+        const { error } = await response.json().catch(() => ({ error: '' }));
+        showToast(`❌ ${error || 'Ese horario ya no está disponible'} — elegí otro.`);
         setIsProcessingPayment(false);
         setHoraSeleccionada('');
-        irAPaso(3);
+        irAPaso(2);
         return;
       }
       if (!response.ok) throw new Error('crear-preferencia respondió con error');
@@ -341,7 +342,7 @@ export const Reserva: React.FC = () => {
               </label>
               <input
                 type="date"
-                min="2026-08-17"
+                min={hoyISO()}
                 value={fechaSeleccionada}
                 onChange={(e) => elegirFecha(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-rf-rose-deep bg-white text-rf-black font-medium"

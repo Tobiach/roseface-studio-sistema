@@ -10,6 +10,7 @@ import { RitualTimeline } from '../../components/ui/RitualTimeline';
 import { CalendarioGrilla } from '../../components/admin/CalendarioGrilla';
 import { formatCurrency, formatDateReadable } from '../../lib/formatters';
 import { mensajeRecordatorio, buildWhatsAppUrlPara } from '../../lib/whatsapp';
+import { hoyISO } from '../../lib/disponibilidad';
 import {
   CalendarDays,
   Clock,
@@ -123,14 +124,14 @@ export const AdminAgenda: React.FC = () => {
       })()
     : [];
 
-  const [fechaFiltro, setFechaFiltro] = useState<string>('2026-08-17');
+  const [fechaFiltro, setFechaFiltro] = useState<string>(hoyISO());
   const [profesionalFiltro, setProfesionalFiltro] = useState<string>('todos');
   const [turnoSeleccionadoModal, setTurnoSeleccionadoModal] = useState<Turno | null>(null);
 
   // Bloqueo manual de horario (Fase 6)
   const [modalBloqueoAbierto, setModalBloqueoAbierto] = useState(false);
   const [bloqueoProfesionalId, setBloqueoProfesionalId] = useState<string>('');
-  const [bloqueoFecha, setBloqueoFecha] = useState<string>('2026-08-17');
+  const [bloqueoFecha, setBloqueoFecha] = useState<string>(hoyISO());
   const [bloqueoDiaCompleto, setBloqueoDiaCompleto] = useState(true);
   const [bloqueoHoraInicio, setBloqueoHoraInicio] = useState('09:00');
   const [bloqueoHoraFin, setBloqueoHoraFin] = useState('19:00');

@@ -33,9 +33,21 @@ function bloqueoCubreFranja(b: BloqueoHorario, horaFranja: string, horaFin: stri
 // "Hoy" y "ahora" en la zona del navegador (los usuarios de Rose Face
 // están en Argentina, UTC-3 sin horario de verano). Se usa para no ofrecer
 // horarios que ya pasaron.
+export function hoyISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Fecha ISO de mañana — default del calendario de reserva.
+export function mananaISO(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function hoyYAhora(): { hoy: string; ahora: string } {
   const d = new Date();
-  const hoy = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const hoy = hoyISO();
   const ahora = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   return { hoy, ahora };
 }
@@ -62,6 +74,7 @@ export function calcularHorariosDisponibles(
   );
   const bloqueosDelDia = bloqueos.filter((b) => b.profesionalId === profesional.id && b.fecha === fecha);
   const { hoy, ahora } = hoyYAhora();
+  if (fecha < hoy) return []; // fecha pasada: nunca hay horarios para reservar
   const esHoy = fecha === hoy;
 
   // Candidatos: horarios fijos de ese día, o la grilla cada 30 min.
