@@ -89,8 +89,8 @@ export const mockProfesionales: Profesional[] = [
   },
   {
     id: 'prof-martina',
-    nombre: 'Martina',
-    apodo: 'Marti',
+    nombre: 'Anye',
+    apodo: 'Anye',
     fotoUrl: fotoMartina,
     especialidades: ['Alisados', 'Alisado Brasilero'],
     bio: 'Especialista en nutrición capilar y alisados progresivos libres de formol. Cabellos brillantes, sedosos y saludables.',
@@ -117,8 +117,8 @@ export const mockProfesionales: Profesional[] = [
   },
   {
     id: 'prof-sofia',
-    nombre: 'Sofía',
-    apodo: 'Sofi',
+    nombre: 'Cris',
+    apodo: 'Cris',
     fotoUrl: fotoSofia,
     especialidades: ['Masajes y Faciales', 'Limpieza Facial Profunda'],
     bio: 'Cosmiatra y masoterapeuta. Cuidado integral de la piel, peeling ultrasónico y masajes descontracturantes para el relax total.',
@@ -145,8 +145,7 @@ export const mockProfesionales: Profesional[] = [
   },
   {
     id: 'prof-alexandra',
-    nombre: 'Alexandra',
-    apodo: 'Ale',
+    nombre: 'Ariannys',
     fotoUrl: fotoAlexandra,
     especialidades: ['Uñas', 'Semipermanente', 'Esculpidas'],
     bio: 'Nail artist apasionada por la kapping gel, esculpidas en acrílico y esmaltado semipermanente con nail art personalizado.',

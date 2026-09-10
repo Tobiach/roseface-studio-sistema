@@ -165,7 +165,7 @@ export const ReservaConfirmacion: React.FC = () => {
         <MapPin className="w-5 h-5 text-rf-rose-deep shrink-0" />
         <div>
           <span className="font-bold text-rf-black block">¿Dónde estamos?</span>
-          <span>Av. Acoyte 25, C1405BFA Cdad. Autónoma de Buenos Aires.</span>
+          <span>Av. Acoyte 25, piso 5 depto B, Cdad. Autónoma de Buenos Aires.</span>
         </div>
       </div>
 

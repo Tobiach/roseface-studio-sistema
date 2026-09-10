@@ -31,11 +31,11 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2 text-xs text-rf-charcoal">
               <li className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-rf-rose-deep shrink-0 mt-0.5" />
-                <span>Av. Acoyte 25, C1405BFA Cdad. Autónoma de Buenos Aires</span>
+                <span>Av. Acoyte 25, piso 5 depto B, Cdad. Autónoma de Buenos Aires</span>
               </li>
-              <li className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-rf-rose-deep shrink-0" />
-                <span>Lun a Sáb: 09:00 a 19:00 hs</span>
+              <li className="flex items-start gap-2">
+                <Clock className="w-4 h-4 text-rf-rose-deep shrink-0 mt-0.5" />
+                <span>Lun a Sáb: 09:00 a 20:00 hs · Dom: 10:00 a 16:00 hs</span>
               </li>
             </ul>
           </div>

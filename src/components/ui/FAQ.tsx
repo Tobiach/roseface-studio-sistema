@@ -11,12 +11,12 @@ const FAQ_ITEMS: FAQItem[] = [
   {
     pregunta: '¿Tengo que pagar una seña para reservar?',
     respuesta:
-      'Sí, se abona el 30% del valor del servicio en el momento de reservar con Mercado Pago. El saldo restante se paga en el estudio el día del turno.',
+      'Sí, la seña es de $30.000 y se abona al reservar. El saldo restante se paga en el estudio el día del turno. Según la profesional, la seña se paga por Mercado Pago o por transferencia (te lo indica el sistema al reservar).',
   },
   {
-    pregunta: '¿Puedo cancelar o cambiar mi turno?',
+    pregunta: '¿Puedo cancelar o reprogramar mi turno?',
     respuesta:
-      'Podés cancelar cuando quieras, pero la seña no es reembolsable — es lo que confirma tu lugar en la agenda.',
+      'Podés reprogramar tu turno una sola vez. Para cancelar, avisá con al menos 48 horas de anticipación. La seña no es reembolsable — es lo que confirma tu lugar. Si faltás al turno sin avisar, para el siguiente se cobra el 100% del servicio.',
   },
   {
     pregunta: '¿Puedo reservar a cualquier hora?',
@@ -30,7 +30,7 @@ const FAQ_ITEMS: FAQItem[] = [
   {
     pregunta: '¿Dónde están ubicados y qué días atienden?',
     respuesta:
-      'Av. Acoyte 25, C1405BFA Cdad. Autónoma de Buenos Aires. Atendemos de lunes a sábado de 09:00 a 19:00 hs.',
+      'Av. Acoyte 25, piso 5 depto B, Cdad. Autónoma de Buenos Aires. Atendemos de lunes a sábado de 09:00 a 20:00 hs y domingos de 10:00 a 16:00 hs.',
   },
 ];
 

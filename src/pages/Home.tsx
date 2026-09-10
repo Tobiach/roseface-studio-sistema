@@ -8,6 +8,7 @@ import { RitualTimeline } from '../components/ui/RitualTimeline';
 import { formatCurrency } from '../lib/formatters';
 import { buildWhatsAppUrl } from '../lib/whatsapp';
 import { FAQ } from '../components/ui/FAQ';
+import { Logo } from '../components/ui/Logo';
 import { Lightbox } from '../components/ui/Lightbox';
 import { urlFor } from '../data/trabajosFotos';
 import { Calendar, Star, MapPin, Clock, MessageCircle, Heart, Sparkles, GraduationCap, Gem, ExternalLink } from 'lucide-react';
@@ -79,6 +80,10 @@ export const Home: React.FC = () => {
             alt="Rose Face Studio — Caballito"
             className="absolute inset-0 w-full h-full object-cover"
           />
+          {/* Logo sobre la foto del estudio — decisión de Yosy */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-black/20 flex items-center justify-center">
+            <Logo size="xl" className="drop-shadow-xl" />
+          </div>
         </div>
         <div className="text-center mt-8 space-y-4">
           <p className="text-xs font-semibold tracking-[0.2em] uppercase text-rf-rose-deep">
@@ -317,11 +322,11 @@ export const Home: React.FC = () => {
         <div className="space-y-3 text-sm text-rf-charcoal max-w-sm mx-auto">
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 text-rf-rose-deep shrink-0 mt-0.5" />
-            <span>Av. Acoyte 25, C1405BFA Cdad. Autónoma de Buenos Aires</span>
+            <span>Av. Acoyte 25, piso 5 depto B, Cdad. Autónoma de Buenos Aires</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-rf-rose-deep shrink-0" />
-            <span>Lun a Sáb: 09:00 a 19:00 hs</span>
+          <div className="flex items-start gap-2">
+            <Clock className="w-4 h-4 text-rf-rose-deep shrink-0 mt-0.5" />
+            <span>Lun a Sáb: 09:00 a 20:00 hs · Dom: 10:00 a 16:00 hs</span>
           </div>
           <a
             href={mensajeWhatsApp}
