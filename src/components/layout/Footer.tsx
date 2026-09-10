@@ -46,7 +46,7 @@ export const Footer: React.FC = () => {
               Comunidad
             </h4>
             <a
-              href="https://instagram.com"
+              href="https://instagram.com/roseface.studio"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rf-cream text-rf-black text-xs font-medium border border-pink-200/60 hover:bg-rf-blush transition-colors"

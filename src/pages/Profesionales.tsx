@@ -10,29 +10,17 @@ import { Star, ChevronRight, Sparkles } from 'lucide-react';
 export const Profesionales: React.FC = () => {
   const { profesionales } = useApp();
 
-  // Order by main specialty sequence:
-  // 1. Pestañas (Mili, Sharon)
-  // 2. Cejas (Camila, Valentina - Mili shown once)
-  // 3. Uñas (Alexandra)
-  // 4. Alisados (Martina)
-  // 5. Masajes y Faciales (Sofia)
-  // 6. Depilación Láser (Camila shown once)
-  const ordenDeseado = [
-    'prof-yosy',
-    'prof-mili',
-    'prof-sharon',
-    'prof-camila',
-    'prof-valentina',
-    'prof-alexandra',
-    'prof-martina',
-    'prof-sofia',
-  ];
+  // Orden en la página de equipo. "prof-camila" es el slot de Depilación
+  // Láser (no una persona) — no se muestra acá.
+  const ordenDeseado = ['prof-yosy', 'prof-mili', 'prof-sharon', 'prof-alexandra', 'prof-martina', 'prof-sofia'];
 
-  const profesionalesOrdenados = [...profesionales].sort((a, b) => {
-    const idxA = ordenDeseado.indexOf(a.id);
-    const idxB = ordenDeseado.indexOf(b.id);
-    return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
-  });
+  const profesionalesOrdenados = [...profesionales]
+    .filter((p) => p.id !== 'prof-camila')
+    .sort((a, b) => {
+      const idxA = ordenDeseado.indexOf(a.id);
+      const idxB = ordenDeseado.indexOf(b.id);
+      return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+    });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
@@ -105,7 +93,7 @@ export const Profesionales: React.FC = () => {
                   Ver Perfil & Galería
                 </Button>
               </Link>
-              <Link to={`/reserva`} className="flex-1">
+              <Link to={`/reserva?profesionalId=${prof.id}`} className="flex-1">
                 <Button variant="primary" size="sm" fullWidth>
                   Reservar Turno
                 </Button>

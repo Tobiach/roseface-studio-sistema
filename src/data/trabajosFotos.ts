@@ -16,16 +16,19 @@ export function urlFor(filename: string): string {
 }
 
 export const trabajosPorProfesional: Record<string, string[]> = {
-  // Yosy: trabajos reusados de Mili/Sharon como placeholder (autorizado por
-  // Tobias, 17/8) — reemplazar por fotos reales de Yosy al cerrar la venta.
+  // Yosy hace cejas y laminado — galería de cejas/laminado (fotos reales
+  // de Yosy pendientes, por ahora reusa las de cejas que ya están cargadas).
   'prof-yosy': [
-    'Clasicas_Lash_1.jpg',
-    'Volumen_Brasilero_4D_3.jpg',
-    'Efecto_Humedo_1.jpg',
-    'Hibrida_Lash_1.jpg',
-    'Medio_Volumen_1.jpg',
-    'Natural_Volumen_1.jpg',
+    'Laminado_de_Cejas_1.jpg',
+    'Laminado_de_Cejas_2.jpg',
+    'Perfilado_de_Cejas_1.jpg',
+    'Perfilado_de_Cejas_2.jpg',
+    'Sombreado_de_Cejas_1.jpg',
+    'Sombreado_de_Cejas_2.jpg',
   ].map(urlFor),
+  // Anye (alisados) y Cris (faciales): sin fotos reales todavía.
+  'prof-martina': [],
+  'prof-sofia': [],
   'prof-mili': [
     'Clasicas_Lash_1.jpg',
     'Efecto_Humedo_1.jpg',
@@ -58,13 +61,9 @@ export const trabajosPorProfesional: Record<string, string[]> = {
     'Volumen_Tecnologico_5.jpg',
     'Volumen_Tecnologico_6.jpg',
   ].map(urlFor),
-  'prof-camila': [
-    'Sombreado_de_Cejas_1.jpg',
-    'Sombreado_de_Cejas_2.jpg',
-    'Sombreado_de_Cejas_3.jpg',
-    'Sombreado_de_Cejas_4.jpg',
-  ].map(urlFor),
-  'prof-valentina': ['Laminado_de_Cejas_1.jpg', 'Laminado_de_Cejas_2.jpg'].map(urlFor),
+  // "prof-camila" ahora es el slot de Depilación Láser, no una persona —
+  // sin galería (no hay fotos de láser).
+  'prof-camila': [],
   'prof-alexandra': [
     'Unas_1.jpg',
     'Unas_2.jpg',

@@ -426,10 +426,8 @@ export const Reserva: React.FC = () => {
                 const tecnicaCejas =
                   prof.id === 'prof-mili'
                     ? 'Perfilado y diseño'
-                    : prof.id === 'prof-camila'
-                    ? 'Visajismo'
-                    : prof.id === 'prof-valentina'
-                    ? 'Laminado'
+                    : prof.id === 'prof-yosy'
+                    ? 'Laminado y diseño'
                     : '';
 
                 return (

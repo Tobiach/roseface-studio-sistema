@@ -30,10 +30,22 @@ function bloqueoCubreFranja(b: BloqueoHorario, horaFranja: string, horaFin: stri
   return horaFranja < b.horaFin && horaFin > b.horaInicio;
 }
 
-// Horarios reales disponibles: cruza el horario semanal de la profesional
-// para ese día contra los turnos que ya tiene ocupados esa fecha y contra
-// los bloqueos manuales que haya — ya no es una lista fija, y nunca ofrece
-// un horario que se superponga con otro turno o un bloqueo.
+// "Hoy" y "ahora" en la zona del navegador (los usuarios de Rose Face
+// están en Argentina, UTC-3 sin horario de verano). Se usa para no ofrecer
+// horarios que ya pasaron.
+function hoyYAhora(): { hoy: string; ahora: string } {
+  const d = new Date();
+  const hoy = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const ahora = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return { hoy, ahora };
+}
+
+// Horarios reales disponibles para reservar. Cruza:
+//  - los horarios fijos de la profesional para ese día (o la grilla cada
+//    30 min si ese día no tiene horarios fijos definidos)
+//  - los turnos ya ocupados esa fecha
+//  - los bloqueos manuales
+//  - la hora actual (si la fecha es hoy, no ofrece horarios que ya pasaron)
 export function calcularHorariosDisponibles(
   profesional: Profesional,
   fecha: string,
@@ -49,19 +61,32 @@ export function calcularHorariosDisponibles(
     (t) => t.profesionalId === profesional.id && t.fecha === fecha && turnoBloqueaHorario(t)
   );
   const bloqueosDelDia = bloqueos.filter((b) => b.profesionalId === profesional.id && b.fecha === fecha);
+  const { hoy, ahora } = hoyYAhora();
+  const esHoy = fecha === hoy;
 
-  const slots: string[] = [];
-  let cursor = jornada.desde;
-
-  while (sumarMinutos(cursor, duracionMinutos) <= jornada.hasta) {
-    const finSlot = sumarMinutos(cursor, duracionMinutos);
-    const seSuperpone = ocupados.some((t) => cursor < t.horaFin && finSlot > t.horaInicio);
-    const bloqueado = bloqueosDelDia.some((b) => bloqueoCubreFranja(b, cursor, finSlot));
-    if (!seSuperpone && !bloqueado) slots.push(cursor);
-    cursor = sumarMinutos(cursor, 30);
+  // Candidatos: horarios fijos de ese día, o la grilla cada 30 min.
+  const fijosDelDia = profesional.horariosFijos?.[diaSemana];
+  let candidatos: string[];
+  if (fijosDelDia && fijosDelDia.length > 0) {
+    candidatos = [...fijosDelDia].sort();
+  } else {
+    candidatos = [];
+    let cursor = jornada.desde;
+    while (sumarMinutos(cursor, duracionMinutos) <= jornada.hasta) {
+      candidatos.push(cursor);
+      cursor = sumarMinutos(cursor, 30);
+    }
   }
 
-  return slots;
+  return candidatos.filter((inicio) => {
+    if (esHoy && inicio <= ahora) return false; // ya pasó
+    const finSlot = sumarMinutos(inicio, duracionMinutos);
+    const seSuperpone = ocupados.some((t) => inicio < t.horaFin && finSlot > t.horaInicio);
+    if (seSuperpone) return false;
+    const bloqueado = bloqueosDelDia.some((b) => bloqueoCubreFranja(b, inicio, finSlot));
+    if (bloqueado) return false;
+    return true;
+  });
 }
 
 // Franjas de 30 min entre dos horas, para dibujar la grilla del calendario.

@@ -209,8 +209,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     })();
 
+    // Refresco periódico de lo que cambia durante la operación (turnos,
+    // clientas, recordatorios, bloqueos) — así cuando una clienta reserva y
+    // paga, aparece en los paneles sin que nadie recargue la página. Solo
+    // corre con la pestaña visible para no gastar de gusto.
+    const refrescar = async () => {
+      if (document.hidden || !supabase) return;
+      const [t, c, r, b] = await Promise.all([
+        supabase.from('turnos').select('*').order('fecha_creacion', { ascending: false }),
+        supabase.from('clientas').select('*'),
+        supabase.from('recordatorios_config').select('*'),
+        supabase.from('bloqueos_horario').select('*'),
+      ]);
+      if (cancelado) return;
+      if (t.data) setTurnos(t.data.map(turnoFromRow));
+      if (c.data) setClientas(c.data.map(clientaFromRow));
+      if (r.data) setRecordatoriosConfig(r.data.map(recordatorioFromRow));
+      if (b.data) setBloqueos(b.data.map(bloqueoFromRow));
+    };
+    const intervalo = setInterval(refrescar, 45000);
+
     return () => {
       cancelado = true;
+      clearInterval(intervalo);
     };
   }, []);
 

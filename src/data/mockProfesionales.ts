@@ -1,4 +1,10 @@
 // src/data/mockProfesionales.ts
+//
+// Catálogo visual + operativo de las profesionales. Los campos operativos
+// (modeloComision, horarioDisponible, aliasCbu, etc.) se pisan con lo que
+// venga de Supabase; el resto (nombre, foto, bio, galería, horariosFijos)
+// vive acá. Datos reales de Yosy cargados el 10/9/2026 — ver
+// project_roseface_datos_reales_yosy.md para lo que sigue pendiente.
 import { Profesional } from '../types';
 import fotoYosy from '../assets/images/profesionales/prof-yosy.jpg';
 import fotoMili from '../assets/images/profesionales/prof-mili.jpg';
@@ -7,34 +13,41 @@ import fotoMartina from '../assets/images/profesionales/prof-martina.jpg';
 import fotoSofia from '../assets/images/profesionales/prof-sofia.jpg';
 import fotoAlexandra from '../assets/images/profesionales/prof-alexandra.jpg';
 import fotoCamila from '../assets/images/profesionales/prof-camila.jpg';
-import fotoValentina from '../assets/images/profesionales/prof-valentina.jpg';
 import { trabajosPorProfesional } from './trabajosFotos';
+
+// Helpers para armar la semana
+const SIN_HORARIO = { lunes: null, martes: null, miercoles: null, jueves: null, viernes: null, sabado: null, domingo: null } as const;
+const vent = (desde: string, hasta: string) => ({ desde, hasta });
 
 export const mockProfesionales: Profesional[] = [
   {
     id: 'prof-yosy',
     nombre: 'Yosy',
     fotoUrl: fotoYosy,
-    especialidades: ['Pestañas'],
-    bio: 'Fundadora y especialista principal en pestañas de Rose Face Studio. Referente del equipo en técnicas de volumen y diseño de mirada.',
+    especialidades: ['Cejas', 'Laminado de Cejas'],
+    bio: 'Fundadora de Rose Face Studio. Especialista en cejas y laminado — diseño de mirada, cejas definidas y con efecto duradero.',
     aniosExperiencia: 8,
-    // TODO: reemplazar por trabajos reales de Yosy al cerrar la venta —
-    // por ahora reusa fotos ya cargadas de Mili/Sharon (autorizado por Tobias, 17/8).
     galeria: trabajosPorProfesional['prof-yosy'],
     calificacionPromedio: 5.0,
     cantidadResenas: 120,
-    modeloComision: {
-      tipo: 'porcentaje',
-      porcentajeProfesional: 100, // es la dueña — toda la facturación es del estudio
-    },
+    modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 100 }, // es la dueña
+    // Lunes a domingo EXCEPTO miércoles. Turnos fijos 9/11/13/15.
     horarioDisponible: {
-      lunes: { desde: '09:00', hasta: '19:00' },
-      martes: { desde: '09:00', hasta: '19:00' },
-      miercoles: { desde: '09:00', hasta: '19:00' },
-      jueves: { desde: '09:00', hasta: '19:00' },
-      viernes: { desde: '09:00', hasta: '19:00' },
-      sabado: { desde: '09:00', hasta: '15:00' },
-      domingo: null,
+      ...SIN_HORARIO,
+      lunes: vent('09:00', '17:00'),
+      martes: vent('09:00', '17:00'),
+      jueves: vent('09:00', '17:00'),
+      viernes: vent('09:00', '17:00'),
+      sabado: vent('09:00', '17:00'),
+      domingo: vent('09:00', '17:00'),
+    },
+    horariosFijos: {
+      lunes: ['09:00', '11:00', '13:00', '15:00'],
+      martes: ['09:00', '11:00', '13:00', '15:00'],
+      jueves: ['09:00', '11:00', '13:00', '15:00'],
+      viernes: ['09:00', '11:00', '13:00', '15:00'],
+      sabado: ['09:00', '11:00', '13:00', '15:00'],
+      domingo: ['09:00', '11:00', '13:00', '15:00'],
     },
   },
   {
@@ -43,23 +56,27 @@ export const mockProfesionales: Profesional[] = [
     apodo: 'Mili',
     fotoUrl: fotoMili,
     especialidades: ['Pestañas', 'Lifting de Pestañas', 'Cejas'],
-    bio: 'Especialista senior en diseño de mirada y lifting de pestañas. Apasionada por resaltar la belleza natural con técnicas de alta precisión.',
+    bio: 'Especialista senior en diseño de mirada y lifting de pestañas. Alta precisión y foco en la belleza natural.',
     aniosExperiencia: 5,
     galeria: trabajosPorProfesional['prof-mili'],
     calificacionPromedio: 4.9,
     cantidadResenas: 86,
-    modeloComision: {
-      tipo: 'porcentaje',
-      porcentajeProfesional: 55, // 55% para Mili / 45% para el estudio
-    },
+    modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 55 }, // PLACEHOLDER — pendiente % real de Yosy
+    // Martes a sábado. Turnos fijos 9/11/14/16.
     horarioDisponible: {
-      lunes: { desde: '09:00', hasta: '18:00' },
-      martes: { desde: '09:00', hasta: '18:00' },
-      miercoles: { desde: '09:00', hasta: '18:00' },
-      jueves: { desde: '09:00', hasta: '18:00' },
-      viernes: { desde: '09:00', hasta: '19:00' },
-      sabado: { desde: '09:00', hasta: '15:00' },
-      domingo: null,
+      ...SIN_HORARIO,
+      martes: vent('09:00', '18:30'),
+      miercoles: vent('09:00', '18:30'),
+      jueves: vent('09:00', '18:30'),
+      viernes: vent('09:00', '18:30'),
+      sabado: vent('09:00', '18:30'),
+    },
+    horariosFijos: {
+      martes: ['09:00', '11:00', '14:00', '16:00'],
+      miercoles: ['09:00', '11:00', '14:00', '16:00'],
+      jueves: ['09:00', '11:00', '14:00', '16:00'],
+      viernes: ['09:00', '11:00', '14:00', '16:00'],
+      sabado: ['09:00', '11:00', '14:00', '16:00'],
     },
   },
   {
@@ -68,23 +85,29 @@ export const mockProfesionales: Profesional[] = [
     apodo: 'Sharon',
     fotoUrl: fotoSharon,
     especialidades: ['Pestañas', 'Volumen Ruso'],
-    bio: 'Experta certificada en extensiones pelo a pelo y volumen ruso. Enfoque hiper-detallista para miradas de impacto.',
+    bio: 'Experta certificada en extensiones pelo a pelo y volumen ruso. Enfoque hiper-detallista.',
     aniosExperiencia: 3,
     galeria: trabajosPorProfesional['prof-sharon'],
     calificacionPromedio: 4.9,
     cantidadResenas: 142,
-    modeloComision: {
-      tipo: 'porcentaje',
-      porcentajeProfesional: 45, // 45% para Sharon / 55% para el estudio
-    },
+    modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 45 }, // PLACEHOLDER — pendiente % real de Yosy
+    // Lunes a sábado. Bloques de 2h: 9/11/14/16/18/20.
     horarioDisponible: {
-      lunes: null,
-      martes: { desde: '10:00', hasta: '19:00' },
-      miercoles: { desde: '10:00', hasta: '19:00' },
-      jueves: { desde: '10:00', hasta: '19:00' },
-      viernes: { desde: '10:00', hasta: '19:00' },
-      sabado: { desde: '09:00', hasta: '17:00' },
-      domingo: null,
+      ...SIN_HORARIO,
+      lunes: vent('09:00', '22:00'),
+      martes: vent('09:00', '22:00'),
+      miercoles: vent('09:00', '22:00'),
+      jueves: vent('09:00', '22:00'),
+      viernes: vent('09:00', '22:00'),
+      sabado: vent('09:00', '22:00'),
+    },
+    horariosFijos: {
+      lunes: ['09:00', '11:00', '14:00', '16:00', '18:00', '20:00'],
+      martes: ['09:00', '11:00', '14:00', '16:00', '18:00', '20:00'],
+      miercoles: ['09:00', '11:00', '14:00', '16:00', '18:00', '20:00'],
+      jueves: ['09:00', '11:00', '14:00', '16:00', '18:00', '20:00'],
+      viernes: ['09:00', '11:00', '14:00', '16:00', '18:00', '20:00'],
+      sabado: ['09:00', '11:00', '14:00', '16:00', '18:00', '20:00'],
     },
   },
   {
@@ -93,26 +116,30 @@ export const mockProfesionales: Profesional[] = [
     apodo: 'Anye',
     fotoUrl: fotoMartina,
     especialidades: ['Alisados', 'Alisado Brasilero'],
-    bio: 'Especialista en nutrición capilar y alisados progresivos libres de formol. Cabellos brillantes, sedosos y saludables.',
+    bio: 'Especialista en alisados progresivos libres de formol. Cabellos brillantes, sedosos y saludables.',
     aniosExperiencia: 4,
-    galeria: [
-      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=800',
-    ],
+    galeria: trabajosPorProfesional['prof-martina'] ?? [],
     calificacionPromedio: 4.8,
     cantidadResenas: 52,
-    modeloComision: {
-      tipo: 'alquiler_fijo',
-      montoSemanal: 50000,
-    },
+    modeloComision: { tipo: 'alquiler_fijo', montoSemanal: 50000 }, // PLACEHOLDER — alquiler real pendiente
+    aliasCbu: 'Anye.studio',
+    // Lunes a sábado 9-16 (último turno). Turnos largos (3-4h) → 2 por día. PLACEHOLDER.
     horarioDisponible: {
-      lunes: { desde: '09:00', hasta: '18:00' },
-      martes: { desde: '09:00', hasta: '18:00' },
-      miercoles: { desde: '09:00', hasta: '18:00' },
-      jueves: { desde: '09:00', hasta: '18:00' },
-      viernes: { desde: '09:00', hasta: '18:00' },
-      sabado: { desde: '09:00', hasta: '14:00' },
-      domingo: null,
+      ...SIN_HORARIO,
+      lunes: vent('09:00', '20:00'),
+      martes: vent('09:00', '20:00'),
+      miercoles: vent('09:00', '20:00'),
+      jueves: vent('09:00', '20:00'),
+      viernes: vent('09:00', '20:00'),
+      sabado: vent('09:00', '20:00'),
+    },
+    horariosFijos: {
+      lunes: ['09:00', '13:00'],
+      martes: ['09:00', '13:00'],
+      miercoles: ['09:00', '13:00'],
+      jueves: ['09:00', '13:00'],
+      viernes: ['09:00', '13:00'],
+      sabado: ['09:00', '13:00'],
     },
   },
   {
@@ -121,26 +148,30 @@ export const mockProfesionales: Profesional[] = [
     apodo: 'Cris',
     fotoUrl: fotoSofia,
     especialidades: ['Masajes y Faciales', 'Limpieza Facial Profunda'],
-    bio: 'Cosmiatra y masoterapeuta. Cuidado integral de la piel, peeling ultrasónico y masajes descontracturantes para el relax total.',
+    bio: 'Cosmiatra y masoterapeuta. Cuidado integral de la piel, peeling ultrasónico y masajes descontracturantes.',
     aniosExperiencia: 6,
-    galeria: [
-      'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=800',
-    ],
+    galeria: trabajosPorProfesional['prof-sofia'] ?? [],
     calificacionPromedio: 4.9,
     cantidadResenas: 86,
-    modeloComision: {
-      tipo: 'alquiler_fijo',
-      montoSemanal: 45000,
-    },
+    modeloComision: { tipo: 'alquiler_fijo', montoSemanal: 45000 }, // PLACEHOLDER
+    aliasCbu: 'Crisbel.gonzalez',
+    // "Corrido, 2h por turno". Ventana PLACEHOLDER 9-19.
     horarioDisponible: {
-      lunes: { desde: '10:00', hasta: '18:00' },
-      martes: { desde: '10:00', hasta: '18:00' },
-      miercoles: { desde: '10:00', hasta: '18:00' },
-      jueves: { desde: '10:00', hasta: '18:00' },
-      viernes: { desde: '10:00', hasta: '18:00' },
-      sabado: null,
-      domingo: null,
+      ...SIN_HORARIO,
+      lunes: vent('09:00', '19:00'),
+      martes: vent('09:00', '19:00'),
+      miercoles: vent('09:00', '19:00'),
+      jueves: vent('09:00', '19:00'),
+      viernes: vent('09:00', '19:00'),
+      sabado: vent('09:00', '19:00'),
+    },
+    horariosFijos: {
+      lunes: ['09:00', '11:00', '13:00', '15:00', '17:00'],
+      martes: ['09:00', '11:00', '13:00', '15:00', '17:00'],
+      miercoles: ['09:00', '11:00', '13:00', '15:00', '17:00'],
+      jueves: ['09:00', '11:00', '13:00', '15:00', '17:00'],
+      viernes: ['09:00', '11:00', '13:00', '15:00', '17:00'],
+      sabado: ['09:00', '11:00', '13:00', '15:00', '17:00'],
     },
   },
   {
@@ -148,73 +179,48 @@ export const mockProfesionales: Profesional[] = [
     nombre: 'Ariannys',
     fotoUrl: fotoAlexandra,
     especialidades: ['Uñas', 'Semipermanente', 'Esculpidas'],
-    bio: 'Nail artist apasionada por la kapping gel, esculpidas en acrílico y esmaltado semipermanente con nail art personalizado.',
+    bio: 'Nail artist. Capping en gel, esculpidas en acrílico y esmaltado semipermanente con nail art personalizado.',
     aniosExperiencia: 4,
     galeria: trabajosPorProfesional['prof-alexandra'],
     calificacionPromedio: 4.9,
     cantidadResenas: 142,
-    modeloComision: {
-      tipo: 'alquiler_fijo',
-      montoSemanal: 48000,
-    },
+    modeloComision: { tipo: 'alquiler_fijo', montoSemanal: 48000 }, // PLACEHOLDER
+    aliasCbu: 'Aribell.st',
+    // "De 9 a 19", 2h por turno. Días PLACEHOLDER (no los dijo) → lun a sáb.
     horarioDisponible: {
-      lunes: { desde: '09:00', hasta: '19:00' },
-      martes: { desde: '09:00', hasta: '19:00' },
-      miercoles: { desde: '09:00', hasta: '19:00' },
-      jueves: { desde: '09:00', hasta: '19:00' },
-      viernes: { desde: '09:00', hasta: '19:00' },
-      sabado: { desde: '09:00', hasta: '16:00' },
-      domingo: null,
+      ...SIN_HORARIO,
+      lunes: vent('09:00', '21:00'),
+      martes: vent('09:00', '21:00'),
+      miercoles: vent('09:00', '21:00'),
+      jueves: vent('09:00', '21:00'),
+      viernes: vent('09:00', '21:00'),
+      sabado: vent('09:00', '21:00'),
+    },
+    horariosFijos: {
+      lunes: ['09:00', '11:00', '13:00', '15:00', '17:00'],
+      martes: ['09:00', '11:00', '13:00', '15:00', '17:00'],
+      miercoles: ['09:00', '11:00', '13:00', '15:00', '17:00'],
+      jueves: ['09:00', '11:00', '13:00', '15:00', '17:00'],
+      viernes: ['09:00', '11:00', '13:00', '15:00', '17:00'],
+      sabado: ['09:00', '11:00', '13:00', '15:00', '17:00'],
     },
   },
   {
     id: 'prof-camila',
-    nombre: 'Camila',
-    apodo: 'Cami',
+    nombre: 'Depilación Láser',
     fotoUrl: fotoCamila,
-    especialidades: ['Depilación Láser', 'Cejas'],
-    bio: 'Técnica láser con equipamiento Soprano Ice de última generación y especialista en visajismo de cejas.',
+    especialidades: ['Depilación Láser'],
+    bio: 'Sesiones de depilación láser con tecnología Soprano Ice. El día de atención es el 3er viernes de cada mes.',
     aniosExperiencia: 3,
-    galeria: trabajosPorProfesional['prof-camila'],
+    galeria: trabajosPorProfesional['prof-camila'] ?? [],
     calificacionPromedio: 4.8,
     cantidadResenas: 64,
-    modeloComision: {
-      tipo: 'alquiler_fijo',
-      montoSemanal: 52000,
-    },
+    modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 0 }, // servicio del estudio, no de una persona
+    // Solo viernes (grilla cada 30 min). Los viernes que NO son el 3ro del
+    // mes, Yosy los bloquea a mano desde el panel.
     horarioDisponible: {
-      lunes: { desde: '10:00', hasta: '18:00' },
-      martes: null,
-      miercoles: { desde: '10:00', hasta: '18:00' },
-      jueves: null,
-      viernes: { desde: '10:00', hasta: '19:00' },
-      sabado: { desde: '09:00', hasta: '15:00' },
-      domingo: null,
-    },
-  },
-  {
-    id: 'prof-valentina',
-    nombre: 'Valentina',
-    apodo: 'Valen',
-    fotoUrl: fotoValentina,
-    especialidades: ['Cejas', 'Laminado de Cejas'],
-    bio: 'Especialista en laminado de cejas — cejas peinadas, definidas y con efecto duradero.',
-    aniosExperiencia: 2,
-    galeria: trabajosPorProfesional['prof-valentina'],
-    calificacionPromedio: 4.8,
-    cantidadResenas: 45,
-    modeloComision: {
-      tipo: 'alquiler_fijo',
-      montoSemanal: 45000,
-    },
-    horarioDisponible: {
-      lunes: { desde: '11:00', hasta: '19:00' },
-      martes: { desde: '11:00', hasta: '19:00' },
-      miercoles: { desde: '11:00', hasta: '19:00' },
-      jueves: { desde: '11:00', hasta: '19:00' },
-      viernes: { desde: '11:00', hasta: '19:00' },
-      sabado: { desde: '10:00', hasta: '14:00' },
-      domingo: null,
+      ...SIN_HORARIO,
+      viernes: vent('08:00', '20:00'),
     },
   },
 ];

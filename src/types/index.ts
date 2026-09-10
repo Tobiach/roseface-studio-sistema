@@ -15,6 +15,11 @@ export interface Profesional {
   cantidadResenas: number;
   modeloComision: ModeloComision;
   horarioDisponible: DisponibilidadSemanal;
+  // Horarios de inicio FIJOS por día (ej. Mili: 09:00/11:00/14:00/16:00).
+  // Si un día tiene lista acá, la disponibilidad de ese día son exactamente
+  // esas horas (no la grilla cada 30 min). Si es null/ausente para un día,
+  // se usa la grilla dentro de horarioDisponible. Es como trabaja Rose Face.
+  horariosFijos?: { [dia: string]: string[] | null };
   // Solo se usa para el modelo alquiler_fijo (circuito de pago por
   // transferencia) — dónde le transfiere la clienta.
   aliasCbu?: string | null;

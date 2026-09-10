@@ -62,6 +62,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  // No dejar reservar un horario que ya pasó (backstop del filtro del
+  // cliente). Argentina es UTC-3 sin horario de verano.
+  const ahoraArg = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const hoyArg = ahoraArg.toISOString().slice(0, 10);
+  const horaArg = ahoraArg.toISOString().slice(11, 16);
+  if (fecha < hoyArg || (fecha === hoyArg && hora <= horaArg)) {
+    res.status(409).json({ error: 'Ese horario ya pasó — elegí otro' });
+    return;
+  }
+
   try {
     const [{ data: servicio, error: servicioError }, { data: profesional, error: profesionalError }] =
       await Promise.all([
