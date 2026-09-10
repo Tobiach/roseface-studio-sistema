@@ -5,6 +5,7 @@ import { Logo } from '../ui/Logo';
 import { useApp } from '../../context/AppContext';
 import {
   CalendarDays,
+  Clock,
   CircleDollarSign,
   TrendingUp,
   Crown,
@@ -32,6 +33,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ abierta = false, onCerrar }) =
       description: 'Gestión diaria y turnos',
     },
     {
+      label: esProfesional ? 'Mi Horario' : 'Horarios',
+      path: '/admin/horario',
+      icon: Clock,
+      description: 'Días y horarios de trabajo',
+    },
+    {
       label: esProfesional ? 'Mis Comisiones' : 'Comisiones',
       path: '/admin/comisiones',
       icon: CircleDollarSign,
@@ -53,7 +60,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ abierta = false, onCerrar }) =
 
   // Un profesional ve solo su agenda y sus comisiones — Caja y VIP son vista exclusiva de la dueña
   const navItems = esProfesional
-    ? navItemsCompletos.filter((item) => item.path === '/admin/agenda' || item.path === '/admin/comisiones')
+    ? navItemsCompletos.filter(
+        (item) =>
+          item.path === '/admin/agenda' ||
+          item.path === '/admin/horario' ||
+          item.path === '/admin/comisiones'
+      )
     : navItemsCompletos;
 
   return (

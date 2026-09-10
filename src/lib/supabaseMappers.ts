@@ -92,20 +92,54 @@ export interface ProfesionalOperativo {
   id: string;
   modeloComision: ModeloComision;
   horarioDisponible: DisponibilidadSemanal;
+  horariosFijos: { [dia: string]: string[] | null };
   aliasCbu: string | null;
   videoUrl: string | null;
   linkAutoagenda: string | null;
 }
 
+// En Supabase, horario_disponible guarda por día:
+//   null  |  { desde, hasta, fijos?: string[] }
+// Acá se parte en horarioDisponible (ventana) + horariosFijos (las horas).
 export function profesionalOperativoFromRow(row: any): ProfesionalOperativo {
+  const raw = (row.horario_disponible ?? {}) as Record<string, any>;
+  const horarioDisponible: DisponibilidadSemanal = {};
+  const horariosFijos: { [dia: string]: string[] | null } = {};
+  for (const [dia, val] of Object.entries(raw)) {
+    if (!val) {
+      horarioDisponible[dia] = null;
+      horariosFijos[dia] = null;
+    } else {
+      horarioDisponible[dia] = { desde: val.desde, hasta: val.hasta };
+      horariosFijos[dia] = Array.isArray(val.fijos) && val.fijos.length > 0 ? val.fijos : null;
+    }
+  }
   return {
     id: row.id,
     modeloComision: row.modelo_comision,
-    horarioDisponible: row.horario_disponible,
+    horarioDisponible,
+    horariosFijos,
     aliasCbu: row.alias_cbu ?? null,
     videoUrl: row.video_url ?? null,
     linkAutoagenda: row.link_autoagenda ?? null,
   };
+}
+
+// Vuelve a armar el jsonb de Supabase a partir de ventana + horarios fijos.
+export function horarioToRow(
+  horarioDisponible: DisponibilidadSemanal,
+  horariosFijos: { [dia: string]: string[] | null } = {}
+) {
+  const out: Record<string, any> = {};
+  for (const [dia, vent] of Object.entries(horarioDisponible)) {
+    if (!vent) {
+      out[dia] = null;
+    } else {
+      const fijos = horariosFijos[dia];
+      out[dia] = fijos && fijos.length > 0 ? { ...vent, fijos } : { desde: vent.desde, hasta: vent.hasta };
+    }
+  }
+  return out;
 }
 
 export function bloqueoFromRow(row: any): BloqueoHorario {

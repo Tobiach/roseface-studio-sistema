@@ -28,7 +28,9 @@ import {
   bloqueoFromRow,
   bloqueoToInsertRow,
   recordatorioFromRow,
+  horarioToRow,
 } from '../lib/supabaseMappers';
+import type { DisponibilidadSemanal } from '../types';
 
 interface AppContextType {
   rolActivo: RolUsuario;
@@ -52,6 +54,11 @@ interface AppContextType {
   crearBloqueo: (data: Omit<BloqueoHorario, 'id'>) => Promise<void>;
   eliminarBloqueo: (id: string) => Promise<void>;
   toggleRecordatorio: (turnoId: string, plantilla: '48h' | '24h' | '4h', activar: boolean) => Promise<void>;
+  guardarHorario: (
+    profesionalId: string,
+    horarioDisponible: DisponibilidadSemanal,
+    horariosFijos: { [dia: string]: string[] | null }
+  ) => Promise<void>;
   buscarOCrearClienta: (nombre: string, telefono: string, email?: string) => Promise<string>;
   activarFlujoRecuperacion: (clientaId: string) => void;
   canjearBeneficio: (clientaId: string, beneficio: BeneficioVIP) => boolean;
@@ -199,6 +206,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   ...p,
                   modeloComision: operativo.modeloComision,
                   horarioDisponible: operativo.horarioDisponible,
+                  horariosFijos: operativo.horariosFijos,
                   aliasCbu: operativo.aliasCbu,
                   videoUrl: operativo.videoUrl,
                   linkAutoagenda: operativo.linkAutoagenda,
@@ -338,6 +346,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((t) => (t.id === turnoId ? { ...t, estado: 'sena_confirmada', aprobadoPorProfesional: true } : t))
     );
     showToast('✅ Comprobante aprobado — turno confirmado.');
+  };
+
+  // Auto-edición de horario: la profesional (o Yosy) cambia sus días y sus
+  // horarios fijos desde el panel. Se persiste en el jsonb horario_disponible.
+  const guardarHorario = async (
+    profesionalId: string,
+    horarioDisponible: DisponibilidadSemanal,
+    horariosFijos: { [dia: string]: string[] | null }
+  ): Promise<void> => {
+    if (supabaseEnabled && supabase) {
+      const { error } = await supabase
+        .from('profesionales')
+        .update({ horario_disponible: horarioToRow(horarioDisponible, horariosFijos) })
+        .eq('id', profesionalId);
+      if (error) {
+        showToast('❌ No se pudo guardar el horario.');
+        return;
+      }
+    }
+    setProfesionales((prev) =>
+      prev.map((p) => (p.id === profesionalId ? { ...p, horarioDisponible, horariosFijos } : p))
+    );
+    showToast('✓ Horario guardado');
   };
 
   // Bloqueo manual de horario (Fase 6): Yosy bloquea para cualquiera, cada
@@ -497,6 +528,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         crearBloqueo,
         eliminarBloqueo,
         toggleRecordatorio,
+        guardarHorario,
         buscarOCrearClienta,
         activarFlujoRecuperacion,
         canjearBeneficio,

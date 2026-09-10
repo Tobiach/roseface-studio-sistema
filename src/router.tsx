@@ -18,6 +18,7 @@ import { ReservaTransferencia } from './pages/ReservaTransferencia';
 import { Profesionales } from './pages/Profesionales';
 import { PerfilProfesional } from './pages/PerfilProfesional';
 import { AdminAgenda } from './pages/admin/AdminAgenda';
+import { AdminHorario } from './pages/admin/AdminHorario';
 import { AdminComisiones } from './pages/admin/AdminComisiones';
 import { AdminCaja } from './pages/admin/AdminCaja';
 import { AdminVIP } from './pages/admin/AdminVIP';
@@ -128,6 +129,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/admin/agenda" replace /> },
       { path: 'agenda', element: <AdminAgenda /> },
+      { path: 'horario', element: <AdminHorario /> },
       { path: 'comisiones', element: <AdminComisiones /> },
       { path: 'caja', element: <AdminCaja /> },
       { path: 'vip', element: <AdminVIP /> },
