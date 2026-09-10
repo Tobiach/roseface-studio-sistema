@@ -76,7 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const [{ data: servicio, error: servicioError }, { data: profesional, error: profesionalError }] =
       await Promise.all([
         supabaseAdmin.from('servicios').select('*').eq('id', servicioId).single(),
-        supabaseAdmin.from('profesionales').select('id, nombre, modelo_comision, alias_cbu').eq('id', profesionalId).single(),
+        supabaseAdmin.from('profesionales').select('id, nombre, modelo_comision, alias_cbu, horario_disponible').eq('id', profesionalId).single(),
       ]);
 
     if (servicioError || !servicio) {
@@ -89,6 +89,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (!servicio.profesionales_que_lo_realizan.includes(profesionalId)) {
       res.status(400).json({ error: 'Esa profesional no realiza este servicio' });
+      return;
+    }
+
+    // El horario pedido tiene que ser un horario válido de la profesional
+    // para ese día (uno de sus horarios fijos, o dentro de su ventana si no
+    // tiene fijos). Antes el server no validaba esto — solo el cliente.
+    const DIAS = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+    const diaSemana = DIAS[new Date(`${fecha}T12:00:00`).getDay()];
+    const jornada = (profesional.horario_disponible ?? {})[diaSemana] as
+      | { desde: string; hasta: string; fijos?: string[] }
+      | null
+      | undefined;
+    if (!jornada) {
+      res.status(409).json({ error: 'La profesional no atiende ese día' });
+      return;
+    }
+    const horarioValido =
+      jornada.fijos && jornada.fijos.length > 0
+        ? jornada.fijos.includes(hora)
+        : hora >= jornada.desde && hora <= jornada.hasta;
+    if (!horarioValido) {
+      res.status(409).json({ error: 'Ese horario no está disponible para esta profesional' });
       return;
     }
 
