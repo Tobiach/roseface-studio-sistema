@@ -71,7 +71,7 @@ export const mockServicios: Servicio[] = [
   },
   {
     id: 'serv-pestanas-volumen-tecnologico',
-    nombre: 'Volumen tecnológico (fibras YY)',
+    nombre: 'Volumen Tecnológico YY',
     categoria: 'Pestañas',
     descripcion: 'Fibras especiales en forma de Y para retención prolongada y efecto esponjoso.',
     duracionMinutos: 110,
@@ -93,7 +93,7 @@ export const mockServicios: Servicio[] = [
   },
   {
     id: 'serv-pestanas-brasileno-4d',
-    nombre: 'Volumen brasileño 4D',
+    nombre: 'Volumen Brasilero 4D W',
     categoria: 'Pestañas',
     descripcion: 'Técnica brasileña con fibras multidimensionales 4D de textura ultra suave.',
     duracionMinutos: 130,
@@ -104,7 +104,7 @@ export const mockServicios: Servicio[] = [
   },
   {
     id: 'serv-pestanas-brasileno-6d',
-    nombre: 'Volumen brasileño 6D',
+    nombre: 'Volumen Brasilero 6D W',
     categoria: 'Pestañas',
     descripcion: 'Efecto ultra tupido brasileño en 6D con gran densidad y ligereza.',
     duracionMinutos: 140,
@@ -163,7 +163,7 @@ export const mockServicios: Servicio[] = [
   // ===== UÑAS =====
   {
     id: 'serv-unas-semi',
-    nombre: 'Esmaltado Semipermanente',
+    nombre: 'Manicura Semipermanente',
     categoria: 'Uñas',
     descripcion: 'Limpieza de cutículas, limado y esmaltado de larga duración brillante.',
     duracionMinutos: 45,
@@ -174,7 +174,7 @@ export const mockServicios: Servicio[] = [
   },
   {
     id: 'serv-unas-esculpidas',
-    nombre: 'Uñas Esculpidas',
+    nombre: 'Esculpidas N1',
     categoria: 'Uñas',
     descripcion: 'Extensión y esculpido artesanal en gel o acrílico con acabado personalizado.',
     duracionMinutos: 90,
