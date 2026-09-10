@@ -137,7 +137,7 @@ export const Reserva: React.FC = () => {
 
   const volverACalendario = () => irAPaso(2);
 
-  // Seña fija de $20.000 para todos los servicios (regla de negocio real,
+  // Seña fija de $30.000 para todos los servicios (regla de negocio real,
   // no un porcentaje). Solo para mostrar en pantalla — el monto que
   // efectivamente se cobra lo recalcula el servidor en
   // /api/mercadopago/crear-preferencia.

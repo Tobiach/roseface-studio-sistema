@@ -13,7 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 // Duplicado a propósito de src/lib/pricing.ts: Vercel no empaqueta código
 // compartido fuera de cada función individual (mismo motivo por el que
 // getSupabaseAdmin va inline acá abajo).
-const MONTO_SENA_FIJO = 20000;
+const MONTO_SENA_FIJO = 30000;
 
 // Hold del horario mientras la clienta paga. Pasado este tiempo sin
 // confirmación, el horario se libera para otra clienta (Fase 3). El
