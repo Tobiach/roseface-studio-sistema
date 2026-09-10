@@ -12,7 +12,6 @@ import { Logo } from '../components/ui/Logo';
 import { Lightbox } from '../components/ui/Lightbox';
 import { urlFor } from '../data/trabajosFotos';
 import { Calendar, Star, MapPin, Clock, MessageCircle, Heart, Sparkles, GraduationCap, Gem, ExternalLink } from 'lucide-react';
-import heroBannerEstudio from '../assets/images/home/hero-banner-estudio.jpg';
 
 // Trabajos reales destacados en el Home — nombre de técnica = nombre real
 // del archivo (fotos provistas por Yosy, ver trabajosFotos.ts).
@@ -74,16 +73,9 @@ export const Home: React.FC = () => {
     <div className="pb-16">
       {/* 1. HERO — deseo / experiencia */}
       <section className="px-4 pt-8 sm:pt-14 max-w-4xl mx-auto">
-        <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-rf-gold/40">
-          <img
-            src={heroBannerEstudio}
-            alt="Rose Face Studio — Caballito"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          {/* Logo sobre la foto del estudio — decisión de Yosy */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-black/20 flex items-center justify-center">
-            <Logo size="xl" className="drop-shadow-xl" />
-          </div>
+        {/* Portada: solo el logo, sin foto de fondo (decisión de Yosy) */}
+        <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden border border-rf-gold/40 bg-gradient-to-br from-rf-cream via-white to-rf-blush/40 flex items-center justify-center">
+          <Logo size="xl" className="scale-[1.6] sm:scale-[2]" />
         </div>
         <div className="text-center mt-8 space-y-4">
           <p className="text-xs font-semibold tracking-[0.2em] uppercase text-rf-rose-deep">
