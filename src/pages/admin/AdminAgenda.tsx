@@ -8,9 +8,9 @@ import { Badge } from '../../components/ui/Badge';
 import { StatusPill } from '../../components/ui/StatusPill';
 import { RitualTimeline } from '../../components/ui/RitualTimeline';
 import { CalendarioGrilla } from '../../components/admin/CalendarioGrilla';
-import { formatCurrency, formatDateReadable } from '../../lib/formatters';
+import { formatCurrency, formatDateReadable, formatDateShort } from '../../lib/formatters';
 import { mensajeRecordatorio, buildWhatsAppUrlPara } from '../../lib/whatsapp';
-import { hoyISO } from '../../lib/disponibilidad';
+import { hoyISO, sumarDiasISO } from '../../lib/disponibilidad';
 import {
   CalendarDays,
   Clock,
@@ -40,6 +40,16 @@ const VENTANAS_RECORDATORIO = [
   { value: '48h', label: '48 horas antes' },
   { value: '24h', label: '24 horas antes' },
   { value: '4h', label: '4 horas antes' },
+] as const;
+
+// Presets de rango a futuro para el filtro de la agenda. "dias: N" = ventana
+// de N días de calendario arrancando hoy (hoy incluido).
+const PRESETS_RANGO = [
+  { id: 'hoy', label: 'Hoy', dias: 1 },
+  { id: 'd2', label: 'Próx. 2 días', dias: 2 },
+  { id: 'd3', label: 'Próx. 3 días', dias: 3 },
+  { id: 'd4', label: 'Próx. 4 días', dias: 4 },
+  { id: 'd7', label: 'Próx. 7 días', dias: 7 },
 ] as const;
 
 export const AdminAgenda: React.FC = () => {
@@ -124,7 +134,22 @@ export const AdminAgenda: React.FC = () => {
       })()
     : [];
 
-  const [fechaFiltro, setFechaFiltro] = useState<string>(hoyISO());
+  // Filtro de fecha: un rango [desde, hasta]. Un solo día = desde === hasta
+  // (mantiene la grilla de disponibilidad). Presets a futuro + rango libre.
+  const [desde, setDesde] = useState<string>(hoyISO());
+  const [hasta, setHasta] = useState<string>(hoyISO());
+  const [presetActivo, setPresetActivo] = useState<string>('hoy');
+  const esRango = desde !== hasta;
+  // Retrocompat: varias partes de abajo usaban "fechaFiltro" como el día foco.
+  const fechaFiltro = desde;
+
+  const aplicarPreset = (preset: (typeof PRESETS_RANGO)[number]) => {
+    const hoy = hoyISO();
+    setDesde(hoy);
+    setHasta(sumarDiasISO(hoy, preset.dias - 1));
+    setPresetActivo(preset.id);
+  };
+
   const [profesionalFiltro, setProfesionalFiltro] = useState<string>('todos');
   const [turnoSeleccionadoModal, setTurnoSeleccionadoModal] = useState<Turno | null>(null);
 
@@ -140,13 +165,28 @@ export const AdminAgenda: React.FC = () => {
   // Un profesional solo ve su propia agenda — el filtro queda fijo en su id
   const profesionalFiltroEfectivo = esProfesional ? profesionalActivoId ?? 'todos' : profesionalFiltro;
 
-  // Filter turnos by date and professional
-  const turnosFiltrados = turnos.filter((t) => {
-    const coincideFecha = t.fecha === fechaFiltro;
-    const coincideProf =
-      profesionalFiltroEfectivo === 'todos' ? true : t.profesionalId === profesionalFiltroEfectivo;
-    return coincideFecha && coincideProf;
-  });
+  // Filter turnos by date range and professional, ordenados por fecha + hora
+  const turnosFiltrados = turnos
+    .filter((t) => {
+      const coincideFecha = t.fecha >= desde && t.fecha <= hasta;
+      const coincideProf =
+        profesionalFiltroEfectivo === 'todos' ? true : t.profesionalId === profesionalFiltroEfectivo;
+      return coincideFecha && coincideProf;
+    })
+    .sort((a, b) => (a.fecha === b.fecha ? a.horaInicio.localeCompare(b.horaInicio) : a.fecha.localeCompare(b.fecha)));
+
+  // Turnos agrupados por día (para la vista de rango)
+  const turnosPorDia: Record<string, Turno[]> = {};
+  for (const t of turnosFiltrados) {
+    (turnosPorDia[t.fecha] ||= []).push(t);
+  }
+
+  const bloqueosDelRango = bloqueos.filter(
+    (b) =>
+      b.fecha >= desde &&
+      b.fecha <= hasta &&
+      (profesionalFiltroEfectivo === 'todos' || b.profesionalId === profesionalFiltroEfectivo)
+  );
 
   const getClientaNombre = (id: string) => {
     const c = clientas.find((cli) => cli.id === id);
@@ -190,6 +230,62 @@ export const AdminAgenda: React.FC = () => {
     setBloqueoMotivo('');
   };
 
+  const renderTurnoCard = (turno: Turno) => {
+    const prof = getProfesional(turno.profesionalId);
+    const isCancelled = turno.estado.startsWith('cancelado');
+    return (
+      <Card
+        key={turno.id}
+        hoverable
+        onClick={() => setTurnoSeleccionadoModal(turno)}
+        className={`space-y-3 border-l-4 ${
+          turno.estado === 'completado'
+            ? 'border-l-emerald-500'
+            : turno.estado === 'sena_confirmada' || turno.estado === 'recordatorio_enviado'
+            ? 'border-l-rf-gold-bright'
+            : isCancelled
+            ? 'border-l-rf-danger'
+            : 'border-l-amber-300'
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <div className="bg-pink-50 px-3 py-1.5 rounded-xl border border-pink-100 text-center shrink-0">
+              <span className="font-bold text-rf-rose-deep text-sm block">{turno.horaInicio}</span>
+              <span className="text-[10px] text-rf-charcoal block">hs</span>
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-rf-black">{getClientaNombre(turno.clientaId)}</h3>
+              <p className="text-xs text-rf-charcoal">
+                {getServicioNombre(turno.servicioId)} •{' '}
+                <span className="font-semibold text-rf-rose-deep">{prof?.nombre}</span>
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <StatusPill estado={turno.estado} />
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-pink-100/60 flex items-center justify-between text-xs">
+          <RitualTimeline estado={turno.estado} compact />
+          <div className="text-right shrink-0">
+            <span className="text-[10px] text-gray-400 block font-medium">Seña / Total</span>
+            <span className="font-bold text-rf-black">
+              {formatCurrency(turno.montoSena)} / {formatCurrency(turno.montoTotal)}
+            </span>
+          </div>
+        </div>
+
+        {turno.notasInternas && (
+          <p className="text-[11px] bg-rf-cream p-2 rounded-lg text-rf-charcoal italic border border-pink-100">
+            💬 {turno.notasInternas}
+          </p>
+        )}
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-8 font-admin">
       {/* Header */}
@@ -209,13 +305,6 @@ export const AdminAgenda: React.FC = () => {
 
         {/* Action Controls */}
         <div className="flex items-center gap-3">
-          <input
-            type="date"
-            value={fechaFiltro}
-            onChange={(e) => setFechaFiltro(e.target.value)}
-            className="px-3.5 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep shadow-2xs"
-          />
-
           {esProfesional ? (
             <span className="px-3.5 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white text-rf-rose-deep">
               {profesionales.find((p) => p.id === profesionalActivoId)?.nombre ?? 'Mi agenda'}
@@ -250,36 +339,136 @@ export const AdminAgenda: React.FC = () => {
         </div>
       </div>
 
+      {/* Filtro de fecha — presets a futuro + rango libre (estilo panel de anuncios) */}
+      <div className="bg-white border border-pink-100 rounded-2xl p-4 space-y-3 shadow-2xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Filter className="w-4 h-4 text-rf-rose-deep shrink-0" />
+          {PRESETS_RANGO.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => aplicarPreset(p)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+                presetActivo === p.id
+                  ? 'bg-rf-rose-deep text-white border-rf-rose-deep'
+                  : 'bg-white text-rf-charcoal border-pink-200 hover:border-rf-rose'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+          <button
+            onClick={() => setPresetActivo('rango')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+              presetActivo === 'rango'
+                ? 'bg-rf-rose-deep text-white border-rf-rose-deep'
+                : 'bg-white text-rf-charcoal border-pink-200 hover:border-rf-rose'
+            }`}
+          >
+            Rango a elección
+          </button>
+        </div>
+
+        {presetActivo === 'rango' && (
+          <div className="flex items-end gap-3 flex-wrap pt-1">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-rf-charcoal block mb-1">Desde</label>
+              <input
+                type="date"
+                value={desde}
+                min={hoyISO()}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setDesde(v);
+                  if (v > hasta) setHasta(v);
+                }}
+                className="px-3 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-rf-charcoal block mb-1">Hasta</label>
+              <input
+                type="date"
+                value={hasta}
+                min={desde}
+                onChange={(e) => setHasta(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep"
+              />
+            </div>
+          </div>
+        )}
+
+        <p className="text-[11px] text-rf-charcoal">
+          {esRango ? (
+            <>Mostrando <strong className="text-rf-black">{formatDateShort(desde)}</strong> al <strong className="text-rf-black">{formatDateShort(hasta)}</strong> · {turnosFiltrados.length} turno{turnosFiltrados.length === 1 ? '' : 's'}</>
+          ) : (
+            <>Mostrando <strong className="text-rf-black">{formatDateReadable(desde)}</strong> · {turnosFiltrados.length} turno{turnosFiltrados.length === 1 ? '' : 's'}</>
+          )}
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Agenda Timeline (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
-          <div className="space-y-3">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-rf-charcoal">
-              Disponibilidad — {formatDateReadable(fechaFiltro)}
-            </h2>
-            <CalendarioGrilla
-              profesionales={profesionalesParaGrilla}
-              fecha={fechaFiltro}
-              turnos={turnos}
-              bloqueos={bloqueos}
-              onSeleccionarTurno={setTurnoSeleccionadoModal}
-              getClientaNombre={getClientaNombre}
-            />
-          </div>
+          {esRango ? (
+            <div className="space-y-3">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-rf-charcoal">
+                Resumen por día — {formatDateShort(desde)} al {formatDateShort(hasta)}
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {Object.keys(turnosPorDia).length === 0 ? (
+                  <p className="text-xs text-rf-charcoal col-span-full">Sin turnos en el período.</p>
+                ) : (
+                  Object.entries(turnosPorDia).map(([dia, lista]) => (
+                    <button
+                      key={dia}
+                      onClick={() => {
+                        setDesde(dia);
+                        setHasta(dia);
+                        setPresetActivo('rango');
+                      }}
+                      className="text-left bg-white border border-pink-100 rounded-xl px-3 py-2 hover:border-rf-rose transition-colors cursor-pointer"
+                    >
+                      <span className="block text-[11px] font-bold text-rf-black capitalize">{formatDateReadable(dia)}</span>
+                      <span className="block text-[11px] text-rf-charcoal">{lista.length} turno{lista.length === 1 ? '' : 's'}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+              <p className="text-[11px] text-rf-charcoal italic">
+                La grilla de disponibilidad por hora se ve al filtrar un solo día (tocá un día de arriba o usá el preset "Hoy").
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-rf-charcoal">
+                Disponibilidad — {formatDateReadable(fechaFiltro)}
+              </h2>
+              <CalendarioGrilla
+                profesionales={profesionalesParaGrilla}
+                fecha={fechaFiltro}
+                turnos={turnos}
+                bloqueos={bloqueos}
+                onSeleccionarTurno={setTurnoSeleccionadoModal}
+                getClientaNombre={getClientaNombre}
+              />
+            </div>
+          )}
 
-          {/* Bloqueos activos del día — con opción de sacarlos */}
-          {bloqueos.filter((b) => b.fecha === fechaFiltro && (profesionalFiltroEfectivo === 'todos' || b.profesionalId === profesionalFiltroEfectivo)).length > 0 && (
+          {/* Bloqueos activos del período — con opción de sacarlos */}
+          {bloqueosDelRango.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-rf-charcoal">Bloqueos de hoy</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-rf-charcoal">
+                {esRango ? 'Bloqueos del período' : 'Bloqueos del día'}
+              </h3>
               <div className="space-y-2">
-                {bloqueos
-                  .filter((b) => b.fecha === fechaFiltro && (profesionalFiltroEfectivo === 'todos' || b.profesionalId === profesionalFiltroEfectivo))
+                {bloqueosDelRango
                   .map((b) => (
                     <div
                       key={b.id}
                       className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs"
                     >
                       <span className="text-rf-charcoal">
+                        {esRango && <strong className="text-rf-black">{formatDateShort(b.fecha)} · </strong>}
                         <strong className="text-rf-black">{getProfesional(b.profesionalId)?.nombre}</strong>
                         {' — '}
                         {b.diaCompleto ? 'Todo el día' : `${b.horaInicio} a ${b.horaFin} hs`}
@@ -307,76 +496,24 @@ export const AdminAgenda: React.FC = () => {
           {turnosFiltrados.length === 0 ? (
             <Card className="text-center py-12 space-y-3">
               <CalendarDays className="w-10 h-10 text-pink-300 mx-auto" />
-              <p className="text-sm font-semibold text-rf-black">No hay turnos agendados para este día</p>
+              <p className="text-sm font-semibold text-rf-black">
+                No hay turnos agendados para {esRango ? 'este período' : 'este día'}
+              </p>
               <p className="text-xs text-rf-charcoal">Elegí otra fecha o quitá el filtro de profesional.</p>
             </Card>
-          ) : (
-            <div className="space-y-4">
-              {turnosFiltrados.map((turno) => {
-                const prof = getProfesional(turno.profesionalId);
-                const isCancelled = turno.estado.startsWith('cancelado');
-
-                return (
-                  <Card
-                    key={turno.id}
-                    hoverable
-                    onClick={() => setTurnoSeleccionadoModal(turno)}
-                    className={`space-y-3 border-l-4 ${
-                      turno.estado === 'completado'
-                        ? 'border-l-emerald-500'
-                        : turno.estado === 'sena_confirmada' || turno.estado === 'recordatorio_enviado'
-                        ? 'border-l-rf-gold-bright'
-                        : isCancelled
-                        ? 'border-l-rf-danger'
-                        : 'border-l-amber-300'
-                    }`}
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-pink-50 px-3 py-1.5 rounded-xl border border-pink-100 text-center shrink-0">
-                          <span className="font-bold text-rf-rose-deep text-sm block">
-                            {turno.horaInicio}
-                          </span>
-                          <span className="text-[10px] text-rf-charcoal block">hs</span>
-                        </div>
-
-                        <div>
-                          <h3 className="font-bold text-sm text-rf-black">
-                            {getClientaNombre(turno.clientaId)}
-                          </h3>
-                          <p className="text-xs text-rf-charcoal">
-                            {getServicioNombre(turno.servicioId)} •{' '}
-                            <span className="font-semibold text-rf-rose-deep">{prof?.nombre}</span>
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <StatusPill estado={turno.estado} />
-                      </div>
-                    </div>
-
-                    {/* Compact Ritual Timeline Signature Element */}
-                    <div className="pt-2 border-t border-pink-100/60 flex items-center justify-between text-xs">
-                      <RitualTimeline estado={turno.estado} compact />
-
-                      <div className="text-right shrink-0">
-                        <span className="text-[10px] text-gray-400 block font-medium">Seña / Total</span>
-                        <span className="font-bold text-rf-black">
-                          {formatCurrency(turno.montoSena)} / {formatCurrency(turno.montoTotal)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {turno.notasInternas && (
-                      <p className="text-[11px] bg-rf-cream p-2 rounded-lg text-rf-charcoal italic border border-pink-100">
-                        💬 {turno.notasInternas}
-                      </p>
-                    )}
-                  </Card>
-                );
-              })}
+          ) : esRango ? (
+            <div className="space-y-6">
+              {Object.entries(turnosPorDia).map(([dia, lista]) => (
+                <div key={dia} className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-rf-rose-deep capitalize sticky top-0 bg-rf-cream/95 py-1">
+                    {formatDateReadable(dia)} · {lista.length} turno{lista.length === 1 ? '' : 's'}
+                  </h3>
+                  <div className="space-y-4">{lista.map(renderTurnoCard)}</div>
+                </div>
+              ))}
             </div>
+          ) : (
+            <div className="space-y-4">{turnosFiltrados.map(renderTurnoCard)}</div>
           )}
         </div>
 
@@ -509,7 +646,9 @@ export const AdminAgenda: React.FC = () => {
           {/* Quick Stats Widget */}
           <Card className="space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-rf-charcoal">
-              Resumen del Día ({fechaFiltro})
+              {esRango
+                ? `Resumen del período (${formatDateShort(desde)} – ${formatDateShort(hasta)})`
+                : `Resumen del día (${fechaFiltro})`}
             </h3>
 
             <div className="space-y-2 text-xs">
@@ -518,7 +657,7 @@ export const AdminAgenda: React.FC = () => {
                 <span className="font-bold text-rf-black">{turnosFiltrados.length}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-pink-100">
-                <span className="text-rf-charcoal">Señas Cobradas Hoy:</span>
+                <span className="text-rf-charcoal">{esRango ? 'Señas cobradas:' : 'Señas cobradas hoy:'}</span>
                 <span className="font-bold text-emerald-700">
                   {formatCurrency(
                     turnosFiltrados.reduce((sum, t) => sum + t.montoSena, 0)

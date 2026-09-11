@@ -40,9 +40,14 @@ export function hoyISO(): string {
 
 // Fecha ISO de mañana — default del calendario de reserva.
 export function mananaISO(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return sumarDiasISO(hoyISO(), 1);
+}
+
+// Suma (o resta, con n negativo) días de calendario a una fecha ISO "YYYY-MM-DD".
+export function sumarDiasISO(iso: string, n: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const fecha = new Date(y, m - 1, d + n);
+  return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
 }
 
 function hoyYAhora(): { hoy: string; ahora: string } {
