@@ -10,7 +10,7 @@ import { RitualTimeline } from '../../components/ui/RitualTimeline';
 import { CalendarioGrilla } from '../../components/admin/CalendarioGrilla';
 import { formatCurrency, formatDateReadable, formatDateShort } from '../../lib/formatters';
 import { mensajeRecordatorio, buildWhatsAppUrlPara } from '../../lib/whatsapp';
-import { hoyISO, sumarDiasISO } from '../../lib/disponibilidad';
+import { hoyISO, sumarDiasISO, calcularHorariosDisponibles, sumarMinutos } from '../../lib/disponibilidad';
 import {
   CalendarDays,
   Clock,
@@ -23,7 +23,6 @@ import {
   RefreshCw,
   Search,
   MessageSquare,
-  CalendarCheck,
   Landmark,
   FileImage,
   Ban,
@@ -63,6 +62,7 @@ export const AdminAgenda: React.FC = () => {
     rolActivo,
     profesionalActivoId,
     actualizarEstadoTurno,
+    reprogramarTurno,
     aprobarComprobante,
     crearBloqueo,
     eliminarBloqueo,
@@ -151,7 +151,13 @@ export const AdminAgenda: React.FC = () => {
   };
 
   const [profesionalFiltro, setProfesionalFiltro] = useState<string>('todos');
+  const [busqueda, setBusqueda] = useState<string>('');
   const [turnoSeleccionadoModal, setTurnoSeleccionadoModal] = useState<Turno | null>(null);
+
+  // Reprogramar turno (desde el modal)
+  const [reprogramando, setReprogramando] = useState(false);
+  const [nuevaFecha, setNuevaFecha] = useState<string>('');
+  const [nuevaHora, setNuevaHora] = useState<string>('');
 
   // Bloqueo manual de horario (Fase 6)
   const [modalBloqueoAbierto, setModalBloqueoAbierto] = useState(false);
@@ -165,13 +171,21 @@ export const AdminAgenda: React.FC = () => {
   // Un profesional solo ve su propia agenda — el filtro queda fijo en su id
   const profesionalFiltroEfectivo = esProfesional ? profesionalActivoId ?? 'todos' : profesionalFiltro;
 
-  // Filter turnos by date range and professional, ordenados por fecha + hora
+  const q = busqueda.trim().toLowerCase();
+
+  // Filter turnos by date range, professional y búsqueda por clienta, ordenados por fecha + hora
   const turnosFiltrados = turnos
     .filter((t) => {
       const coincideFecha = t.fecha >= desde && t.fecha <= hasta;
       const coincideProf =
         profesionalFiltroEfectivo === 'todos' ? true : t.profesionalId === profesionalFiltroEfectivo;
-      return coincideFecha && coincideProf;
+      if (!coincideFecha || !coincideProf) return false;
+      if (!q) return true;
+      const c = clientas.find((cli) => cli.id === t.clientaId);
+      return (
+        (c?.nombre ?? '').toLowerCase().includes(q) ||
+        (c?.telefono ?? '').toLowerCase().includes(q)
+      );
     })
     .sort((a, b) => (a.fecha === b.fecha ? a.horaInicio.localeCompare(b.horaInicio) : a.fecha.localeCompare(b.fecha)));
 
@@ -187,6 +201,46 @@ export const AdminAgenda: React.FC = () => {
       b.fecha <= hasta &&
       (profesionalFiltroEfectivo === 'todos' || b.profesionalId === profesionalFiltroEfectivo)
   );
+
+  // Cola de recordatorios: por cada turno futuro del filtro, la ventana
+  // (48h/24h/4h) que ya entró en tiempo y todavía no se activó — solo la más
+  // urgente, para que Yosy tenga una lista corta y accionable.
+  const VENTANAS_HORAS: Record<'48h' | '24h' | '4h', number> = { '48h': 48, '24h': 24, '4h': 4 };
+  const recordatoriosPendientes: { turno: Turno; ventana: (typeof VENTANAS_RECORDATORIO)[number]; horasFaltan: number }[] = [];
+  if (!esProfesional) {
+    const ahoraMs = Date.now();
+    for (const t of turnosFiltrados) {
+      if (t.estado.startsWith('cancelado') || t.estado === 'completado') continue;
+      const inicioMs = new Date(`${t.fecha}T${t.horaInicio}:00`).getTime();
+      const horasFaltan = (inicioMs - ahoraMs) / 3_600_000;
+      if (horasFaltan <= 0) continue;
+      const dueUnsent = VENTANAS_RECORDATORIO.filter((v) => {
+        if (horasFaltan > VENTANAS_HORAS[v.value]) return false;
+        const cfg = recordatoriosConfig.find((r) => r.turnoId === t.id && r.plantilla === v.value);
+        return !cfg?.activado;
+      });
+      if (dueUnsent.length === 0) continue;
+      const ventana = dueUnsent.reduce((a, b) => (VENTANAS_HORAS[a.value] <= VENTANAS_HORAS[b.value] ? a : b));
+      recordatoriosPendientes.push({ turno: t, ventana, horasFaltan });
+    }
+    recordatoriosPendientes.sort((a, b) => a.horasFaltan - b.horasFaltan);
+  }
+
+  const enviarRecordatorio = (turno: Turno, plantilla: '48h' | '24h' | '4h') => {
+    toggleRecordatorio(turno.id, plantilla, true);
+    const clienta = clientas.find((c) => c.id === turno.clientaId);
+    if (!clienta) {
+      showToast('❌ No encontramos el teléfono de la clienta.');
+      return;
+    }
+    const mensaje = mensajeRecordatorio(plantilla, {
+      nombreClienta: clienta.nombre,
+      servicio: getServicioNombre(turno.servicioId),
+      fecha: formatDateReadable(turno.fecha),
+      hora: turno.horaInicio,
+    });
+    window.open(buildWhatsAppUrlPara(clienta.telefono, mensaje), '_blank');
+  };
 
   const getClientaNombre = (id: string) => {
     const c = clientas.find((cli) => cli.id === id);
@@ -294,9 +348,6 @@ export const AdminAgenda: React.FC = () => {
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="gold">Gestión Diaria</Badge>
             <span className="text-xs text-rf-charcoal font-medium">Control.Evo Engine</span>
-            <Badge variant="success" icon={<CalendarCheck className="w-3 h-3" />}>
-              Sincronizado con Google Calendar
-            </Badge>
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-rf-black mt-1">
             {esProfesional ? 'Mi Agenda' : 'Agenda del Studio'}
@@ -366,6 +417,17 @@ export const AdminAgenda: React.FC = () => {
           >
             Rango a elección
           </button>
+
+          <div className="relative ml-auto">
+            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar clienta o teléfono..."
+              className="pl-8 pr-3 py-1.5 rounded-lg text-xs font-medium border border-pink-200 bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep w-48"
+            />
+          </div>
         </div>
 
         {presetActivo === 'rango' && (
@@ -627,19 +689,43 @@ export const AdminAgenda: React.FC = () => {
             </Card>
           )}
 
-          {/* Yosy Recordatorios (Fase 7): la activación es por turno, desde
-              el modal de cada uno — este card es solo la explicación. */}
+          {/* Yosy Recordatorios (Fase 7): cola de lo que hay que mandar YA,
+              juntando los turnos del filtro actual — 1 click abre WhatsApp
+              con el mensaje ya armado. */}
           {!esProfesional && (
-            <Card className="bg-gradient-to-b from-amber-50/60 via-white to-white space-y-2 border border-amber-200">
+            <Card className="bg-gradient-to-b from-amber-50/60 via-white to-white space-y-3 border border-amber-200">
               <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
                 <Sparkles className="w-4 h-4 text-rf-gold-bright" />
-                <span>Yosy Recordatorios</span>
+                <span>Yosy Recordatorios {recordatoriosPendientes.length > 0 ? `(${recordatoriosPendientes.length})` : ''}</span>
               </div>
-              <p className="text-[11px] text-amber-900/90 leading-relaxed">
-                Tocá un turno para activar sus recordatorios (48h / 24h / 4h antes). Se activan uno
-                por uno, por turno — todavía no manda WhatsApp real, queda registrado como
-                "✓ Activado" para cuando se conecte el envío.
-              </p>
+
+              {recordatoriosPendientes.length === 0 ? (
+                <p className="text-[11px] text-amber-900/90 leading-relaxed">
+                  No hay recordatorios pendientes en el rango filtrado. Se activan por turno
+                  (48h / 24h / 4h antes) y quedan acá hasta que los mandes por WhatsApp.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {recordatoriosPendientes.map(({ turno, ventana, horasFaltan }) => {
+                    const clienta = clientas.find((c) => c.id === turno.clientaId);
+                    return (
+                      <div key={`${turno.id}-${ventana.value}`} className="bg-white rounded-xl border border-amber-200 p-2.5 space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-rf-black">{clienta?.nombre ?? 'Clienta'}</span>
+                          <Badge variant="warning" size="sm">{ventana.label}</Badge>
+                        </div>
+                        <p className="text-[10px] text-rf-charcoal">
+                          {formatDateReadable(turno.fecha)} {turno.horaInicio} hs · en {Math.round(horasFaltan)}h
+                        </p>
+                        <Button variant="primary" size="sm" fullWidth onClick={() => enviarRecordatorio(turno, ventana.value)}>
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>Enviar por WhatsApp</span>
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </Card>
           )}
 
@@ -691,7 +777,10 @@ export const AdminAgenda: React.FC = () => {
                 </h3>
               </div>
               <button
-                onClick={() => setTurnoSeleccionadoModal(null)}
+                onClick={() => {
+                  setTurnoSeleccionadoModal(null);
+                  setReprogramando(false);
+                }}
                 className="text-gray-400 hover:text-rf-black cursor-pointer"
               >
                 ✕
@@ -715,6 +804,73 @@ export const AdminAgenda: React.FC = () => {
               </p>
             </div>
 
+            {reprogramando ? (
+              (() => {
+                const profReprog = getProfesional(turnoSeleccionadoModal.profesionalId);
+                const servReprog = servicios.find((s) => s.id === turnoSeleccionadoModal.servicioId);
+                const horariosReprog =
+                  profReprog && servReprog && nuevaFecha
+                    ? calcularHorariosDisponibles(profReprog, nuevaFecha, servReprog.duracionMinutos, turnos, bloqueos)
+                    : [];
+                return (
+                  <div className="space-y-3 pt-2 border-t border-pink-100">
+                    <label className="text-xs font-bold text-rf-black block">Reprogramar a:</label>
+                    <input
+                      type="date"
+                      value={nuevaFecha}
+                      min={hoyISO()}
+                      onChange={(e) => {
+                        setNuevaFecha(e.target.value);
+                        setNuevaHora('');
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-pink-200 text-xs font-semibold"
+                    />
+                    {nuevaFecha && (
+                      horariosReprog.length === 0 ? (
+                        <p className="text-[11px] text-rf-charcoal bg-rf-cream border border-pink-100 rounded-xl p-2">
+                          {profReprog?.nombre} no tiene horarios libres ese día. Probá otra fecha.
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {horariosReprog.map((h) => (
+                            <button
+                              key={h}
+                              onClick={() => setNuevaHora(h)}
+                              className={`py-2 rounded-lg text-xs font-bold border cursor-pointer ${
+                                nuevaHora === h
+                                  ? 'bg-rf-rose-deep text-white border-rf-rose-deep'
+                                  : 'bg-white text-rf-black border-pink-200 hover:border-rf-rose'
+                              }`}
+                            >
+                              {h}
+                            </button>
+                          ))}
+                        </div>
+                      )
+                    )}
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <Button variant="ghost" size="sm" onClick={() => setReprogramando(false)}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        disabled={!nuevaFecha || !nuevaHora || !servReprog}
+                        onClick={async () => {
+                          if (!servReprog) return;
+                          const horaFin = sumarMinutos(nuevaHora, servReprog.duracionMinutos);
+                          await reprogramarTurno(turnoSeleccionadoModal.id, nuevaFecha, nuevaHora, horaFin);
+                          setReprogramando(false);
+                          setTurnoSeleccionadoModal(null);
+                        }}
+                      >
+                        Confirmar nueva fecha
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
             <div className="space-y-2 pt-2 border-t border-pink-100">
               <label className="text-xs font-bold text-rf-black block">
                 Cambiar Estado del Turno:
@@ -745,6 +901,20 @@ export const AdminAgenda: React.FC = () => {
                 </Button>
 
                 <Button
+                  variant="outline"
+                  size="sm"
+                  className="col-span-2"
+                  onClick={() => {
+                    setNuevaFecha(turnoSeleccionadoModal.fecha);
+                    setNuevaHora('');
+                    setReprogramando(true);
+                  }}
+                >
+                  <CalendarDays className="w-3.5 h-3.5 text-rf-rose-deep" />
+                  <span>Reprogramar turno</span>
+                </Button>
+
+                <Button
                   variant="danger"
                   size="sm"
                   className="col-span-2"
@@ -757,6 +927,7 @@ export const AdminAgenda: React.FC = () => {
                 </Button>
               </div>
             </div>
+            )}
 
             {/* Yosy Recordatorios por turno (Fase 7) — 2 clicks: activar acá
                 abre WhatsApp con el mensaje ya armado, listo para enviar. */}
@@ -820,7 +991,10 @@ export const AdminAgenda: React.FC = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setTurnoSeleccionadoModal(null)}
+                onClick={() => {
+                  setTurnoSeleccionadoModal(null);
+                  setReprogramando(false);
+                }}
               >
                 Cerrar
               </Button>

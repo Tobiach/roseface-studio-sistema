@@ -49,6 +49,7 @@ interface AppContextType {
   showToast: (msg: string) => void;
   crearTurno: (data: Omit<Turno, 'id' | 'fechaCreacion'>) => Promise<Turno>;
   actualizarEstadoTurno: (id: string, nuevoEstado: EstadoTurno, notasInternas?: string) => Promise<void>;
+  reprogramarTurno: (id: string, fecha: string, horaInicio: string, horaFin: string) => Promise<void>;
   subirComprobante: (turnoId: string, file: File) => Promise<void>;
   aprobarComprobante: (turnoId: string) => Promise<void>;
   crearBloqueo: (data: Omit<BloqueoHorario, 'id'>) => Promise<void>;
@@ -294,6 +295,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Estado de turno actualizado a: ${nuevoEstado.replace('_', ' ')}`);
   };
 
+  // Mover un turno a otra fecha/hora sin perder la seña ni el estado.
+  const reprogramarTurno = async (id: string, fecha: string, horaInicio: string, horaFin: string) => {
+    if (supabaseEnabled && supabase) {
+      const { error } = await supabase
+        .from('turnos')
+        .update({ fecha, hora_inicio: horaInicio, hora_fin: horaFin })
+        .eq('id', id);
+      if (error) {
+        showToast('❌ No se pudo reprogramar el turno.');
+        return;
+      }
+    }
+    setTurnos((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, fecha, horaInicio, horaFin } : t))
+    );
+    showToast('✓ Turno reprogramado');
+  };
+
   // Circuito de transferencia (Fase 5): la clienta sube su comprobante
   // directo a Supabase Storage y lo asocia al turno — todavía no confirma
   // el turno, eso lo hace la profesional al aprobarlo.
@@ -523,6 +542,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showToast,
         crearTurno,
         actualizarEstadoTurno,
+        reprogramarTurno,
         subirComprobante,
         aprobarComprobante,
         crearBloqueo,
