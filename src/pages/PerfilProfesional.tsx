@@ -146,12 +146,12 @@ export const PerfilProfesional: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 className="font-display text-2xl font-bold text-rf-black">
-                {esCamila ? 'Equipamiento & Gabinete' : 'Galería de Trabajos Realizados'}
+                {esCamila ? 'Equipamiento & Gabinete' : 'Estilos y Técnicas que Trabajamos'}
               </h2>
               <p className="text-xs text-rf-charcoal">
                 {esCamila
                   ? 'Gabinete equipado con máquina Soprano Ice de última generación.'
-                  : `Muestra de técnicas y resultados reales de ${prof.nombre}.`}
+                  : `Ejemplos reales de ${prof.especialidades.join(' y ')} que hacemos en el estudio.`}
               </p>
             </div>
 
@@ -171,12 +171,12 @@ export const PerfilProfesional: React.FC = () => {
               >
                 <img
                   src={imgUrl}
-                  alt={`Trabajo de ${prof.nombre} ${idx + 1}`}
+                  alt={esCamila ? `Equipamiento ${idx + 1}` : `Ejemplo de trabajo ${idx + 1} — ${prof.especialidades[0] ?? 'estudio'}`}
                   className="w-full h-full object-cover filter brightness-[1.02] contrast-[1.03] saturate-[1.05] group-hover:scale-105 transition-transform duration-300"
                 />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-3">
                   <span className="text-[10px] text-white font-medium bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-xs">
-                    {esCamila ? 'Equipamiento Soprano Ice' : `${prof.nombre} — Trabajo real`}
+                    {esCamila ? 'Equipamiento Soprano Ice' : 'Ejemplo del estudio'}
                   </span>
                   <Expand className="w-4 h-4 text-white shrink-0" />
                 </div>
@@ -192,7 +192,7 @@ export const PerfilProfesional: React.FC = () => {
           indiceActivo={imagenActiva}
           onCerrar={() => setImagenActiva(null)}
           onCambiarIndice={setImagenActiva}
-          alt={`Trabajo de ${prof.nombre}`}
+          alt={esCamila ? 'Equipamiento' : `Ejemplo de trabajo — ${prof.especialidades[0] ?? 'estudio'}`}
         />
       )}
     </div>

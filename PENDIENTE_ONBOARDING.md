@@ -29,9 +29,29 @@ cargar y dónde impacta.
 
 - **Nombre y apellido real completo** — hoy se muestra el apodo en todos
   lados; interno, no bloquea nada.
-- **Foto de perfil, video de presentación, fotos de trabajos realizados**
-  — placeholder deliberado por ahora (se salteó a pedido explícito para
-  agilizar el arranque del sistema).
+- **Foto de perfil** — Yosy mandó por Drive 6 fotos reales del equipo
+  (18/9/2026). Solo pudimos confirmar 1 con certeza por texto en la propia
+  foto (remera "ANYE — BEAUTY STUDIO" → ya cargada como `prof-martina`).
+  Las otras 5 quedaron guardadas sin usar en
+  `src/assets/images/profesionales/pendientes/` (nombradas por rasgos
+  visuales) — **hay que preguntarle a Yosy cuál es cuál** antes de
+  asignarlas a Mili/Sharon/Cris/Ariannys/ella misma, para no ponerle la
+  cara de una persona equivocada a otra. `prof-yosy.jpg` hoy es solo el
+  logo del estudio, no una foto de ella — la más urgente de resolver.
+- **Trabajos realizados por profesional**: decisión de Yosy (18/9/2026) —
+  ninguna profesional tiene portfolio propio. Ya se sacó el copy que decía
+  "Trabajo real de {nombre}" / "Galería de Trabajos Realizados" de
+  `PerfilProfesional.tsx` — ahora dice "Estilos y Técnicas que Trabajamos"
+  / "Ejemplo del estudio", genérico por categoría (especialidad), no por
+  persona. La segmentación de fotos por profesional en
+  `trabajosFotos.ts` se mantiene (es solo "qué técnicas hace ella", no
+  atribución de autoría).
+- **Video de presentación** — Yosy mandó 3 videos sin nombre (.mov, ~80MB
+  c/u) el 18/9/2026. Pesados para meter directo al repo/build de Vercel y
+  sin forma de identificar el contenido sin verlos enteros. Pendiente:
+  preguntarle a Yosy qué muestra cada uno, y subirlos a un host de video
+  (YouTube sin listar, Supabase Storage o similar) en vez de commitear el
+  archivo — así no infla el bundle del sitio.
 - **Días y horarios de trabajo reales** — los cargados en el seed de
   Supabase (`profesionales.horario_disponible`) son un supuesto inicial,
   no confirmados una por una con cada profesional. Esto alimenta
