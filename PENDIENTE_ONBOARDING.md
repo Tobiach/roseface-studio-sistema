@@ -34,16 +34,16 @@ cargar y dónde impacta.
   se confirmaron y ya están cargadas: Anye (por su remera "ANYE — BEAUTY
   STUDIO"), Mili, Cris y **Yosy** (`prof-yosy.jpg` ya no es el logo, es su
   foto real).
-  ⚠️ **Quedan 2 fotos sin usar y hay una inconsistencia real en el
-  etiquetado de Yosy**: dos fotos de personas distintas (una con
-  frenillos y mechón rosa, otra sin frenillos con un lunar cerca de la
-  boca y buzo "Roseface by Yosy") están **las dos nombradas "Ari"** en su
-  Drive, y **ninguna foto ni video de toda la carpeta está nombrado
-  "Sharon"**. O tiene 2 fotos de Ariannys y se olvidó la de Sharon, o una
-  de las dos "Ari" es en realidad Sharon. Hay que preguntarle directo
-  (describir: ¿cuál tiene frenillos, es Ariannys? ¿la otra es Sharon?).
-  Quedan en `src/assets/images/profesionales/pendientes/` hasta que
-  responda.
+  ✅ **21/9/2026 — Ariannys confirmada**: Yosy renombró en Drive la foto
+  "Ari " (buzo Roseface + lunar cerca de la boca) a **"Ariannys"** — ya
+  cargada en `prof-alexandra.jpg`.
+  ⚠️ **Queda 1 foto sin usar, todavía ambigua**: la otra ("Ari" original
+  — mechón rosa + frenillos, sin buzo del estudio) sigue sin nombre claro
+  en Drive. Combinado con que **ninguna foto ni video de toda la carpeta
+  está nombrado "Sharon"**, cada vez pesa más la hipótesis de que Sharon
+  puede no estar en el equipo — hay que preguntárselo directo a Yosy, no
+  asumir. Queda en `src/assets/images/profesionales/pendientes/` hasta
+  que responda.
 - **Trabajos realizados por profesional**: decisión de Yosy (18/9/2026) —
   ninguna profesional tiene portfolio propio. Ya se sacó el copy que decía
   "Trabajo real de {nombre}" / "Galería de Trabajos Realizados" de
@@ -66,16 +66,15 @@ cargar y dónde impacta.
   Tobias fallaban (quedaron en "Privado" en vez de "Oculto" al subirlos)
   — los volvió a publicar y ahí sí cargaron; los títulos reales los leí
   con la API oEmbed de YouTube, no adivinados.
-  ⚠️ **Falta Yosy y Sharon, y persiste la ambigüedad de "Ari" x2**: de
-  los 4 links de este lote, uno (`DC9s9AGWOCI`) se llama solo "video ari"
-  — nombre duplicado con el que ya se usó para Ariannys. Es la MISMA
-  situación que ya pasó con las fotos de perfil (dos fotos nombradas
-  "Ari", cero nombradas "Sharon") — repetirse en dos lotes de contenido
-  distintos hace pensar que puede no ser un typo: **quizás Sharon ya no
-  está en el equipo**. Hay que preguntárselo directo a Yosy, no asumir.
-  `DC9s9AGWOCI` quedó sin usar hasta que se aclare. Tampoco llegó todavía
-  el video de Yosy ("Video Yosy pestañas" en el Drive original, o el
-  audio del formulario dice que ella también hace cejas).
+  ⚠️ **Falta Yosy, y persiste la ambigüedad de "Ari" x2**: de los 4 links
+  de este lote, uno (`DC9s9AGWOCI`, título real "video ari") duplica el
+  nombre que ya se usó para Ariannys — en Drive corresponde a
+  "video ari OK.mp4", un segundo video de Ariannys (o de Sharon mal
+  etiquetado, no se puede saber sin preguntar). Queda sin usar hasta
+  aclarar — mismo patrón que las fotos, ver arriba.
+  **"Video Yosy pestañas" existe en Drive (24MB) pero todavía no se subió
+  a YouTube** — falta que la suban como "Oculto" y me pasen el link, igual
+  que los demás.
   Detalle histórico (18-20/9): Yosy (vía cuenta control.evo.admin,
   probablemente Tobias comprimiendo) subió 6 videos .mp4 ya bien
   nombrados: "Video de presentación rose face Studio", "video mili
