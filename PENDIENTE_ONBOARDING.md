@@ -14,10 +14,15 @@ cargar y dónde impacta.
   feriado). Si la respuesta es "depende", hay que decidir cómo se carga.
 - **Fotos del local** (fachada, interior, ambientación) — Home.tsx usa fotos
   de trabajos, no del local en sí.
-- **Video de presentación del estudio** (opcional).
+- ~~Video de presentación del estudio~~ ✅ **21/9/2026**: en producción en
+  el Home (YouTube, ver sección de videos más abajo).
 
 ## Precios (Página 3) — impacta directo en cobros reales
 
+- ~~Pestañas~~ ✅ **21/9/2026**: repriceo completo con la lista real que
+  mandó Yosy (11 servicios, precios y orden de aparición al reservar) —
+  ya en Supabase y en `mockServicios.ts`. Ver `ordenarServicios()` en
+  `src/lib/ordenServicios.ts` para el orden.
 - **Lista de precios de Cejas y Uñas** — los cargados hoy en
   `src/data/mockServicios.ts` / tabla `servicios` son la estimación inicial
   con la que se armó el sistema, nunca confirmados por Yosy.
@@ -59,22 +64,25 @@ cargar y dónde impacta.
   — confirmado real vía oEmbed de YouTube antes de cargarlo, no un
   placeholder. `VideoYoutube.tsx` ahora soporta modo `vertical` (9:16)
   además del horizontal, para Shorts.
-  ✅ **21/9/2026 — 3 más cargados en Supabase** (efecto inmediato, sin
-  deploy — `video_url` se lee en vivo): Cris (`A6tZdj1x0bo`, "Video Cris
-  cosmetologa"), Mili (`5ip0rEsB1E4`, "video mili pestañas"), Ariannys
-  (`L2nnG27xtGc`, "Video Ari pestañas"). Los primeros 4 links que pasó
-  Tobias fallaban (quedaron en "Privado" en vez de "Oculto" al subirlos)
-  — los volvió a publicar y ahí sí cargaron; los títulos reales los leí
-  con la API oEmbed de YouTube, no adivinados.
-  ⚠️ **Falta Yosy, y persiste la ambigüedad de "Ari" x2**: de los 4 links
-  de este lote, uno (`DC9s9AGWOCI`, título real "video ari") duplica el
-  nombre que ya se usó para Ariannys — en Drive corresponde a
-  "video ari OK.mp4", un segundo video de Ariannys (o de Sharon mal
-  etiquetado, no se puede saber sin preguntar). Queda sin usar hasta
-  aclarar — mismo patrón que las fotos, ver arriba.
-  **"Video Yosy pestañas" existe en Drive (24MB) pero todavía no se subió
-  a YouTube** — falta que la suban como "Oculto" y me pasen el link, igual
-  que los demás.
+  ✅ **21/9/2026 — Cris, Mili y Yosy cargados en Supabase** (efecto
+  inmediato, sin deploy — `video_url` se lee en vivo): Cris (`A6tZdj1x0bo`,
+  "Video Cris cosmetologa"), Mili (`5ip0rEsB1E4`, "video mili pestañas"),
+  Yosy (`Xe4aapAiic0`, "Video Yosy pestañas"). Los primeros 4 links que
+  pasó Tobias fallaban (quedaron en "Privado" en vez de "Oculto" al
+  subirlos) — los volvió a publicar y ahí sí cargaron; los títulos reales
+  los leí con la API oEmbed de YouTube, no adivinados.
+  ⚠️ **Corrección importante (21/9/2026): "Ari" NO es Ariannys.**
+  Había cargado "Video Ari pestañas" (`L2nnG27xtGc`) en el perfil de
+  Ariannys por la similitud del nombre — error real: Ariannys hace Uñas,
+  no Pestañas, y Tobias confirmó que es una persona distinta. Se sacó ese
+  `video_url` de `prof-alexandra` (queda en `null`). Quedan **2 videos de
+  "Ari" sin asignar** (`L2nnG27xtGc` "Video Ari pestañas" y `DC9s9AGWOCI`
+  "video ari") más la foto pendiente-1 (mechón rosa + frenillos, ver
+  arriba) — los 3 son de la misma persona, especialista en Pestañas, que
+  todavía no tiene perfil propio claro en el sistema. Sigue sin
+  confirmarse si "Ari" es el nombre real/apodo de Sharon (que no tiene
+  ninguna foto ni video propio en ningún lote) o alguien nuevo — hay que
+  preguntarle a Yosy directo, no asumir de nuevo.
   Detalle histórico (18-20/9): Yosy (vía cuenta control.evo.admin,
   probablemente Tobias comprimiendo) subió 6 videos .mp4 ya bien
   nombrados: "Video de presentación rose face Studio", "video mili
