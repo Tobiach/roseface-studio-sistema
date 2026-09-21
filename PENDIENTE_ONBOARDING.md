@@ -34,25 +34,23 @@ cargar y dónde impacta.
 
 - **Nombre y apellido real completo** — hoy se muestra el apodo en todos
   lados; interno, no bloquea nada.
-- ~~Foto de perfil~~ ✅ **resuelto 21/9/2026**: las 6 personas tienen foto
-  real (Yosy mandó por Drive el 18/9, terminó de confirmarse el 21/9).
-  **Ojo con el mapeo id ↔ nombre, se corrigió dos veces**: la foto/video
-  de "Ari" NO es de la persona que usa el id `prof-alexandra` — es de la
-  persona que usa el id `prof-sharon`. O sea, hoy:
-  - `prof-sharon` (id) → se llama **"Ariannys"**, hace Pestañas.
-  - `prof-alexandra` (id) → se llama **"Sharon"**, hace Uñas.
-  Los ids quedaron como estaban (son solo URLs internas), lo que cambió
-  fue el campo `nombre` en `mockProfesionales.ts` y en Supabase. Como los
-  servicios se mapean por id (no por nombre), no hizo falta tocar
-  `mockServicios.ts`.
+- ~~Foto de perfil~~ ✅ **resuelto 21/9/2026** (hubo dos idas y vueltas
+  sobre quién era "Ari" — este es el estado FINAL, confirmado por Tobias
+  viendo el sitio en vivo, no seguir corrigiendo sin verlo en producción
+  primero): `prof-sharon` (id) = **Sharon**, hace Pestañas, foto real +
+  video "Video Ari pestañas". `prof-alexandra` (id) = **Ariannys**, hace
+  Uñas, foto real, todavía sin video. Las 6 personas tienen foto real. Los
+  ids no cambiaron (son solo URLs internas), lo único que se tocó fue el
+  campo `nombre`. Como los servicios se mapean por id y no por nombre, no
+  hizo falta tocar `mockServicios.ts`.
   ⚠️ **Sin confirmar todavía**: el % de comisión (45%, en `prof-sharon`)
-  y el alquiler + alias `Aribell.st` (en `prof-alexandra`) se quedaron
-  pegados al id — no se movieron con el nombre. Si Ariannys y Sharon
-  tienen acuerdos de pago propios (no ligados a qué servicio hacen), hay
-  que confirmarlo y mover esos campos también.
+  y el alquiler + alias `Aribell.st` (en `prof-alexandra`) — si Sharon y
+  Ariannys tienen acuerdos de pago propios independientes de qué servicio
+  hacen, confirmarlo.
   Descartado: un archivo "Sharon .PNG" que llegó por Drive aparte
   (id `1BPYgCzq4...`) resultó ser un duplicado byte a byte del archivo ya
-  usado como foto (mismo tamaño exacto: 2.009.773 bytes) — no se usó.
+  usado como foto de Ariannys (mismo tamaño exacto: 2.009.773 bytes) — no
+  se usó.
 - **Trabajos realizados por profesional**: decisión de Yosy (18/9/2026) —
   ninguna profesional tiene portfolio propio. Ya se sacó el copy que decía
   "Trabajo real de {nombre}" / "Galería de Trabajos Realizados" de
@@ -70,15 +68,14 @@ cargar y dónde impacta.
   además del horizontal, para Shorts.
   ✅ **21/9/2026 — 4 de 6 cargados en Supabase** (efecto inmediato, sin
   deploy — `video_url` se lee en vivo): Cris (`A6tZdj1x0bo`), Mili
-  (`5ip0rEsB1E4`), Yosy (`Xe4aapAiic0`), y en `prof-sharon` (nombre
-  "Ariannys") el que decía "Video Ari pestañas" (`L2nnG27xtGc`) — con el
-  mapeo id↔nombre ya corregido, este video queda en el lugar correcto sin
-  tocar nada. Queda un segundo video de ella sin usar (`DC9s9AGWOCI`,
-  "video ari" — Drive: "video ari OK.mp4") por si hace falta más adelante.
-  ⚠️ **Faltan 2 videos, y no existen en Drive todavía — hay que
-  pedírselos a Yosy**: el de **Anye** y el de **Sharon** (la persona en
-  `prof-alexandra`, la de uñas). Ningún lote de Drive trajo nunca un
-  video para estas dos.
+  (`5ip0rEsB1E4`), Yosy (`Xe4aapAiic0`) y **Sharon** (`prof-sharon`,
+  "Video Ari pestañas" → `L2nnG27xtGc`). Queda un segundo video de ella
+  sin usar (`DC9s9AGWOCI`, "video ari" — Drive: "video ari OK.mp4") por
+  si hace falta más adelante.
+  ⚠️ **Faltan 3 videos, y no existen en Drive todavía — hay que
+  pedírselos a Yosy**: **Ariannys**, **Anye**, y **Depilación Láser**
+  (video del lugar/equipamiento, no de una persona). Ningún lote de Drive
+  trajo nunca contenido para estos tres.
   Detalle histórico (18-20/9): Yosy (vía cuenta control.evo.admin,
   probablemente Tobias comprimiendo) subió 6 videos .mp4 ya bien
   nombrados: "Video de presentación rose face Studio", "video mili
@@ -90,8 +87,7 @@ cargar y dónde impacta.
   directo Yosy desde su Drive/celular a YouTube, sin pasar por acá.
 - **6 fotos nuevas de trabajos de Uñas** ("Soft Gel✨ - 1 a 5.PNG",
   "Capping✨.PNG", subidas 20/9/2026, ~7-8MB cada una) — nombres coinciden
-  con servicios reales de la persona en `prof-alexandra` (hoy "Sharon",
-  ver corrección de nombres arriba) (`Soft Gel`, `Capping` en
+  con servicios reales de Ariannys (`Soft Gel`, `Capping` en
   `mockServicios.ts`), pero **no se pudieron descargar ni ver** por la
   misma limitación del conector (ver arriba) — y la lección del 18/9 fue
   que el nombre de archivo no siempre coincide con lo que dice la foto.
@@ -112,19 +108,15 @@ cargar y dónde impacta.
 
 - ~~Alias/CBU reales~~ ✅ **resuelto desde el 10/9/2026** (este doc había
   quedado desactualizado): Anye → `Anye.studio`, Cris → `Crisbel.gonzalez`,
-  y el alias `Aribell.st` (en el id `prof-alexandra`, hoy nombre
-  "Sharon" — ver corrección arriba). Es transferencia bancaria genérica
-  (cualquier banco o billetera), no un alias de Mercado Pago — el copy ya
-  lo aclara. Pendiente confirmar que sigan siendo exactos, y **si el
-  alias `Aribell.st` en realidad es de Ariannys y no de Sharon** (dado
-  que el nombre se parece), ahora que se corrigió a quién pertenece cada
-  id.
+  Ariannys → `Aribell.st`. Es transferencia bancaria genérica (cualquier
+  banco o billetera), no un alias de Mercado Pago — el copy ya lo aclara.
+  Pendiente solo confirmar que sigan siendo exactos.
 - **Monto de alquiler semanal real** de Anye ($50.000), Cris ($45.000) y
-  Sharon/id `prof-alexandra` ($48.000), y **% de comisión** real de Mili
-  (55%) y Ariannys/id `prof-sharon` (45%) — todos siguen siendo
-  placeholders puestos para poder probar el sistema, nunca confirmados
-  por Yosy. Alimenta directo el panel de Comisiones
-  (`AdminComisiones.tsx`) — con el número real mal, la cuenta que Yosy le
+  Ariannys ($48.000), y **% de comisión** real de Mili (55%) y Sharon
+  (45%) — todos siguen siendo placeholders puestos para poder probar el
+  sistema, nunca confirmados por Yosy. Alimenta directo el panel de
+  Comisiones (`AdminComisiones.tsx`) — con el número real mal, la cuenta
+  que Yosy le
   paga a cada una sale mal.
 
 ## Recordatorios y recurrencia (Páginas 6 y 7)
@@ -147,8 +139,8 @@ cargar y dónde impacta.
   número real de Yosy.
 - ~~Confirmar el plantel activo~~ ✅ **resuelto 21/9/2026**: 6 personas
   (Yosy, Mili, Sharon, Anye, Cris, Ariannys) + el slot de Depilación
-  Láser, todas con foto y 4/6 con video real. "Ari" era Ariannys (no
-  Sharon — corregido, ver arriba).
+  Láser, todas con foto real. "Ari" era Sharon. 4/7 con video real (Yosy,
+  Mili, Cris, Sharon) — faltan Ariannys, Anye y Depilación Láser.
 
 ## Ya resuelto, no pendiente
 
