@@ -53,15 +53,17 @@ cargar y dónde impacta.
   `trabajosFotos.ts` se mantiene (es solo "qué técnicas hace ella", no
   atribución de autoría).
 - **Video de presentación** — decisión 21/9/2026: formato YouTube (probado
-  con Tobias, ver artifact de prueba). Ya está cableado el lado del código
-  (`VideoYoutube.tsx` + `profesionales.video_url`, en `PerfilProfesional.tsx`)
-  — falta solo (a) subir los 6 videos a YouTube como **"Oculto"** (no
-  "Privado" — un video Privado no se puede embeber) y (b) pasarme los 6
-  links para hacer el `UPDATE profesionales SET video_url = ...` en
-  Supabase. El video de presentación general del estudio ("Video de
-  presentación rose face Studio OK.mp4") probablemente reemplaza al que ya
-  está en el Home (hoy embebido desde Google Drive) — confirmar con
-  Tobias antes de sacarlo.
+  con Tobias, ver artifact de prueba). ✅ **El general ya está en
+  producción**: "Video de presentación rose face Studio OK" (Short/vertical,
+  cuenta Control Evo) reemplaza al viejo iframe de Google Drive en el Home
+  — confirmado real vía oEmbed de YouTube antes de cargarlo, no un
+  placeholder. `VideoYoutube.tsx` ahora soporta modo `vertical` (9:16)
+  además del horizontal, para Shorts.
+  Falta para los otros 5 (Mili, Sharon/Ari — ver ambigüedad abajo, Cris,
+  Yosy): (a) subirlos a YouTube como **"Oculto"** (no "Privado" — un video
+  Privado no se puede embeber) y (b) pasarme los links para el
+  `UPDATE profesionales SET video_url = ...` en Supabase — con eso ya
+  aparecen solos en `PerfilProfesional.tsx`, sin deploy nuevo de código.
   Detalle histórico (18-20/9): Yosy (vía cuenta control.evo.admin,
   probablemente Tobias comprimiendo) subió 6 videos .mp4 ya bien
   nombrados: "Video de presentación rose face Studio", "video mili
