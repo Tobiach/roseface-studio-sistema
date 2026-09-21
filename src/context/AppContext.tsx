@@ -18,6 +18,7 @@ import { mockProfesionales } from '../data/mockProfesionales';
 import { mockServicios } from '../data/mockServicios';
 import { mockBeneficiosVIP, mockClientasEnRiesgo } from '../data/mockFidelizacion';
 import { supabase, supabaseEnabled } from '../lib/supabase';
+import { ordenarServicios } from '../lib/ordenServicios';
 import {
   turnoFromRow,
   turnoToInsertRow,
@@ -100,7 +101,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [turnos, setTurnos] = useState<Turno[]>(mockTurnos);
   const [clientas, setClientas] = useState<Clienta[]>(mockClientas);
   const [profesionales, setProfesionales] = useState<Profesional[]>(mockProfesionales);
-  const [servicios, setServicios] = useState<Servicio[]>(mockServicios);
+  const [servicios, setServicios] = useState<Servicio[]>(ordenarServicios(mockServicios));
   const [bloqueos, setBloqueos] = useState<BloqueoHorario[]>([]);
   const [recordatoriosConfig, setRecordatoriosConfig] = useState<RecordatorioConfig[]>([]);
   const [beneficiosVIP] = useState<BeneficioVIP[]>(mockBeneficiosVIP);
@@ -193,7 +194,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (bloqueosRes.data) setBloqueos(bloqueosRes.data.map(bloqueoFromRow));
       if (recordatoriosRes.data) setRecordatoriosConfig(recordatoriosRes.data.map(recordatorioFromRow));
       if (serviciosRes.data && serviciosRes.data.length > 0) {
-        setServicios(serviciosRes.data.map(servicioFromRow));
+        setServicios(ordenarServicios(serviciosRes.data.map(servicioFromRow)));
       }
       if (profesionalesRes.data && profesionalesRes.data.length > 0) {
         const operativoPorId = new Map(
