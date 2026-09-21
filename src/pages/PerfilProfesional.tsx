@@ -7,6 +7,7 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { formatCurrency } from '../lib/formatters';
 import { Lightbox } from '../components/ui/Lightbox';
+import { VideoYoutube } from '../components/ui/VideoYoutube';
 import {
   Star,
   Calendar,
@@ -108,6 +109,20 @@ export const PerfilProfesional: React.FC = () => {
           </div>
         </div>
       </Card>
+
+      {/* Video de presentación — solo si Yosy cargó un link de YouTube para esta profesional */}
+      {prof.videoUrl && (
+        <div className="space-y-3">
+          <h2 className="font-display text-2xl font-bold text-rf-black">
+            Conocé a {prof.nombre}
+          </h2>
+          <VideoYoutube
+            url={prof.videoUrl}
+            titulo={`Presentación de ${prof.nombre} — Rose Face Studio`}
+            className="max-w-lg"
+          />
+        </div>
+      )}
 
       {/* Services performed by this professional */}
       <div className="space-y-4">
