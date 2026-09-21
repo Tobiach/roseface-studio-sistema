@@ -80,7 +80,7 @@ export const mockProfesionales: Profesional[] = [
   },
   {
     id: 'prof-sharon',
-    nombre: 'Sharon',
+    nombre: 'Ariannys',
     fotoUrl: fotoSharon,
     especialidades: ['Pestañas', 'Volumen Ruso'],
     bio: 'Experta certificada en extensiones pelo a pelo y volumen ruso. Enfoque hiper-detallista.',
@@ -172,7 +172,7 @@ export const mockProfesionales: Profesional[] = [
   },
   {
     id: 'prof-alexandra',
-    nombre: 'Ariannys',
+    nombre: 'Sharon',
     fotoUrl: fotoAlexandra,
     especialidades: ['Uñas', 'Semipermanente', 'Esculpidas'],
     bio: 'Nail artist. Capping en gel, esculpidas en acrílico y esmaltado semipermanente con nail art personalizado.',
