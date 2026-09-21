@@ -113,19 +113,18 @@ cargar y dónde impacta.
 
 ## Alias/CBU (Página 5) — bloqueante para Fase 5
 
-- **Alias o CBU de cada profesional de alquiler fijo** (Martina, Sofía,
-  Alexandra, Camila, Valentina) — necesario para mostrarle a la clienta
-  dónde transferir en el circuito de pago por transferencia. **Es
-  transferencia bancaria genérica (cualquier banco o billetera), no un
-  alias de Mercado Pago específicamente** — el copy de la pantalla ya lo
-  aclara así.
-  ⚠️ **Ahora mismo tienen un alias FALSO cargado a propósito**
-  (`martina.pendiente-cargar`, etc. — 5/9/2026, sin sufijo `.mp` a
-  propósito para no sugerir que es un alias de MP) solo para poder ver la
-  estructura del flujo de transferencia + comprobante antes de tener los
-  datos reales. Hay que reemplazarlos por los alias/CBU reales antes de
-  dejar el sistema operativo para clientas de verdad — si no, alguien
-  podría intentar transferir a un alias que no existe.
+- ~~Alias/CBU reales~~ ✅ **resuelto desde el 10/9/2026** (este doc había
+  quedado desactualizado): Anye → `Anye.studio`, Ariannys → `Aribell.st`,
+  Cris → `Crisbel.gonzalez`. Es transferencia bancaria genérica (cualquier
+  banco o billetera), no un alias de Mercado Pago — el copy ya lo aclara.
+  Pendiente solo confirmar que sigan siendo exactos (podrían estar
+  abreviados/mal transcriptos del formulario original).
+- **Monto de alquiler semanal real** de Anye ($50.000), Cris ($45.000) y
+  Ariannys ($48.000), y **% de comisión** real de Mili (55%) y Sharon
+  (45%) — todos siguen siendo placeholders puestos para poder probar el
+  sistema, nunca confirmados por Yosy. Alimenta directo el panel de
+  Comisiones (`AdminComisiones.tsx`) — con el número real mal, la cuenta
+  que Yosy le paga a cada una sale mal.
 
 ## Recordatorios y recurrencia (Páginas 6 y 7)
 
@@ -145,8 +144,13 @@ cargar y dónde impacta.
 - **Número de WhatsApp real del estudio** — hoy hardcodeado en
   `src/lib/whatsapp.ts` (`5491160549387`), nunca confirmado como el
   número real de Yosy.
-- **Confirmar el plantel activo** — que las 8 profesionales cargadas
-  (incluida Yosy) sigan siendo las que trabajan hoy en el estudio.
+- **Confirmar el plantel activo** — hoy el sistema tiene 6 personas
+  cargadas (Yosy, Mili, Sharon, Anye, Cris, Ariannys) + el slot de
+  Depilación Láser. Con la pista de "Ari" (ver arriba: contenido real de
+  una especialista en pestañas que no es Ariannys, y cero contenido de
+  Sharon en ningún lote de fotos/videos) hay que confirmar si Sharon
+  sigue en el equipo o si hay que dar de alta a "Ari" como profesional
+  nueva.
 
 ## Ya resuelto, no pendiente
 
