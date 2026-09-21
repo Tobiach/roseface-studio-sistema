@@ -13,9 +13,13 @@ interface VideoYoutubeProps {
   url: string;
   titulo: string;
   className?: string;
+  // Los Shorts (y varios videos grabados con el celular en vertical) son
+  // 9:16 — estirarlos en una caja 16:9 los deja con barras negras enormes
+  // a los costados. Con vertical=true la caja se arma angosta y alta.
+  vertical?: boolean;
 }
 
-export const VideoYoutube: React.FC<VideoYoutubeProps> = ({ url, titulo, className = '' }) => {
+export const VideoYoutube: React.FC<VideoYoutubeProps> = ({ url, titulo, className = '', vertical = false }) => {
   const [reproduciendo, setReproduciendo] = useState(false);
   const id = extraerIdYoutube(url);
 
@@ -23,7 +27,9 @@ export const VideoYoutube: React.FC<VideoYoutubeProps> = ({ url, titulo, classNa
 
   return (
     <div
-      className={`relative w-full aspect-video rounded-2xl overflow-hidden border border-rf-gold/40 shadow-md bg-black ${className}`}
+      className={`relative rounded-2xl overflow-hidden border border-rf-gold/40 shadow-md bg-black ${
+        vertical ? 'aspect-[9/16] w-full max-w-[280px] mx-auto' : 'aspect-video w-full'
+      } ${className}`}
     >
       {reproduciendo ? (
         <iframe

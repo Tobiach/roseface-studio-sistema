@@ -10,6 +10,7 @@ import { buildWhatsAppUrl } from '../lib/whatsapp';
 import { FAQ } from '../components/ui/FAQ';
 import { Logo } from '../components/ui/Logo';
 import { Lightbox } from '../components/ui/Lightbox';
+import { VideoYoutube } from '../components/ui/VideoYoutube';
 import { urlFor } from '../data/trabajosFotos';
 import { Calendar, Star, MapPin, Clock, MessageCircle, Heart, Sparkles, GraduationCap, Gem, ExternalLink } from 'lucide-react';
 
@@ -301,15 +302,11 @@ export const Home: React.FC = () => {
           <h2 className="font-display text-2xl sm:text-3xl text-rf-black">Estamos en Caballito.</h2>
         </div>
 
-        <div className="relative w-full aspect-video max-w-md mx-auto rounded-2xl overflow-hidden border border-rf-gold/40 shadow-md bg-black">
-          <iframe
-            src="https://drive.google.com/file/d/1FDZNrYOEwciRTI74sDVlsJj92N2-We2f/preview"
-            title="Un día con Yosy"
-            className="absolute inset-0 w-full h-full"
-            allow="autoplay; encrypted-media"
-            allowFullScreen
-          />
-        </div>
+        <VideoYoutube
+          url="https://youtube.com/shorts/BIHttQcOlbs"
+          titulo="Video de presentación — Rose Face Studio"
+          vertical
+        />
 
         <div className="space-y-3 text-sm text-rf-charcoal max-w-sm mx-auto">
           <div className="flex items-start gap-2">
