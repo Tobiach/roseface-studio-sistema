@@ -42,13 +42,16 @@ cargar y dónde impacta.
   ✅ **21/9/2026 — Ariannys confirmada**: Yosy renombró en Drive la foto
   "Ari " (buzo Roseface + lunar cerca de la boca) a **"Ariannys"** — ya
   cargada en `prof-alexandra.jpg`.
-  ⚠️ **Queda 1 foto sin usar, todavía ambigua**: la otra ("Ari" original
-  — mechón rosa + frenillos, sin buzo del estudio) sigue sin nombre claro
-  en Drive. Combinado con que **ninguna foto ni video de toda la carpeta
-  está nombrado "Sharon"**, cada vez pesa más la hipótesis de que Sharon
-  puede no estar en el equipo — hay que preguntárselo directo a Yosy, no
-  asumir. Queda en `src/assets/images/profesionales/pendientes/` hasta
-  que responda.
+  ✅ **21/9/2026 (noche) — resuelto el misterio "Ari": es Sharon.**
+  Confirmado por Tobias: la foto con mechón rosa + frenillos (la que
+  quedaba ambigua) es Sharon → cargada en `prof-sharon.jpg`. `pendientes/`
+  ya quedó vacía, las 6 fotos de perfil están asignadas.
+  ⚠️ Ojo con un archivo llamado "Sharon .PNG" que llegó por Drive aparte
+  (id `1BPYgCzq4...`) — es un **duplicado byte a byte** del archivo ya
+  usado como Ariannys (mismo tamaño exacto: 2.009.773 bytes), no una foto
+  distinta. No se usó. Si en algún momento aparece una foto de Sharon que
+  se vea igual a la de Ariannys, es este archivo — no es que se haya
+  vuelto a mezclar.
 - **Trabajos realizados por profesional**: decisión de Yosy (18/9/2026) —
   ninguna profesional tiene portfolio propio. Ya se sacó el copy que decía
   "Trabajo real de {nombre}" / "Galería de Trabajos Realizados" de
@@ -71,18 +74,13 @@ cargar y dónde impacta.
   pasó Tobias fallaban (quedaron en "Privado" en vez de "Oculto" al
   subirlos) — los volvió a publicar y ahí sí cargaron; los títulos reales
   los leí con la API oEmbed de YouTube, no adivinados.
-  ⚠️ **Corrección importante (21/9/2026): "Ari" NO es Ariannys.**
-  Había cargado "Video Ari pestañas" (`L2nnG27xtGc`) en el perfil de
-  Ariannys por la similitud del nombre — error real: Ariannys hace Uñas,
-  no Pestañas, y Tobias confirmó que es una persona distinta. Se sacó ese
-  `video_url` de `prof-alexandra` (queda en `null`). Quedan **2 videos de
-  "Ari" sin asignar** (`L2nnG27xtGc` "Video Ari pestañas" y `DC9s9AGWOCI`
-  "video ari") más la foto pendiente-1 (mechón rosa + frenillos, ver
-  arriba) — los 3 son de la misma persona, especialista en Pestañas, que
-  todavía no tiene perfil propio claro en el sistema. Sigue sin
-  confirmarse si "Ari" es el nombre real/apodo de Sharon (que no tiene
-  ninguna foto ni video propio en ningún lote) o alguien nuevo — hay que
-  preguntarle a Yosy directo, no asumir de nuevo.
+  ✅ **21/9/2026 (noche) — resuelto: "Ari" = Sharon.** Primero había
+  cargado "Video Ari pestañas" (`L2nnG27xtGc`) en el perfil de Ariannys
+  por la similitud del nombre — error (Ariannys hace Uñas, no Pestañas).
+  Confirmado por Tobias que "Ari" es Sharon → `L2nnG27xtGc` ya está en
+  `prof-sharon.video_url`. Queda un segundo video de ella sin usar
+  (`DC9s9AGWOCI`, "video ari" — Drive: "video ari OK.mp4") por si hace
+  falta más adelante, no es necesario cargarlo ahora que ya tiene uno.
   Detalle histórico (18-20/9): Yosy (vía cuenta control.evo.admin,
   probablemente Tobias comprimiendo) subió 6 videos .mp4 ya bien
   nombrados: "Video de presentación rose face Studio", "video mili
@@ -144,13 +142,9 @@ cargar y dónde impacta.
 - **Número de WhatsApp real del estudio** — hoy hardcodeado en
   `src/lib/whatsapp.ts` (`5491160549387`), nunca confirmado como el
   número real de Yosy.
-- **Confirmar el plantel activo** — hoy el sistema tiene 6 personas
-  cargadas (Yosy, Mili, Sharon, Anye, Cris, Ariannys) + el slot de
-  Depilación Láser. Con la pista de "Ari" (ver arriba: contenido real de
-  una especialista en pestañas que no es Ariannys, y cero contenido de
-  Sharon en ningún lote de fotos/videos) hay que confirmar si Sharon
-  sigue en el equipo o si hay que dar de alta a "Ari" como profesional
-  nueva.
+- ~~Confirmar el plantel activo~~ ✅ **resuelto 21/9/2026**: 6 personas
+  (Yosy, Mili, Sharon, Anye, Cris, Ariannys) + el slot de Depilación
+  Láser, todas con foto y la mayoría con video real. "Ari" era Sharon.
 
 ## Ya resuelto, no pendiente
 
