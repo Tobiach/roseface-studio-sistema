@@ -64,7 +64,7 @@ export const PerfilProfesional: React.FC = () => {
             <img
               src={prof.fotoUrl}
               alt={prof.nombre}
-              className="w-36 h-36 rounded-2xl object-cover aspect-[4/5] border-2 border-rf-gold shadow-md filter brightness-[1.02] contrast-[1.03] saturate-[1.05]"
+              className="w-36 aspect-[4/5] rounded-2xl object-cover object-top border-2 border-rf-gold shadow-md filter brightness-[1.02] contrast-[1.03] saturate-[1.05]"
             />
           </div>
 

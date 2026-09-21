@@ -53,7 +53,6 @@ export const mockProfesionales: Profesional[] = [
   {
     id: 'prof-mili',
     nombre: 'Mili',
-    apodo: 'Mili',
     fotoUrl: fotoMili,
     especialidades: ['Pestañas', 'Lifting de Pestañas', 'Cejas'],
     bio: 'Especialista senior en diseño de mirada y lifting de pestañas. Alta precisión y foco en la belleza natural.',
@@ -82,7 +81,6 @@ export const mockProfesionales: Profesional[] = [
   {
     id: 'prof-sharon',
     nombre: 'Sharon',
-    apodo: 'Sharon',
     fotoUrl: fotoSharon,
     especialidades: ['Pestañas', 'Volumen Ruso'],
     bio: 'Experta certificada en extensiones pelo a pelo y volumen ruso. Enfoque hiper-detallista.',
@@ -113,7 +111,6 @@ export const mockProfesionales: Profesional[] = [
   {
     id: 'prof-martina',
     nombre: 'Anye',
-    apodo: 'Anye',
     fotoUrl: fotoMartina,
     especialidades: ['Alisados', 'Alisado Brasilero'],
     bio: 'Especialista en alisados progresivos libres de formol. Cabellos brillantes, sedosos y saludables.',
@@ -145,7 +142,6 @@ export const mockProfesionales: Profesional[] = [
   {
     id: 'prof-sofia',
     nombre: 'Cris',
-    apodo: 'Cris',
     fotoUrl: fotoSofia,
     especialidades: ['Masajes y Faciales', 'Limpieza Facial Profunda'],
     bio: 'Cosmiatra y masoterapeuta. Cuidado integral de la piel, peeling ultrasónico y masajes descontracturantes.',

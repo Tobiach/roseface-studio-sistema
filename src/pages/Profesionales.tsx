@@ -47,7 +47,7 @@ export const Profesionales: React.FC = () => {
                 <img
                   src={prof.fotoUrl}
                   alt={prof.nombre}
-                  className="w-full h-60 object-cover aspect-[4/5] filter brightness-[1.02] contrast-[1.03] saturate-[1.05] group-hover:scale-105 transition-transform duration-300"
+                  className="w-full aspect-[4/5] object-cover object-top filter brightness-[1.02] contrast-[1.03] saturate-[1.05] group-hover:scale-105 transition-transform duration-300"
                 />
                 {/* Google Style Rating Badge */}
                 <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-full border border-pink-200/80 shadow-xs flex items-center gap-1">
