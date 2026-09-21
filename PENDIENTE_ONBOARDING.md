@@ -59,11 +59,23 @@ cargar y dónde impacta.
   — confirmado real vía oEmbed de YouTube antes de cargarlo, no un
   placeholder. `VideoYoutube.tsx` ahora soporta modo `vertical` (9:16)
   además del horizontal, para Shorts.
-  Falta para los otros 5 (Mili, Sharon/Ari — ver ambigüedad abajo, Cris,
-  Yosy): (a) subirlos a YouTube como **"Oculto"** (no "Privado" — un video
-  Privado no se puede embeber) y (b) pasarme los links para el
-  `UPDATE profesionales SET video_url = ...` en Supabase — con eso ya
-  aparecen solos en `PerfilProfesional.tsx`, sin deploy nuevo de código.
+  ✅ **21/9/2026 — 3 más cargados en Supabase** (efecto inmediato, sin
+  deploy — `video_url` se lee en vivo): Cris (`A6tZdj1x0bo`, "Video Cris
+  cosmetologa"), Mili (`5ip0rEsB1E4`, "video mili pestañas"), Ariannys
+  (`L2nnG27xtGc`, "Video Ari pestañas"). Los primeros 4 links que pasó
+  Tobias fallaban (quedaron en "Privado" en vez de "Oculto" al subirlos)
+  — los volvió a publicar y ahí sí cargaron; los títulos reales los leí
+  con la API oEmbed de YouTube, no adivinados.
+  ⚠️ **Falta Yosy y Sharon, y persiste la ambigüedad de "Ari" x2**: de
+  los 4 links de este lote, uno (`DC9s9AGWOCI`) se llama solo "video ari"
+  — nombre duplicado con el que ya se usó para Ariannys. Es la MISMA
+  situación que ya pasó con las fotos de perfil (dos fotos nombradas
+  "Ari", cero nombradas "Sharon") — repetirse en dos lotes de contenido
+  distintos hace pensar que puede no ser un typo: **quizás Sharon ya no
+  está en el equipo**. Hay que preguntárselo directo a Yosy, no asumir.
+  `DC9s9AGWOCI` quedó sin usar hasta que se aclare. Tampoco llegó todavía
+  el video de Yosy ("Video Yosy pestañas" en el Drive original, o el
+  audio del formulario dice que ella también hace cejas).
   Detalle histórico (18-20/9): Yosy (vía cuenta control.evo.admin,
   probablemente Tobias comprimiendo) subió 6 videos .mp4 ya bien
   nombrados: "Video de presentación rose face Studio", "video mili
