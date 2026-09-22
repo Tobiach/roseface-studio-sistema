@@ -46,7 +46,8 @@ const CATEGORIA_DESCRIPTOR: Record<string, string> = {
   Uñas: 'Detalle que se nota',
   Alisados: 'Brillo que se siente',
   'Depilación Láser': 'Piel lista, siempre',
-  'Masajes y Faciales': 'Piel que respira',
+  Faciales: 'Piel que respira',
+  Corporales: 'Cuerpo en equilibrio',
 };
 
 export const Home: React.FC = () => {

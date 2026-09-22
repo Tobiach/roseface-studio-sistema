@@ -156,6 +156,33 @@ export const PerfilProfesional: React.FC = () => {
         </div>
       </div>
 
+      {/* Adicionales — se suman a un servicio ya reservado, no se agendan
+          solos (por eso no tienen botón de reservar ni están en /reserva). */}
+      {prof.adicionales && prof.adicionales.length > 0 && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-rf-black">
+              Adicionales
+            </h2>
+            <p className="text-xs text-rf-charcoal">
+              Se suman a tu servicio el día del turno — no se reservan por separado.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {prof.adicionales.map((ad) => (
+              <div
+                key={ad.nombre}
+                className="flex items-center justify-between gap-2 bg-rf-cream rounded-xl border border-pink-100 px-3 py-2.5"
+              >
+                <span className="text-xs font-semibold text-rf-black">{ad.nombre}</span>
+                <span className="text-xs font-bold text-rf-rose-deep shrink-0">{formatCurrency(ad.precio)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Gallery of Work Samples */}
       {prof.galeria.length > 0 && (
         <div className="space-y-4">

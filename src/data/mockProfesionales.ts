@@ -88,7 +88,10 @@ export const mockProfesionales: Profesional[] = [
     galeria: trabajosPorProfesional['prof-sharon'],
     calificacionPromedio: 4.9,
     cantidadResenas: 142,
-    modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 45 }, // PLACEHOLDER — pendiente % real de Yosy
+    // 50% confirmado contra la planilla real "Agenda Sharon" (22/9/2026):
+    // "% Salón" es matemáticamente el 50% exacto de lo facturado en varias
+    // semanas — ya no es placeholder.
+    modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 50 },
     // Lunes a sábado. Bloques de 2h: 9/11/14/16/18/20.
     horarioDisponible: {
       ...SIN_HORARIO,
@@ -143,7 +146,7 @@ export const mockProfesionales: Profesional[] = [
     id: 'prof-sofia',
     nombre: 'Cris',
     fotoUrl: fotoSofia,
-    especialidades: ['Masajes y Faciales', 'Limpieza Facial Profunda'],
+    especialidades: ['Faciales', 'Corporales'],
     bio: 'Cosmiatra y masoterapeuta. Cuidado integral de la piel, peeling ultrasónico y masajes descontracturantes.',
     aniosExperiencia: 6,
     galeria: trabajosPorProfesional['prof-sofia'] ?? [],
@@ -200,6 +203,17 @@ export const mockProfesionales: Profesional[] = [
       viernes: ['09:00', '11:00', '13:00', '15:00', '17:00'],
       sabado: ['09:00', '11:00', '13:00', '15:00', '17:00'],
     },
+    // Extras que se suman a un servicio ya reservado — no van al flujo de
+    // Reserva (no son un turno en sí). Lista real del cartel de precios de
+    // Ariannys (22/9/2026); queda 1 ítem cortado en la foto sin cargar.
+    adicionales: [
+      { nombre: 'Retiro común', precio: 3000 },
+      { nombre: 'Retiro Semipermanente', precio: 8000 },
+      { nombre: 'Reconstrucciones', precio: 4000 },
+      { nombre: 'Parches', precio: 3000 },
+      { nombre: 'Decos (desde)', precio: 2000 },
+      { nombre: 'French / BabyBoomer (desde)', precio: 3000 },
+    ],
   },
   {
     id: 'prof-camila',

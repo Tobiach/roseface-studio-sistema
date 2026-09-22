@@ -91,7 +91,7 @@ export const AdminComisiones: React.FC = () => {
             seleccionada — un turno reservado o cancelado no suma facturación.
           </li>
           <li>
-            • <strong>Modelo Porcentaje</strong> (ej. Mili 55%, Sharon 45%): Rose Face cobra el turno
+            • <strong>Modelo Porcentaje</strong> (ej. Mili 55%, Sharon 50%): Rose Face cobra el turno
             completo y le paga a la profesional ese % sobre la facturación total generada; el resto
             queda para Rose Face.
           </li>

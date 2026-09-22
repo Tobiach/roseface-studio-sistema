@@ -26,10 +26,13 @@ export interface Profesional {
   videoUrl?: string | null;
   // Link de auto-agendado propio, para el aviso de recurrencia (Fase 8).
   linkAutoagenda?: string | null;
+  // Extras que se suman a un servicio ya reservado (no se agendan solos,
+  // por eso no son un Servicio más) — hoy solo Ariannys (uñas).
+  adicionales?: { nombre: string; precio: number }[];
 }
 
 export type ModeloComision =
-  | { tipo: 'porcentaje'; porcentajeProfesional: number }  // ej Mili: 55, Sharon: 45
+  | { tipo: 'porcentaje'; porcentajeProfesional: number }  // ej Mili: 55, Sharon: 50
   | { tipo: 'alquiler_fijo'; montoSemanal: number };
 
 export interface DisponibilidadSemanal {
@@ -39,7 +42,7 @@ export interface DisponibilidadSemanal {
 export interface Servicio {
   id: string;
   nombre: string;
-  categoria: 'Pestañas' | 'Cejas' | 'Uñas' | 'Alisados' | 'Depilación Láser' | 'Masajes y Faciales';
+  categoria: 'Pestañas' | 'Cejas' | 'Uñas' | 'Alisados' | 'Depilación Láser' | 'Faciales' | 'Corporales';
   descripcion: string;
   duracionMinutos: number;
   precio: number;                  // ARS
