@@ -34,15 +34,17 @@ cargar y dónde impacta.
 
 - **Nombre y apellido real completo** — hoy se muestra el apodo en todos
   lados; interno, no bloquea nada.
-- ~~Foto de perfil~~ ✅ **resuelto 21/9/2026** (hubo dos idas y vueltas
+- ~~Foto de perfil~~ ✅ **resuelto 22/9/2026** (hubo tres idas y vueltas
   sobre quién era "Ari" — este es el estado FINAL, confirmado por Tobias
   viendo el sitio en vivo, no seguir corrigiendo sin verlo en producción
-  primero): `prof-sharon` (id) = **Sharon**, hace Pestañas, foto real +
-  video "Video Ari pestañas". `prof-alexandra` (id) = **Ariannys**, hace
-  Uñas, foto real, todavía sin video. Las 6 personas tienen foto real. Los
-  ids no cambiaron (son solo URLs internas), lo único que se tocó fue el
-  campo `nombre`. Como los servicios se mapean por id y no por nombre, no
-  hizo falta tocar `mockServicios.ts`.
+  primero): `prof-sharon` (id) = **Sharon**, hace Pestañas, foto real,
+  todavía sin video. `prof-alexandra` (id) = **Ariannys**, hace Uñas,
+  foto real + video "Video Ari pestañas". Los NOMBRES quedaron como
+  siempre estuvieron (Sharon en `prof-sharon`, Ariannys en
+  `prof-alexandra`) — lo que se corrigió al final fue solo qué FOTO y qué
+  VIDEO tenía cada una (estaban cruzados). Las 6 personas tienen foto
+  real. Como los servicios se mapean por id y no por nombre, nunca hizo
+  falta tocar `mockServicios.ts`.
   ⚠️ **Sin confirmar todavía**: el % de comisión (45%, en `prof-sharon`)
   y el alquiler + alias `Aribell.st` (en `prof-alexandra`) — si Sharon y
   Ariannys tienen acuerdos de pago propios independientes de qué servicio
@@ -66,16 +68,20 @@ cargar y dónde impacta.
   — confirmado real vía oEmbed de YouTube antes de cargarlo, no un
   placeholder. `VideoYoutube.tsx` ahora soporta modo `vertical` (9:16)
   además del horizontal, para Shorts.
-  ✅ **21/9/2026 — 4 de 6 cargados en Supabase** (efecto inmediato, sin
+  ✅ **22/9/2026 — 4 de 7 cargados en Supabase** (efecto inmediato, sin
   deploy — `video_url` se lee en vivo): Cris (`A6tZdj1x0bo`), Mili
-  (`5ip0rEsB1E4`), Yosy (`Xe4aapAiic0`) y **Sharon** (`prof-sharon`,
-  "Video Ari pestañas" → `L2nnG27xtGc`). Queda un segundo video de ella
-  sin usar (`DC9s9AGWOCI`, "video ari" — Drive: "video ari OK.mp4") por
-  si hace falta más adelante.
-  ⚠️ **Faltan 3 videos, y no existen en Drive todavía — hay que
-  pedírselos a Yosy**: **Ariannys**, **Anye**, y **Depilación Láser**
-  (video del lugar/equipamiento, no de una persona). Ningún lote de Drive
-  trajo nunca contenido para estos tres.
+  (`5ip0rEsB1E4`), Yosy (`Xe4aapAiic0`) y **Ariannys** (`prof-alexandra`,
+  "Video Ari pestañas" → `L2nnG27xtGc`) — el video se movió de
+  `prof-sharon` a `prof-alexandra` junto con la corrección de la foto.
+  Queda un segundo video de ella sin usar (`DC9s9AGWOCI`, "video ari" —
+  Drive: "video ari OK.mp4") por si hace falta.
+  🎥 **Pendiente subir a YouTube**: "video sharon OK.mp4" (Drive,
+  22/9/2026, `10whBBNySCXjWtM4ZUfmEDR_jOb8OKP5W`, 12.8MB) — llegó como
+  link de Drive, no de YouTube. Falta que lo suban como "Oculto" (no
+  "Privado") y pasen el link de YouTube para cargarlo en `prof-sharon`.
+  ⚠️ **Faltan videos, y no existen en Drive todavía — hay que
+  pedírselos a Yosy**: **Anye** y **Depilación Láser** (video del
+  lugar/equipamiento, no de una persona).
   Detalle histórico (18-20/9): Yosy (vía cuenta control.evo.admin,
   probablemente Tobias comprimiendo) subió 6 videos .mp4 ya bien
   nombrados: "Video de presentación rose face Studio", "video mili
@@ -146,5 +152,9 @@ cargar y dónde impacta.
 
 - Dirección real del estudio (Av. Acoyte 25, Caballito).
 - Reseñas: se decidió linkear a Google Maps en vez de fabricar contenido.
-- Video "un día con Yosy" embebido en Home (reemplaza la foto de fachada
-  vieja en "Estamos en Caballito").
+- Video de presentación en el Home (YouTube, reemplaza tanto la foto de
+  fachada vieja como el video de Drive "un día con Yosy" que hubo antes).
+- **22/9/2026**: las URLs de perfil dejaron de mostrar el id interno
+  (`/profesionales/prof-sharon`) y ahora usan el nombre real
+  (`/profesionales/sharon`, `/profesionales/ariannys`, etc.) — no quedaba
+  profesional que la URL no coincidiera con el nombre de la persona.
