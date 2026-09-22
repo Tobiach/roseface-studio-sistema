@@ -46,13 +46,13 @@ export const Footer: React.FC = () => {
               Comunidad
             </h4>
             <a
-              href="https://instagram.com/roseface.studio"
+              href="https://instagram.com/rosefacestudio"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rf-cream text-rf-black text-xs font-medium border border-pink-200/60 hover:bg-rf-blush transition-colors"
             >
               <Instagram className="w-4 h-4 text-rf-rose-deep" />
-              <span>@roseface.studio</span>
+              <span>@rosefacestudio</span>
             </a>
             <a
               href={buildWhatsAppUrl('Hola! Quiero reservar un turno en Rose Face Studio 💕')}
