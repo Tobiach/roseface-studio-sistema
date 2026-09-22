@@ -9,9 +9,13 @@ cargar y dónde impacta.
 
 - **Horarios de atención del estudio** — confirmar contra lo mostrado en la
   sección "Estamos en Caballito" de Home.tsx.
-- **¿Atiende en feriados?** — no está modelado todavía en el sistema (hoy
-  solo existe `horarioDisponible` por día de semana, no una excepción por
-  feriado). Si la respuesta es "depende", hay que decidir cómo se carga.
+- ~~¿Atiende en feriados?~~ ✅ **releído el formulario 22/9/2026** — SÍ
+  está contestado, no hacía falta modelar una excepción nueva: el
+  estudio dijo "Sí, normalmente" y por profesional: Yosy, Anye y Ari
+  dijeron "Sí" (no hace falta tocar nada), Mili/Sharon/Cris/Camila
+  dijeron "Depende del feriado" — para esas, Yosy ya puede bloquear el
+  feriado puntual a mano con "Bloquear horario" en el admin cuando sepa
+  si trabaja o no ese día. No es un gap del sistema.
 - **Fotos del local** (fachada, interior, ambientación) — Home.tsx usa fotos
   de trabajos, no del local en sí.
 - ~~Video de presentación del estudio~~ ✅ **21/9/2026**: en producción en
@@ -133,13 +137,21 @@ cargar y dónde impacta.
   Anye/Cris/Ariannys, y armar la lista de clientas frecuentes para
   precargar (pendiente histórico, ver "Recordatorios y recurrencia" más
   abajo).
-- **Días y horarios de trabajo reales** — los cargados en el seed de
-  Supabase (`profesionales.horario_disponible`) son un supuesto inicial,
-  no confirmados una por una con cada profesional. Esto alimenta
-  directamente `calcularHorariosDisponibles` — si están mal, el sistema va
-  a ofrecer turnos en horarios que en realidad no atienden.
-- **¿Trabaja en feriados?** — mismo caso que el del estudio, no modelado
-  todavía.
+- **Días y horarios de trabajo reales** — ✅ **auditado 22/9/2026 contra
+  el formulario real** (antes de preguntarle nada nuevo a Yosy, releí
+  todo lo que ya había contestado). Encontré y corregí 2 bugs reales —
+  no placeholders, datos que YA estaban bien en el comentario del código
+  pero mal en el valor real: Anye tenía la ventana hasta las 20hs (el
+  formulario dice hasta las 16hs) y Ari hasta las 21hs (el formulario
+  dice hasta las 19hs). Ya corregido en Supabase y en el código; no
+  afectaba qué horarios se podían reservar (eso lo deciden los horarios
+  fijos, no la ventana), pero si en algún momento se muestra la ventana
+  como texto en algún lado, ahora es la correcta.
+  Sigue sin confirmar: **los días exactos de Ari** (el formulario solo
+  dio el horario "9 a 19", nunca dijo qué días) y **la ventana horaria
+  exacta de Cris** ("corrido", sin desde/hasta — hoy 9-19 es una
+  estimación razonable, no lo que ella dijo literalmente).
+- ~~¿Trabaja en feriados?~~ ✅ ver arriba — ya está contestado por todas.
 - **Tiempo de descanso/limpieza entre turno y turno** — **no está
   implementado en el motor de disponibilidad todavía** (hoy los turnos se
   agendan pegados sin buffer). Falta decidir cómo se suma este campo a
@@ -162,13 +174,23 @@ cargar y dónde impacta.
 
 ## Recordatorios y recurrencia (Páginas 6 y 7)
 
-- **Anticipación habitual de confirmación** (48h/24h/mismo día/varía).
-- **Estilo de saludo a clientas** — para que el copy de los mensajes
-  automáticos suene como Yosy.
-- **Servicios con ciclo de recurrencia (~21 días)** y su ciclo real si
-  difiere — alimenta `servicios.ciclo_recurrencia_dias`.
-- **Lista de clientas frecuentes a precargar** (opcional) — nombre,
-  teléfono, servicio y profesional habitual.
+- ~~Anticipación habitual de confirmación~~ ✅ ya estaba contestado en el
+  formulario ("48 horas antes", ideal 72h) — ver ventanas 48h/24h/4h ya
+  implementadas.
+- ~~Estilo de saludo a clientas~~ ✅ **22/9/2026**: el formulario tenía la
+  respuesta literal ("Hola hola mi niña...") que nunca se había aplicado
+  — los 3 templates de `src/lib/whatsapp.ts` usaban un saludo genérico.
+  Ya corregido para usar su voz real, y el recordatorio de 24h ahora
+  incluye la dirección del estudio (ella lo pidió explícito).
+- **Servicios con ciclo de recurrencia (~21 días)** — el formulario da
+  una pista útil sin números exactos: "pestañas casi todas cada 21, uñas
+  igual, depilación 1 vez al mes, otros servicios se pueden demorar más"
+  — falta traducir esto a `servicios.ciclo_recurrencia_dias` por
+  categoría (hoy sin cargar en ninguno).
+- **Lista de clientas frecuentes a precargar** — el formulario confirma
+  que existe ("Yo tengo una agenda que te podría pasar el acceso") — son
+  las 3 planillas de "Agenda" que ya se compartieron. Falta la
+  extracción para armar el import.
 
 ## Fuera del formulario — hay que conseguirlos aparte
 
