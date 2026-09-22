@@ -9,7 +9,7 @@ import { Badge } from '../components/ui/Badge';
 import { RitualTimeline } from '../components/ui/RitualTimeline';
 import { formatCurrency, formatDateReadable } from '../lib/formatters';
 import { calcularHorariosDisponibles, sumarMinutos, hoyISO, mananaISO } from '../lib/disponibilidad';
-import { MONTO_SENA_FIJO } from '../lib/pricing';
+import { calcularMontoSena } from '../lib/pricing';
 import { leerClienteRecordado, guardarClienteRecordado } from '../lib/clienteRecordado';
 import {
   Clock,
@@ -137,11 +137,10 @@ export const Reserva: React.FC = () => {
 
   const volverACalendario = () => irAPaso(2);
 
-  // Seña fija de $30.000 para todos los servicios (regla de negocio real,
-  // no un porcentaje). Solo para mostrar en pantalla — el monto que
-  // efectivamente se cobra lo recalcula el servidor en
-  // /api/mercadopago/crear-preferencia.
-  const montoSena = servicioSeleccionado ? MONTO_SENA_FIJO : 0;
+  // Seña fija de $30.000 (con 2 excepciones reales, ver calcularMontoSena).
+  // Solo para mostrar en pantalla — el monto que efectivamente se cobra lo
+  // recalcula el servidor en /api/mercadopago/crear-preferencia.
+  const montoSena = servicioSeleccionado ? calcularMontoSena(servicioSeleccionado) : 0;
   const saldoRestante = servicioSeleccionado ? Math.max(0, servicioSeleccionado.precio - montoSena) : 0;
 
   // Handle Mercado Pago payment — intenta crear una preferencia real contra
@@ -313,7 +312,7 @@ export const Reserva: React.FC = () => {
                         {serv.duracionMinutos} min
                       </span>
                       <span className="text-emerald-700 font-semibold">
-                        Seña: {formatCurrency(MONTO_SENA_FIJO)}
+                        Seña: {formatCurrency(calcularMontoSena(serv))}
                       </span>
                     </div>
                   </div>

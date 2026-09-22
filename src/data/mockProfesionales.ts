@@ -31,23 +31,25 @@ export const mockProfesionales: Profesional[] = [
     calificacionPromedio: 5.0,
     cantidadResenas: 120,
     modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 100 }, // es la dueña
-    // Lunes a domingo EXCEPTO miércoles. Turnos fijos 9/11/13/15.
+    // Confirmado por Yosy (doc "dia a dia Rose Face", 22/9/2026): lunes a
+    // viernes excepto miércoles 9-15 (fijos 9/11/13/15); sábado suma un
+    // turno más a las 17; domingo es corto, solo 10 y 12.
     horarioDisponible: {
       ...SIN_HORARIO,
       lunes: vent('09:00', '17:00'),
       martes: vent('09:00', '17:00'),
       jueves: vent('09:00', '17:00'),
       viernes: vent('09:00', '17:00'),
-      sabado: vent('09:00', '17:00'),
-      domingo: vent('09:00', '17:00'),
+      sabado: vent('09:00', '19:00'),
+      domingo: vent('10:00', '14:00'),
     },
     horariosFijos: {
       lunes: ['09:00', '11:00', '13:00', '15:00'],
       martes: ['09:00', '11:00', '13:00', '15:00'],
       jueves: ['09:00', '11:00', '13:00', '15:00'],
       viernes: ['09:00', '11:00', '13:00', '15:00'],
-      sabado: ['09:00', '11:00', '13:00', '15:00'],
-      domingo: ['09:00', '11:00', '13:00', '15:00'],
+      sabado: ['09:00', '11:00', '13:00', '15:00', '17:00'],
+      domingo: ['10:00', '12:00'],
     },
   },
   {
@@ -60,7 +62,9 @@ export const mockProfesionales: Profesional[] = [
     galeria: trabajosPorProfesional['prof-mili'],
     calificacionPromedio: 4.9,
     cantidadResenas: 86,
-    modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 55 }, // PLACEHOLDER — pendiente % real de Yosy
+    // 55% confirmado por Yosy, texto literal (doc "dia a dia Rose Face",
+    // 22/9/2026): "Mili: 55% mili, el 45% estudio". Ya no es placeholder.
+    modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 55 },
     // Martes a sábado. Turnos fijos 9/11/14/16.
     horarioDisponible: {
       ...SIN_HORARIO,
@@ -88,10 +92,16 @@ export const mockProfesionales: Profesional[] = [
     galeria: trabajosPorProfesional['prof-sharon'],
     calificacionPromedio: 4.9,
     cantidadResenas: 142,
-    // 50% confirmado contra la planilla real "Agenda Sharon" (22/9/2026):
-    // "% Salón" es matemáticamente el 50% exacto de lo facturado en varias
-    // semanas — ya no es placeholder.
-    modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 50 },
+    // OJO — dos fuentes distintas dan números distintos:
+    // 1) La planilla real "Agenda Sharon": "% Salón" salía matemáticamente
+    //    50% exacto en varias semanas.
+    // 2) El doc "dia a dia Rose Face" (22/9/2026), respuesta literal y
+    //    directa de Yosy: "Sharon: 45% Sharon, el 55% estudio".
+    // Se usa 45% acá porque es la palabra directa de Yosy sobre SU propio
+    // negocio (más autoritativa que una inferencia mía sobre una planilla
+    // que puede tener otros descuentos mezclados) — pero esto se le debe
+    // confirmar explícitamente antes de cerrarlo del todo.
+    modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 45 },
     // Lunes a sábado. Bloques de 2h: 9/11/14/16/18/20.
     horarioDisponible: {
       ...SIN_HORARIO,
@@ -154,23 +164,32 @@ export const mockProfesionales: Profesional[] = [
     calificacionPromedio: 4.9,
     cantidadResenas: 86,
     modeloComision: { tipo: 'alquiler_fijo', montoSemanal: 45000 }, // PLACEHOLDER
+    // OJO: el doc "dia a dia Rose Face" escribe el alias como
+    // "Crisbel.gonzlz" (sin la "a") en la tabla de CBUs, pero como
+    // "Crisbel.gonzalez" en el texto de la pregunta — puede ser un typo de
+    // Yosy o de quien tipeó el doc. NO se corrigió a ciegas por ser un
+    // alias bancario real; confirmar con Yosy cuál es el correcto antes de
+    // usarlo para una transferencia real.
     aliasCbu: 'Crisbel.gonzalez',
-    // "Corrido, 2h por turno". Ventana PLACEHOLDER 9-19.
+    // Confirmado por Yosy (doc "dia a dia Rose Face", 22/9/2026): "desde
+    // las 13 hrs de lunes a viernes" y sábado "desde la mañana 9 am hasta
+    // 20 hrs". El hasta de lunes a viernes sigue siendo estimado (no dijo
+    // hora de cierre) manteniendo "corrido, 2h por turno".
     horarioDisponible: {
       ...SIN_HORARIO,
-      lunes: vent('09:00', '19:00'),
-      martes: vent('09:00', '19:00'),
-      miercoles: vent('09:00', '19:00'),
-      jueves: vent('09:00', '19:00'),
-      viernes: vent('09:00', '19:00'),
-      sabado: vent('09:00', '19:00'),
+      lunes: vent('13:00', '19:00'),
+      martes: vent('13:00', '19:00'),
+      miercoles: vent('13:00', '19:00'),
+      jueves: vent('13:00', '19:00'),
+      viernes: vent('13:00', '19:00'),
+      sabado: vent('09:00', '20:00'),
     },
     horariosFijos: {
-      lunes: ['09:00', '11:00', '13:00', '15:00', '17:00'],
-      martes: ['09:00', '11:00', '13:00', '15:00', '17:00'],
-      miercoles: ['09:00', '11:00', '13:00', '15:00', '17:00'],
-      jueves: ['09:00', '11:00', '13:00', '15:00', '17:00'],
-      viernes: ['09:00', '11:00', '13:00', '15:00', '17:00'],
+      lunes: ['13:00', '15:00', '17:00'],
+      martes: ['13:00', '15:00', '17:00'],
+      miercoles: ['13:00', '15:00', '17:00'],
+      jueves: ['13:00', '15:00', '17:00'],
+      viernes: ['13:00', '15:00', '17:00'],
       sabado: ['09:00', '11:00', '13:00', '15:00', '17:00'],
     },
   },
@@ -187,7 +206,8 @@ export const mockProfesionales: Profesional[] = [
     modeloComision: { tipo: 'alquiler_fijo', montoSemanal: 48000 }, // PLACEHOLDER
     aliasCbu: 'Aribell.st',
     // "De 9 a 19", 2h por turno — tal cual el formulario real de Yosy.
-    // Días PLACEHOLDER (no los dijo) → lun a sáb.
+    // Sábado confirmado: "Ari igual si trabaja sábado corrido" (doc "dia a
+    // dia Rose Face", 22/9/2026). Ya no es placeholder.
     horarioDisponible: {
       ...SIN_HORARIO,
       lunes: vent('09:00', '19:00'),

@@ -15,6 +15,14 @@ import { createClient } from '@supabase/supabase-js';
 // getSupabaseAdmin va inline acá abajo).
 const MONTO_SENA_FIJO = 30000;
 
+// Mismas 2 excepciones que calcularMontoSena en src/lib/pricing.ts —
+// duplicado acá por la misma razón. Ver ese archivo para el detalle.
+function calcularMontoSena(servicio: { precio: number; categoria: string; requiere_sena?: boolean }): number {
+  if (servicio.requiere_sena === false) return 0;
+  if (servicio.categoria === 'Depilación Láser') return servicio.precio;
+  return Math.min(MONTO_SENA_FIJO, servicio.precio);
+}
+
 // Hold del horario mientras la clienta paga. Pasado este tiempo sin
 // confirmación, el horario se libera para otra clienta (Fase 3). El
 // circuito de transferencia tiene más margen porque implica un paso manual

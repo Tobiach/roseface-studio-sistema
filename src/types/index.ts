@@ -32,7 +32,7 @@ export interface Profesional {
 }
 
 export type ModeloComision =
-  | { tipo: 'porcentaje'; porcentajeProfesional: number }  // ej Mili: 55, Sharon: 50
+  | { tipo: 'porcentaje'; porcentajeProfesional: number }  // ej Mili: 55, Sharon: 45
   | { tipo: 'alquiler_fijo'; montoSemanal: number };
 
 export interface DisponibilidadSemanal {

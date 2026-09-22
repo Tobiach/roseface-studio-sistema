@@ -39,8 +39,17 @@ cargar y dónde impacta.
   servicios es una estimación mía** (Anye y Cris nunca dieron cuánto dura
   cada tratamiento) — confirmar antes de que el motor de turnos fijos la
   use en serio.
-- Confirmación de la seña fija ($20.000, sin excepción) — ya implementada
-  y confirmada con Tobias; el formulario solo la re-confirma con Yosy.
+- Confirmación de la seña fija ($30.000) — ya implementada. ✅ **22/9/2026,
+  2 excepciones reales confirmadas por Yosy** (doc "dia a dia Rose Face"):
+  ninguna seña puede superar el precio del servicio (afecta "Remoción de
+  Pestañas" $16.000 — antes pedía $30.000 de seña por un servicio de
+  $16.000, ya corregido) y Depilación Láser se cobra 100% por adelantado,
+  no solo la seña. Implementado en `calcularMontoSena()`
+  (`src/lib/pricing.ts`, duplicado en `crear-preferencia.ts`).
+- ✅ **22/9/2026**: "Depilación de Bozo" confirmado con cera/hilo/pinza
+  (va con Cejas, no es la láser del 3er viernes) y "Remoción de Pestañas"
+  confirmado como turno reservable solo — ambos ya estaban bien
+  categorizados en `mockServicios.ts`, no hizo falta mover nada.
 
 ## Por cada profesional (Página 4) — Mili, Sharon, Martina, Sofía, Alexandra, Camila, Valentina
 
@@ -147,11 +156,42 @@ cargar y dónde impacta.
   afectaba qué horarios se podían reservar (eso lo deciden los horarios
   fijos, no la ventana), pero si en algún momento se muestra la ventana
   como texto en algún lado, ahora es la correcta.
+  ✅ **22/9/2026, doc "dia a dia Rose Face" — más horarios confirmados**:
+  Yosy suma un turno sábado a las 17hs y el domingo pasa a ser corto,
+  solo 10 y 12 (antes tenía los mismos 4 turnos que un día de semana).
+  Cris arranca a las 13hs de lunes a viernes (antes decía 9am — la hora
+  de cierre semanal sigue siendo estimada, no la dijo) y el sábado
+  extiende hasta las 20hs. Ari confirmó que sí trabaja sábado corrido
+  (antes era un placeholder sin confirmar).
   Sigue sin confirmar: **los días exactos de Ari** (el formulario solo
-  dio el horario "9 a 19", nunca dijo qué días) y **la ventana horaria
-  exacta de Cris** ("corrido", sin desde/hasta — hoy 9-19 es una
+  dio el horario "9 a 19" + ahora sábado, nunca dijo si trabaja TODOS los
+  días de semana) y **la hora de cierre exacta de Cris entre semana**
+  (confirmado que arranca 13hs, no cuándo termina — hoy 19hs es una
   estimación razonable, no lo que ella dijo literalmente).
 - ~~¿Trabaja en feriados?~~ ✅ ver arriba — ya está contestado por todas.
+- ⚠️ **NUEVO 22/9/2026 — "quién hace qué" real, sin aplicar todavía por
+  ser ambiguo**: el doc "dia a dia Rose Face" dice textual "Mili solo hace
+  clásicas, híbridas, volumen brasilero y efecto húmedo, Lifting de
+  pestañas, Cejas laminado, perfilado y sombreado" y "Sharon y Yosy
+  hacemos todo, eso más incluido volumen ruso". Dos cosas concretas que
+  esto cambiaría pero que NO se tocaron todavía:
+  1. Varios servicios de `mockServicios.ts` hoy incluyen a `prof-mili`
+     como opción (ej. Natural Volumen, Volumen Tecnológico YY, Lash Rose
+     Face, Volumen Brasilero 6D, Mega Volumen) que no están en esa lista
+     de 4 técnicas — no se sacó a Mili de ahí porque no hay forma 1:1 de
+     mapear "volumen brasilero" a "4D" o "6D" sin preguntarle a Yosy.
+  2. **Yosy también hace Pestañas** (no solo Cejas) — hoy
+     `profesionalesQueLoRealizan` de NINGÚN servicio de Pestañas incluye
+     a `prof-yosy`, así que una clienta no puede reservar pestañas con
+     ella aunque en la realidad sí las hace. Es un gap funcional real,
+     no solo de datos — falta decidir con Yosy si se agrega a todos los
+     servicios de Pestañas o a cuáles.
+  3. "Volumen Ruso" es la especialidad de Sharon en su bio, pero no existe
+     como servicio reservable en el catálogo — probablemente equivale a
+     "Volumen Brasilero 6D" o "Mega Volumen" en el catálogo real, pero no
+     se asumió cuál sin que Yosy lo confirme.
+  4. Quién ejecuta la Depilación Láser en sí — la pregunta se hizo en el
+     doc pero no se ve contestada en el texto extraído.
 - **Tiempo de descanso/limpieza entre turno y turno** — **no está
   implementado en el motor de disponibilidad todavía** (hoy los turnos se
   agendan pegados sin buffer). Falta decidir cómo se suma este campo a
@@ -165,12 +205,23 @@ cargar y dónde impacta.
   banco o billetera), no un alias de Mercado Pago — el copy ya lo aclara.
   Pendiente solo confirmar que sigan siendo exactos.
 - **Monto de alquiler semanal real** de Anye ($50.000), Cris ($45.000) y
-  Ariannys ($48.000), y **% de comisión** real de Mili (55%) — siguen
-  siendo placeholders, nunca confirmados por Yosy.
-- ~~% de comisión de Sharon~~ ✅ **resuelto 22/9/2026**: 45% → **50%**,
-  confirmado contra la planilla real "Agenda Sharon" (el "% Salón" que
-  cobra el estudio da matemáticamente 50% exacto en varias semanas
-  distintas — no es una estimación).
+  Ari ($48.000) — siguen siendo placeholders, nunca confirmados por Yosy.
+- ~~% de comisión de Mili~~ ✅ **resuelto 22/9/2026**: 55% confirmado,
+  palabra literal de Yosy en el doc "dia a dia Rose Face" ("Mili: 55%
+  mili, el 45% estudio"). Ya no es placeholder.
+- ⚠️ **% de comisión de Sharon — 2 fuentes que NO coinciden, sin cerrar
+  del todo**: la planilla real "Agenda Sharon" daba 50% exacto matemático
+  en varias semanas; el doc "dia a dia Rose Face" (22/9/2026) tiene la
+  respuesta literal y directa de Yosy: "Sharon: 45% Sharon, el 55%
+  estudio". Se aplicó **45%** en el código por ser la palabra directa de
+  Yosy sobre su propio negocio, pero **falta confirmárselo explícitamente**
+  antes de darlo por cerrado — puede que la planilla mezcle otro
+  descuento que no es comisión pura.
+- Alias `Crisbel.gonzalez` (Cris) — el doc nuevo lo escribe dos formas
+  distintas en el mismo documento (`Crisbel.gonzlz` en la tabla de CBU,
+  `Crisbel.gonzalez` en el texto). Se dejó `Crisbel.gonzalez` sin tocar
+  por ser un alias bancario real — confirmar cuál es el correcto antes de
+  que alguna clienta transfiera con el que esté mal.
 
 ## Recordatorios y recurrencia (Páginas 6 y 7)
 
