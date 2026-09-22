@@ -3,25 +3,22 @@ import React, { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { calcularCierreSemanal } from '../../lib/comisionesEngine';
 import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { formatCurrency } from '../../lib/formatters';
 import { hoyISO, sumarDiasISO } from '../../lib/disponibilidad';
 import {
   CircleDollarSign,
   Calendar,
-  Download,
   Building,
   UserCheck,
   Percent,
   KeyRound,
   CheckCircle,
-  HelpCircle,
   Info,
 } from 'lucide-react';
 
 export const AdminComisiones: React.FC = () => {
-  const { profesionales, turnos, rolActivo, profesionalActivoId, showToast } = useApp();
+  const { profesionales, turnos, rolActivo, profesionalActivoId } = useApp();
   const esProfesional = rolActivo === 'profesional';
 
   // Semanas reales (lunes a domingo), calculadas desde hoy — antes esto
@@ -64,10 +61,6 @@ export const AdminComisiones: React.FC = () => {
   const totalComisionesPagadas = cierres.reduce((sum, c) => sum + c.montoComisionProfesional, 0);
   const totalNetoEstudio = cierres.reduce((sum, c) => sum + c.montoParaEstudio, 0);
 
-  const handleExportarCierre = () => {
-    showToast('📄 Cierre semanal exportado en PDF / Excel con éxito');
-  };
-
   return (
     <div className="space-y-8 font-admin">
       {/* Header */}
@@ -97,11 +90,6 @@ export const AdminComisiones: React.FC = () => {
               ))}
             </select>
           </div>
-
-          <Button variant="gold" size="sm" onClick={handleExportarCierre}>
-            <Download className="w-4 h-4" />
-            <span>Exportar Cierre</span>
-          </Button>
         </div>
       </div>
 
@@ -270,23 +258,11 @@ export const AdminComisiones: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Status & Action */}
-                <div className="pt-3 border-t border-pink-100 flex items-center justify-between text-xs">
+                {/* Status */}
+                <div className="pt-3 border-t border-pink-100 flex items-center text-xs">
                   <span className="flex items-center gap-1 text-emerald-700 font-semibold">
                     <CheckCircle className="w-3.5 h-3.5" /> Liquidado
                   </span>
-
-                  {!esProfesional && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        showToast(`Detalle enviado a ${prof.nombre} por WhatsApp`)
-                      }
-                    >
-                      Enviar Recibo
-                    </Button>
-                  )}
                 </div>
               </Card>
             );
