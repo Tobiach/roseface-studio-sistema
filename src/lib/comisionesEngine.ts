@@ -5,7 +5,7 @@ import { Profesional, Turno, CierreComisionSemanal } from '../types';
  * Motor de Cálculo de Comisiones — Rose Face Studio
  * Modelo híbrido:
  * - Porcentaje: Mili (55% profesional / 45% estudio), Sharon (50% profesional / 50% estudio)
- * - Alquiler Fijo: Anye, Cris, Ariannys ($45.000 a $60.000 semanales fijos para el estudio)
+ * - Alquiler Fijo: Anye, Cris, Ari ($45.000 a $60.000 semanales fijos para el estudio)
  */
 export function calcularCierreSemanal(
   profesional: Profesional,

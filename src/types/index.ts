@@ -27,7 +27,7 @@ export interface Profesional {
   // Link de auto-agendado propio, para el aviso de recurrencia (Fase 8).
   linkAutoagenda?: string | null;
   // Extras que se suman a un servicio ya reservado (no se agendan solos,
-  // por eso no son un Servicio más) — hoy solo Ariannys (uñas).
+  // por eso no son un Servicio más) — hoy solo Ari (uñas).
   adicionales?: { nombre: string; precio: number }[];
 }
 

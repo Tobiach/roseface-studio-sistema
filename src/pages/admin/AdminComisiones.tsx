@@ -96,7 +96,7 @@ export const AdminComisiones: React.FC = () => {
             queda para Rose Face.
           </li>
           <li>
-            • <strong>Modelo Alquiler Fijo</strong> (ej. Anye, Cris, Ariannys):
+            • <strong>Modelo Alquiler Fijo</strong> (ej. Anye, Cris, Ari):
             la profesional paga un monto semanal fijo y se queda con el 100% de lo que
             factura directamente — no se le retiene comisión sobre sus turnos.
           </li>

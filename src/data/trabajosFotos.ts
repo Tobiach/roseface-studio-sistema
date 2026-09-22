@@ -64,16 +64,15 @@ export const trabajosPorProfesional: Record<string, string[]> = {
   // "prof-camila" ahora es el slot de Depilación Láser, no una persona —
   // sin galería (no hay fotos de láser).
   'prof-camila': [],
+  // Curado 22/9/2026: de las 10 fotos originales, 7 no sirven como
+  // muestra — Unas_2/3/7 casi no muestran uñas (nudillos, anillo, auto de
+  // fondo), Unas_9/10 son la misma foto duplicada, y Unas_5/6 (también
+  // duplicadas entre sí) tienen el cartel de neón de OTRO local de uñas
+  // de fondo ("NAN NAII...") — no son trabajos de Rose Face. Quedan solo
+  // las 3 que sí muestran la mano completa y están bien encuadradas.
   'prof-alexandra': [
     'Unas_1.jpg',
-    'Unas_2.jpg',
-    'Unas_3.jpg',
     'Unas_4.jpg',
-    'Unas_5.jpg',
-    'Unas_6.jpg',
-    'Unas_7.jpg',
     'Unas_8.jpg',
-    'Unas_9.jpg',
-    'Unas_10.jpg',
   ].map(urlFor),
 };

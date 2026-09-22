@@ -175,7 +175,7 @@ export const mockProfesionales: Profesional[] = [
   },
   {
     id: 'prof-alexandra',
-    nombre: 'Ariannys',
+    nombre: 'Ari',
     fotoUrl: fotoAlexandra,
     especialidades: ['Uñas', 'Semipermanente', 'Esculpidas'],
     bio: 'Nail artist. Capping en gel, esculpidas en acrílico y esmaltado semipermanente con nail art personalizado.',
@@ -205,7 +205,7 @@ export const mockProfesionales: Profesional[] = [
     },
     // Extras que se suman a un servicio ya reservado — no van al flujo de
     // Reserva (no son un turno en sí). Lista real del cartel de precios de
-    // Ariannys (22/9/2026); queda 1 ítem cortado en la foto sin cargar.
+    // Ari (22/9/2026); queda 1 ítem cortado en la foto sin cargar.
     adicionales: [
       { nombre: 'Retiro común', precio: 3000 },
       { nombre: 'Retiro Semipermanente', precio: 8000 },
