@@ -24,8 +24,11 @@ export const mockProfesionales: Profesional[] = [
     id: 'prof-yosy',
     nombre: 'Yosy',
     fotoUrl: fotoYosy,
-    especialidades: ['Cejas', 'Laminado de Cejas'],
-    bio: 'Fundadora de Rose Face Studio. Especialista en cejas y laminado — diseño de mirada, cejas definidas y con efecto duradero.',
+    // Sumado 'Pestañas' (22/9/2026): "Sharon y Yosy hacemos todo, eso más
+    // incluido volumen ruso" (doc "dia a dia Rose Face") — Yosy también
+    // hace pestañas, no solo cejas.
+    especialidades: ['Cejas', 'Laminado de Cejas', 'Pestañas'],
+    bio: 'Fundadora de Rose Face Studio. Especialista en cejas, laminado y pestañas — diseño de mirada, cejas definidas y con efecto duradero.',
     aniosExperiencia: 8,
     galeria: trabajosPorProfesional['prof-yosy'],
     calificacionPromedio: 5.0,
@@ -86,21 +89,19 @@ export const mockProfesionales: Profesional[] = [
     id: 'prof-sharon',
     nombre: 'Sharon',
     fotoUrl: fotoSharon,
-    especialidades: ['Pestañas', 'Volumen Ruso'],
-    bio: 'Experta certificada en extensiones pelo a pelo y volumen ruso. Enfoque hiper-detallista.',
+    // Sumado 'Cejas' (22/9/2026), mismo dato que en Yosy: "Sharon y Yosy
+    // hacemos todo" — Sharon también hace cejas, no solo pestañas.
+    especialidades: ['Pestañas', 'Volumen Ruso', 'Cejas'],
+    bio: 'Experta certificada en extensiones pelo a pelo, volumen ruso y cejas. Enfoque hiper-detallista.',
     aniosExperiencia: 3,
     galeria: trabajosPorProfesional['prof-sharon'],
     calificacionPromedio: 4.9,
     cantidadResenas: 142,
-    // OJO — dos fuentes distintas dan números distintos:
-    // 1) La planilla real "Agenda Sharon": "% Salón" salía matemáticamente
-    //    50% exacto en varias semanas.
-    // 2) El doc "dia a dia Rose Face" (22/9/2026), respuesta literal y
-    //    directa de Yosy: "Sharon: 45% Sharon, el 55% estudio".
-    // Se usa 45% acá porque es la palabra directa de Yosy sobre SU propio
-    // negocio (más autoritativa que una inferencia mía sobre una planilla
-    // que puede tener otros descuentos mezclados) — pero esto se le debe
-    // confirmar explícitamente antes de cerrarlo del todo.
+    // 45% CONFIRMADO — Yosy lo reconfirmó directo por WhatsApp con Tobias
+    // (22/9/2026), después de que la planilla "Agenda Sharon" diera 50%
+    // matemático y el doc "dia a dia Rose Face" ya dijera 45% por escrito.
+    // Ya no es un dato en duda: la planilla debe tener otro descuento
+    // mezclado en el "% Salón" que no es la comisión pura.
     modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 45 },
     // Lunes a sábado. Bloques de 2h: 9/11/14/16/18/20.
     horarioDisponible: {

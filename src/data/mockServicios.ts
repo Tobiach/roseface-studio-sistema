@@ -7,6 +7,14 @@ import { Servicio } from '../types';
 export const mockServicios: Servicio[] = [
 
   // ===== PESTAÑAS =====
+  // "Quién hace qué" real (doc "dia a dia Rose Face", 22/9/2026): "Mili
+  // solo hace clásicas, híbridas, volumen brasilero y efecto húmedo,
+  // Lifting de pestañas" — se sacó a Mili de las 5 técnicas que no dijo
+  // (Natural Volumen, Volumen Tecnológico YY, Medio Volumen, Lash Rose
+  // Face, Mega Volumen). Y "Sharon y Yosy hacemos todo, eso más incluido
+  // volumen ruso" — se agregó a Yosy en todo lo que ya tenía Sharon
+  // (menos Lifting, que siempre fue solo de Mili, sin relación con este
+  // dato nuevo).
   {
     id: 'serv-pestanas-remocion',
     nombre: 'Remoción de Pestañas',
@@ -16,7 +24,7 @@ export const mockServicios: Servicio[] = [
     precio: 16000,
     requiereSena: true,
     puntosVIP: 0,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon', 'prof-yosy'],
   },
   {
     id: 'serv-pestanas-clasica',
@@ -27,7 +35,7 @@ export const mockServicios: Servicio[] = [
     precio: 37000,
     requiereSena: true,
     puntosVIP: 10,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon', 'prof-yosy'],
   },
   {
     id: 'serv-lifting',
@@ -49,7 +57,7 @@ export const mockServicios: Servicio[] = [
     precio: 38500,
     requiereSena: true,
     puntosVIP: 10,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon', 'prof-yosy'],
   },
   {
     id: 'serv-pestanas-natural-volumen',
@@ -60,7 +68,7 @@ export const mockServicios: Servicio[] = [
     precio: 39000,
     requiereSena: true,
     puntosVIP: 10,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-sharon', 'prof-yosy'],
   },
   {
     id: 'serv-pestanas-efecto-humedo',
@@ -71,7 +79,7 @@ export const mockServicios: Servicio[] = [
     precio: 40500,
     requiereSena: true,
     puntosVIP: 12,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon', 'prof-yosy'],
   },
   {
     id: 'serv-pestanas-volumen-tecnologico',
@@ -82,7 +90,7 @@ export const mockServicios: Servicio[] = [
     precio: 41000,
     requiereSena: true,
     puntosVIP: 12,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-sharon', 'prof-yosy'],
   },
   {
     id: 'serv-pestanas-medio-volumen',
@@ -93,7 +101,7 @@ export const mockServicios: Servicio[] = [
     precio: 43000,
     requiereSena: true,
     puntosVIP: 12,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-sharon', 'prof-yosy'],
   },
   {
     id: 'serv-pestanas-roseface',
@@ -104,7 +112,7 @@ export const mockServicios: Servicio[] = [
     precio: 45000,
     requiereSena: true,
     puntosVIP: 12,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-sharon', 'prof-yosy'],
   },
   {
     id: 'serv-pestanas-brasileno-4d',
@@ -115,7 +123,7 @@ export const mockServicios: Servicio[] = [
     precio: 45000,
     requiereSena: true,
     puntosVIP: 15,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon', 'prof-yosy'],
   },
   {
     id: 'serv-pestanas-brasileno-6d',
@@ -126,7 +134,7 @@ export const mockServicios: Servicio[] = [
     precio: 48000,
     requiereSena: true,
     puntosVIP: 15,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon', 'prof-yosy'],
   },
   {
     id: 'serv-pestanas-mega-volumen',
@@ -137,10 +145,13 @@ export const mockServicios: Servicio[] = [
     precio: 48000,
     requiereSena: true,
     puntosVIP: 15,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-sharon', 'prof-yosy'],
   },
 
   // ===== CEJAS =====
+  // Sharon sumada acá también (22/9/2026): "Sharon y Yosy hacemos todo"
+  // responde a una pregunta que cubría Pestañas Y Cejas juntas (el
+  // ejemplo puntual de la pregunta era justo "laminado de cejas").
   {
     id: 'serv-cejas-bozo',
     nombre: 'Depilación de Bozo',
@@ -150,7 +161,7 @@ export const mockServicios: Servicio[] = [
     precio: 15000,
     requiereSena: true,
     puntosVIP: 0,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-yosy'],
+    profesionalesQueLoRealizan: ['prof-mili', 'prof-yosy', 'prof-sharon'],
   },
   {
     id: 'serv-cejas-sombreado',
@@ -161,7 +172,7 @@ export const mockServicios: Servicio[] = [
     precio: 23000,
     requiereSena: true,
     puntosVIP: 6,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-yosy'],
+    profesionalesQueLoRealizan: ['prof-mili', 'prof-yosy', 'prof-sharon'],
   },
   {
     id: 'serv-cejas-perfilado',
@@ -172,7 +183,7 @@ export const mockServicios: Servicio[] = [
     precio: 25000,
     requiereSena: true,
     puntosVIP: 5,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-yosy'],
+    profesionalesQueLoRealizan: ['prof-mili', 'prof-yosy', 'prof-sharon'],
   },
   {
     id: 'serv-cejas-laminado',
@@ -183,7 +194,7 @@ export const mockServicios: Servicio[] = [
     precio: 34000,
     requiereSena: true,
     puntosVIP: 8,
-    profesionalesQueLoRealizan: ['prof-yosy'],
+    profesionalesQueLoRealizan: ['prof-yosy', 'prof-sharon'],
   },
   {
     id: 'serv-cejas-perfilado-sombreado',
@@ -194,7 +205,7 @@ export const mockServicios: Servicio[] = [
     precio: 36000,
     requiereSena: true,
     puntosVIP: 0,
-    profesionalesQueLoRealizan: ['prof-mili', 'prof-yosy'],
+    profesionalesQueLoRealizan: ['prof-mili', 'prof-yosy', 'prof-sharon'],
   },
   {
     id: 'serv-cejas-laminado-perfilado',
@@ -205,7 +216,7 @@ export const mockServicios: Servicio[] = [
     precio: 43000,
     requiereSena: true,
     puntosVIP: 0,
-    profesionalesQueLoRealizan: ['prof-yosy'],
+    profesionalesQueLoRealizan: ['prof-yosy', 'prof-sharon'],
   },
 
   // ===== UÑAS =====

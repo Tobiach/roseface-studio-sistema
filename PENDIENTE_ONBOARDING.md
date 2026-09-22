@@ -27,7 +27,13 @@ cargar y dónde impacta.
   mandó Yosy (11 servicios, precios y orden de aparición al reservar) —
   ya en Supabase y en `mockServicios.ts`. Ver `ordenarServicios()` en
   `src/lib/ordenServicios.ts` para el orden.
-- **Lista de precios de Cejas** — sigue sin confirmar (estimación inicial).
+- ~~Lista de precios de Cejas~~ ✅ **releído el formulario original
+  22/9/2026, este doc estaba desactualizado**: SÍ están confirmados desde
+  el 8/9 — Perfilado $25.000, Perfilado+Sombreado $36.000, Sombreado
+  $23.000, Depilación de Bozo $15.000, Laminado $34.000, Laminado+
+  Perfilado $43.000 — los 6 coinciden exacto con lo que ya está cargado
+  en `mockServicios.ts`. No hacía falta preguntarle nada nuevo a Yosy
+  sobre esto.
 - ~~Uñas~~ ✅ verificado 22/9/2026 contra el cartel real de Ariannys: los
   13 servicios que ya estaban cargados coinciden en precio exacto. Se
   agregaron los 6 "adicionales" que faltaban (ver más abajo, sección de
@@ -50,6 +56,17 @@ cargar y dónde impacta.
   (va con Cejas, no es la láser del 3er viernes) y "Remoción de Pestañas"
   confirmado como turno reservable solo — ambos ya estaban bien
   categorizados en `mockServicios.ts`, no hizo falta mover nada.
+- ⚠️ **Precio de Depilación Láser ($15.000 en el sistema) — sospecho que
+  está MAL, no solo "sin confirmar"**: releyendo el formulario original
+  palabra por palabra (22/9/2026) confirmo que Yosy nunca dio un precio
+  para la depilación láser en sí — y el número $15.000 que hoy tiene
+  cargado el sistema es EXACTAMENTE igual al precio de "Depilación de
+  Bozo" (Cejas, cera/hilo). Da la sensación de que en la carga inicial se
+  confundieron los dos servicios por tener nombres parecidos ("Depilación
+  de Bozo" vs. "Depilación Láser"). No lo cambié porque no tengo un
+  número real para reemplazarlo — pero no lo trataría como una
+  estimación razonable, sino como probablemente incorrecto. Hace falta
+  el tarifario real (por zona o precio flat) directo de Yosy.
 
 ## Por cada profesional (Página 4) — Mili, Sharon, Martina, Sofía, Alexandra, Camila, Valentina
 
@@ -168,30 +185,40 @@ cargar y dónde impacta.
   días de semana) y **la hora de cierre exacta de Cris entre semana**
   (confirmado que arranca 13hs, no cuándo termina — hoy 19hs es una
   estimación razonable, no lo que ella dijo literalmente).
+  ✅ **Reconfirmado 22/9/2026, releyendo el formulario original palabra
+  por palabra**: estos dos datos genuinamente NO están en ningún lado —
+  a diferencia del resto de las profesionales (todas tienen una frase
+  explícita tipo "de lunes a sábado" o "de martes a sábado"), la fila de
+  Ari nunca tiene ese tramo de días, solo el horario. Y la de Cris dice
+  literal "colócale 2 horas de turnos y ella después los va bloqueando"
+  — nunca dio una hora de cierre. No es que se perdió un dato, es que
+  Yosy nunca lo escribió.
 - ~~¿Trabaja en feriados?~~ ✅ ver arriba — ya está contestado por todas.
-- ⚠️ **NUEVO 22/9/2026 — "quién hace qué" real, sin aplicar todavía por
-  ser ambiguo**: el doc "dia a dia Rose Face" dice textual "Mili solo hace
-  clásicas, híbridas, volumen brasilero y efecto húmedo, Lifting de
-  pestañas, Cejas laminado, perfilado y sombreado" y "Sharon y Yosy
-  hacemos todo, eso más incluido volumen ruso". Dos cosas concretas que
-  esto cambiaría pero que NO se tocaron todavía:
-  1. Varios servicios de `mockServicios.ts` hoy incluyen a `prof-mili`
-     como opción (ej. Natural Volumen, Volumen Tecnológico YY, Lash Rose
-     Face, Volumen Brasilero 6D, Mega Volumen) que no están en esa lista
-     de 4 técnicas — no se sacó a Mili de ahí porque no hay forma 1:1 de
-     mapear "volumen brasilero" a "4D" o "6D" sin preguntarle a Yosy.
-  2. **Yosy también hace Pestañas** (no solo Cejas) — hoy
-     `profesionalesQueLoRealizan` de NINGÚN servicio de Pestañas incluye
-     a `prof-yosy`, así que una clienta no puede reservar pestañas con
-     ella aunque en la realidad sí las hace. Es un gap funcional real,
-     no solo de datos — falta decidir con Yosy si se agrega a todos los
-     servicios de Pestañas o a cuáles.
-  3. "Volumen Ruso" es la especialidad de Sharon en su bio, pero no existe
-     como servicio reservable en el catálogo — probablemente equivale a
-     "Volumen Brasilero 6D" o "Mega Volumen" en el catálogo real, pero no
-     se asumió cuál sin que Yosy lo confirme.
-  4. Quién ejecuta la Depilación Láser en sí — la pregunta se hizo en el
-     doc pero no se ve contestada en el texto extraído.
+- ✅ **"Quién hace qué" — aplicado 22/9/2026** (doc "dia a dia Rose Face",
+  confirmado por Tobias): "Mili solo hace clásicas, híbridas, volumen
+  brasilero y efecto húmedo, Lifting de pestañas, Cejas laminado,
+  perfilado y sombreado" y "Sharon y Yosy hacemos todo, eso más incluido
+  volumen ruso" (la pregunta original cubría Pestañas Y Cejas juntas, el
+  ejemplo puntual era "laminado de cejas"). Aplicado en código + Supabase:
+  1. Se sacó a Mili de las 5 técnicas de Pestañas que no dijo (Natural
+     Volumen, Volumen Tecnológico YY, Medio Volumen, Lash Rose Face, Mega
+     Volumen) — sigue en clásicas/híbridas/efecto húmedo/4D/6D/lifting
+     (volumen brasilero cubre 4D y 6D, no hay forma de separarlos más).
+  2. Yosy y Sharon ahora están en `profesionalesQueLoRealizan` de todos
+     los servicios de Pestañas Y Cejas del otro (menos Lifting, que
+     siempre fue solo de Mili, sin relación con este dato). Antes una
+     clienta no podía reservar pestañas con Yosy ni cejas con Sharon
+     aunque en la realidad las dos hacen todo — gap funcional real, ya
+     resuelto. Especialidades actualizadas en su bio también.
+  3. "Volumen Ruso" sigue sin existir como servicio reservable propio —
+     se decidió NO forzarlo a "4D" o "6D" sin que Yosy lo confirme, sigue
+     como pendiente.
+  4. Quién ejecuta la Depilación Láser: **releyendo el formulario
+     original** (no solo el doc nuevo) SÍ está contestado, se me había
+     pasado — "La depilación no es necesario colocar un nombre, una
+     especialista, solo los turnos" = no es una persona con nombre propio,
+     coincide con cómo ya está modelado (`prof-camila` como slot genérico
+     de equipamiento, no una persona). No es un gap, ya estaba bien.
 - **Tiempo de descanso/limpieza entre turno y turno** — **no está
   implementado en el motor de disponibilidad todavía** (hoy los turnos se
   agendan pegados sin buffer). Falta decidir cómo se suma este campo a
@@ -204,19 +231,20 @@ cargar y dónde impacta.
   Ariannys → `Aribell.st`. Es transferencia bancaria genérica (cualquier
   banco o billetera), no un alias de Mercado Pago — el copy ya lo aclara.
   Pendiente solo confirmar que sigan siendo exactos.
-- **Monto de alquiler semanal real** de Anye ($50.000), Cris ($45.000) y
-  Ari ($48.000) — siguen siendo placeholders, nunca confirmados por Yosy.
+- ⚠️ **Monto de alquiler semanal real** de Anye ($50.000), Cris ($45.000)
+  y Ari ($48.000) — siguen siendo placeholders. **Reconfirmado
+  22/9/2026** (Tobias preguntó explícitamente si esto existe en algún
+  lado): no está ni en el formulario original ni en el doc "dia a dia
+  Rose Face" — genuinamente nunca se lo preguntamos a Yosy en esos
+  términos. Es 100% pendiente de preguntarle.
 - ~~% de comisión de Mili~~ ✅ **resuelto 22/9/2026**: 55% confirmado,
   palabra literal de Yosy en el doc "dia a dia Rose Face" ("Mili: 55%
   mili, el 45% estudio"). Ya no es placeholder.
-- ⚠️ **% de comisión de Sharon — 2 fuentes que NO coinciden, sin cerrar
-  del todo**: la planilla real "Agenda Sharon" daba 50% exacto matemático
-  en varias semanas; el doc "dia a dia Rose Face" (22/9/2026) tiene la
-  respuesta literal y directa de Yosy: "Sharon: 45% Sharon, el 55%
-  estudio". Se aplicó **45%** en el código por ser la palabra directa de
-  Yosy sobre su propio negocio, pero **falta confirmárselo explícitamente**
-  antes de darlo por cerrado — puede que la planilla mezcle otro
-  descuento que no es comisión pura.
+- ~~% de comisión de Sharon~~ ✅ **CERRADO 22/9/2026**: 45%. Había 2
+  fuentes que no coincidían (la planilla real "Agenda Sharon" daba 50%
+  matemático, el doc nuevo decía 45% por escrito) — Tobias confirmó con
+  Yosy directo por WhatsApp que es **45%**. La planilla debe tener otro
+  descuento mezclado en el "% Salón" que no es la comisión pura.
 - Alias `Crisbel.gonzalez` (Cris) — el doc nuevo lo escribe dos formas
   distintas en el mismo documento (`Crisbel.gonzlz` en la tabla de CBU,
   `Crisbel.gonzalez` en el texto). Se dejó `Crisbel.gonzalez` sin tocar
