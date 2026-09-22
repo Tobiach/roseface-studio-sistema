@@ -34,16 +34,16 @@ cargar y dónde impacta.
 
 - **Nombre y apellido real completo** — hoy se muestra el apodo en todos
   lados; interno, no bloquea nada.
-- ~~Foto de perfil~~ ✅ **resuelto 22/9/2026** (hubo tres idas y vueltas
+- ~~Foto de perfil~~ ✅ **resuelto 22/9/2026** (hubo varias idas y vueltas
   sobre quién era "Ari" — este es el estado FINAL, confirmado por Tobias
   viendo el sitio en vivo, no seguir corrigiendo sin verlo en producción
-  primero): `prof-sharon` (id) = **Sharon**, hace Pestañas, foto real,
-  todavía sin video. `prof-alexandra` (id) = **Ariannys**, hace Uñas,
-  foto real + video "Video Ari pestañas". Los NOMBRES quedaron como
-  siempre estuvieron (Sharon en `prof-sharon`, Ariannys en
-  `prof-alexandra`) — lo que se corrigió al final fue solo qué FOTO y qué
-  VIDEO tenía cada una (estaban cruzados). Las 6 personas tienen foto
-  real. Como los servicios se mapean por id y no por nombre, nunca hizo
+  primero): `prof-sharon` (id) = **Sharon**, hace Pestañas, foto real +
+  video "Video Ari pestañas". `prof-alexandra` (id) = **Ariannys**, hace
+  Uñas, foto real, todavía sin video. Los NOMBRES quedaron como siempre
+  estuvieron (Sharon en `prof-sharon`, Ariannys en `prof-alexandra`) — lo
+  que se corrigió al final fue solo qué FOTO y qué VIDEO tenía cada una
+  (estaban cruzados). Las 6 personas tienen foto real. Como los servicios
+  se mapean por id y no por nombre, nunca hizo
   falta tocar `mockServicios.ts`.
   ⚠️ **Sin confirmar todavía**: el % de comisión (45%, en `prof-sharon`)
   y el alquiler + alias `Aribell.st` (en `prof-alexandra`) — si Sharon y
@@ -70,17 +70,17 @@ cargar y dónde impacta.
   además del horizontal, para Shorts.
   ✅ **22/9/2026 — 4 de 7 cargados en Supabase** (efecto inmediato, sin
   deploy — `video_url` se lee en vivo): Cris (`A6tZdj1x0bo`), Mili
-  (`5ip0rEsB1E4`), Yosy (`Xe4aapAiic0`) y **Ariannys** (`prof-alexandra`,
-  "Video Ari pestañas" → `L2nnG27xtGc`) — el video se movió de
-  `prof-sharon` a `prof-alexandra` junto con la corrección de la foto.
-  Queda un segundo video de ella sin usar (`DC9s9AGWOCI`, "video ari" —
-  Drive: "video ari OK.mp4") por si hace falta.
+  (`5ip0rEsB1E4`), Yosy (`Xe4aapAiic0`) y **Sharon** (`prof-sharon`,
+  "Video Ari pestañas" → `L2nnG27xtGc` — confirmado por Tobias como el
+  video definitivo de Sharon). Queda un segundo video de ella sin usar
+  (`DC9s9AGWOCI`, "video ari" — Drive: "video ari OK.mp4") por si hace
+  falta.
   🎥 **Pendiente subir a YouTube**: "video sharon OK.mp4" (Drive,
   22/9/2026, `10whBBNySCXjWtM4ZUfmEDR_jOb8OKP5W`, 12.8MB) — llegó como
-  link de Drive, no de YouTube. Falta que lo suban como "Oculto" (no
-  "Privado") y pasen el link de YouTube para cargarlo en `prof-sharon`.
+  link de Drive, no de YouTube. Todavía sin usar — Sharon ya tiene un
+  video puesto (arriba); confirmar si este lo reemplaza o no hace falta.
   ⚠️ **Faltan videos, y no existen en Drive todavía — hay que
-  pedírselos a Yosy**: **Anye** y **Depilación Láser** (video del
+  pedírselos a Yosy**: **Ariannys**, **Anye** y **Depilación Láser** (video del
   lugar/equipamiento, no de una persona).
   Detalle histórico (18-20/9): Yosy (vía cuenta control.evo.admin,
   probablemente Tobias comprimiendo) subió 6 videos .mp4 ya bien
