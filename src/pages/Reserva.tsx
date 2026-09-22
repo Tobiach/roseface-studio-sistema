@@ -27,7 +27,7 @@ import {
 export const Reserva: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { servicios, profesionales, turnos, bloqueos, crearTurno, actualizarEstadoTurno, buscarOCrearClienta, showToast } = useApp();
+  const { servicios, profesionales, turnos, bloqueos, crearTurno, registrarTurnoLocal, actualizarEstadoTurno, buscarOCrearClienta, showToast } = useApp();
 
   // El paso vive en la URL (?paso=N) para que el botón atrás del navegador
   // (o el gesto del celular) retroceda de a un paso, en vez de sacarte de
@@ -183,6 +183,29 @@ export const Reserva: React.FC = () => {
       const data = await response.json();
 
       if (data.circuito === 'transferencia') {
+        // El turno ya lo creó el servidor (estado 'reservado'). Como acá no
+        // se recarga la página (navigate de React Router, no un link
+        // externo), hay que sumarlo al estado local para que si la misma
+        // clienta vuelve a "Reservar Turno" en esta sesión, el horario ya
+        // aparezca ocupado sin esperar un refetch completo.
+        registrarTurnoLocal({
+          id: data.turnoId,
+          clientaId: '',
+          profesionalId: profesionalSeleccionado.id,
+          servicioId: servicioSeleccionado.id,
+          fecha: data.fecha,
+          horaInicio: data.hora,
+          horaFin,
+          estado: 'reservado',
+          montoTotal: Number(data.montoTotal ?? servicioSeleccionado.precio),
+          montoSena: Number(data.montoSena),
+          senaVerificadaAutomaticamente: false,
+          fechaCreacion: new Date().toISOString(),
+          origenReserva: 'web',
+          idTransaccionMP: null,
+          circuitoPago: 'transferencia',
+        });
+
         const params = new URLSearchParams({
           turnoId: data.turnoId,
           aliasCbu: data.aliasCbu ?? '',

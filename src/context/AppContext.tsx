@@ -49,6 +49,7 @@ interface AppContextType {
   toastMessage: string | null;
   showToast: (msg: string) => void;
   crearTurno: (data: Omit<Turno, 'id' | 'fechaCreacion'>) => Promise<Turno>;
+  registrarTurnoLocal: (turno: Turno) => void;
   actualizarEstadoTurno: (id: string, nuevoEstado: EstadoTurno, notasInternas?: string) => Promise<void>;
   reprogramarTurno: (id: string, fecha: string, horaInicio: string, horaFin: string) => Promise<void>;
   subirComprobante: (turnoId: string, file: File) => Promise<void>;
@@ -272,6 +273,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTurnos((prev) => [nuevoTurno, ...prev]);
     showToast(`✨ Turno reservado con éxito para el ${nuevoTurno.fecha}`);
     return nuevoTurno;
+  };
+
+  // Para el turno que ya creó el SERVIDOR en /api/mercadopago/crear-preferencia
+  // (circuito transferencia): la SPA no vuelve a insertarlo, solo lo suma acá
+  // para que calcularHorariosDisponibles() lo vea ocupado de inmediato si la
+  // misma clienta vuelve a "Reservar Turno" en la misma sesión, sin esperar a
+  // un refetch completo (que solo pasa al recargar la página).
+  const registrarTurnoLocal = (turno: Turno) => {
+    setTurnos((prev) => [turno, ...prev]);
   };
 
   const actualizarEstadoTurno = async (id: string, nuevoEstado: EstadoTurno, notasInternas?: string) => {
@@ -542,6 +552,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toastMessage,
         showToast,
         crearTurno,
+        registrarTurnoLocal,
         actualizarEstadoTurno,
         reprogramarTurno,
         subirComprobante,
