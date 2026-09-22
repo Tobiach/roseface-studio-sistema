@@ -1,11 +1,12 @@
 // src/pages/admin/AdminComisiones.tsx
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { calcularCierreSemanal } from '../../lib/comisionesEngine';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { formatCurrency } from '../../lib/formatters';
+import { hoyISO, sumarDiasISO } from '../../lib/disponibilidad';
 import {
   CircleDollarSign,
   Calendar,
@@ -22,7 +23,30 @@ import {
 export const AdminComisiones: React.FC = () => {
   const { profesionales, turnos, rolActivo, profesionalActivoId, showToast } = useApp();
   const esProfesional = rolActivo === 'profesional';
-  const [semanaSeleccionada, setSemanaSeleccionada] = useState<string>('2026-08-17|2026-08-23');
+
+  // Semanas reales (lunes a domingo), calculadas desde hoy — antes esto
+  // eran 3 semanas de agosto 2026 hardcodeadas, así que pasado ese mes el
+  // panel ya no tenía forma de mostrar ninguna semana real. Genera la
+  // semana actual + las 7 anteriores para poder cerrar cualquier semana
+  // pasada reciente.
+  const semanasDisponibles = useMemo(() => {
+    const hoy = hoyISO();
+    const diaSemana = new Date(`${hoy}T12:00:00`).getDay(); // 0=domingo..6=sábado
+    const offsetALunes = diaSemana === 0 ? -6 : 1 - diaSemana;
+    const lunesActual = sumarDiasISO(hoy, offsetALunes);
+    const fmt = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+
+    return Array.from({ length: 8 }, (_, i) => {
+      const inicio = sumarDiasISO(lunesActual, -7 * i);
+      const fin = sumarDiasISO(inicio, 6);
+      return {
+        value: `${inicio}|${fin}`,
+        label: `Semana: ${fmt(inicio)} a ${fmt(fin)}${i === 0 ? ' (Actual)' : ''}`,
+      };
+    });
+  }, []);
+
+  const [semanaSeleccionada, setSemanaSeleccionada] = useState<string>(semanasDisponibles[0].value);
   const [semanaInicio, semanaFin] = semanaSeleccionada.split('|');
 
   // Un profesional solo ve su propio cierre — no el del resto del equipo
@@ -66,9 +90,11 @@ export const AdminComisiones: React.FC = () => {
               onChange={(e) => setSemanaSeleccionada(e.target.value)}
               className="bg-transparent focus:outline-none cursor-pointer"
             >
-              <option value="2026-08-17|2026-08-23">Semana: 17/08 a 23/08 (Actual)</option>
-              <option value="2026-08-10|2026-08-16">Semana: 10/08 a 16/08</option>
-              <option value="2026-08-03|2026-08-09">Semana: 03/08 a 09/08</option>
+              {semanasDisponibles.map((semana) => (
+                <option key={semana.value} value={semana.value}>
+                  {semana.label}
+                </option>
+              ))}
             </select>
           </div>
 
