@@ -40,6 +40,17 @@ cargar y dónde impacta.
 
 ## Por cada profesional (Página 4) — Mili, Sharon, Martina, Sofía, Alexandra, Camila, Valentina
 
+- ✅ **22/9/2026**: Ariannys (id `prof-alexandra`) pasa a mostrarse como
+  **"Ari"** en toda la web, URL de perfil incluida (`/profesionales/ari`,
+  se genera sola desde el nombre).
+- ⚠️ **Galería de uñas — solo 3 fotos reales sirven de las 10 que había**:
+  al revisarlas una por una (22/9/2026) se encontró que Unas_2/3/7 casi
+  no muestran uñas, Unas_9/10 son la misma foto duplicada, y Unas_5/6
+  (también duplicadas entre sí) tienen de fondo el cartel de neón de
+  **otro local de uñas** — no son trabajos de Rose Face. Se sacaron las 7
+  de la galería de Ari; quedan `Unas_1`, `Unas_4`, `Unas_8`. **Hace falta
+  pedirle a Yosy/Ari fotos nuevas reales** — el pool actual está casi
+  agotado.
 - **Nombre y apellido real completo** — hoy se muestra el apodo en todos
   lados; interno, no bloquea nada.
 - ~~Foto de perfil~~ ✅ **resuelto 22/9/2026** (hubo varias idas y vueltas
