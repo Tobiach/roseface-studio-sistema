@@ -23,10 +23,18 @@ cargar y dónde impacta.
   mandó Yosy (11 servicios, precios y orden de aparición al reservar) —
   ya en Supabase y en `mockServicios.ts`. Ver `ordenarServicios()` en
   `src/lib/ordenServicios.ts` para el orden.
-- **Lista de precios de Cejas y Uñas** — los cargados hoy en
-  `src/data/mockServicios.ts` / tabla `servicios` son la estimación inicial
-  con la que se armó el sistema, nunca confirmados por Yosy.
-- **Servicios nuevos o dados de baja** que no estén en la lista actual.
+- **Lista de precios de Cejas** — sigue sin confirmar (estimación inicial).
+- ~~Uñas~~ ✅ verificado 22/9/2026 contra el cartel real de Ariannys: los
+  13 servicios que ya estaban cargados coinciden en precio exacto. Se
+  agregaron los 6 "adicionales" que faltaban (ver más abajo, sección de
+  cada profesional) — **queda 1 fila cortada en la foto sin poder leer**,
+  puede faltar 1 adicional más.
+- ✅ **22/9/2026 — Alisados (Anye) y Faciales/Corporales (Cris)
+  reestructurados** con los carteles reales — ver el detalle en la
+  sección de cada profesional más abajo. **La duración de estos ~25
+  servicios es una estimación mía** (Anye y Cris nunca dieron cuánto dura
+  cada tratamiento) — confirmar antes de que el motor de turnos fijos la
+  use en serio.
 - Confirmación de la seña fija ($20.000, sin excepción) — ya implementada
   y confirmada con Tobias; el formulario solo la re-confirma con Yosy.
 
@@ -98,6 +106,22 @@ cargar y dónde impacta.
   misma limitación del conector (ver arriba) — y la lección del 18/9 fue
   que el nombre de archivo no siempre coincide con lo que dice la foto.
   No cargar sin verificar visualmente primero.
+- ✅ **22/9/2026 — carteles de precios reales de Anye, Cris y Ariannys**
+  (3 fotos + 1 "estructura" sin terminar) verificados número por número
+  contra la web. Aplicado: Alisados de Anye (4 niveles reales), Faciales
+  + Corporales de Cris (21 servicios reales, categoría dividida en dos),
+  Adicionales de Ariannys (6 ítems). Sin foto todavía para ninguno de
+  estos servicios nuevos (decisión: cargar sin foto por ahora). Detalle
+  completo del análisis en la memoria del proyecto.
+- **3 planillas de "Agenda" (Sharon, Yosy/negocio, Mili)** — ledger diario
+  real de turnos, pagos y comisión por semana desde hace años. Confirmado
+  22/9/2026: la planilla sin nombre es de **Yosy / el negocio en
+  general**, no de una profesional puntual. De acá salió la corrección
+  del % de Sharon (arriba). Falta la extracción completa mes por mes —
+  puede servir para: confirmar comisión real de Mili y alquileres de
+  Anye/Cris/Ariannys, y armar la lista de clientas frecuentes para
+  precargar (pendiente histórico, ver "Recordatorios y recurrencia" más
+  abajo).
 - **Días y horarios de trabajo reales** — los cargados en el seed de
   Supabase (`profesionales.horario_disponible`) son un supuesto inicial,
   no confirmados una por una con cada profesional. Esto alimenta
@@ -118,12 +142,12 @@ cargar y dónde impacta.
   banco o billetera), no un alias de Mercado Pago — el copy ya lo aclara.
   Pendiente solo confirmar que sigan siendo exactos.
 - **Monto de alquiler semanal real** de Anye ($50.000), Cris ($45.000) y
-  Ariannys ($48.000), y **% de comisión** real de Mili (55%) y Sharon
-  (45%) — todos siguen siendo placeholders puestos para poder probar el
-  sistema, nunca confirmados por Yosy. Alimenta directo el panel de
-  Comisiones (`AdminComisiones.tsx`) — con el número real mal, la cuenta
-  que Yosy le
-  paga a cada una sale mal.
+  Ariannys ($48.000), y **% de comisión** real de Mili (55%) — siguen
+  siendo placeholders, nunca confirmados por Yosy.
+- ~~% de comisión de Sharon~~ ✅ **resuelto 22/9/2026**: 45% → **50%**,
+  confirmado contra la planilla real "Agenda Sharon" (el "% Salón" que
+  cobra el estudio da matemáticamente 50% exacto en varias semanas
+  distintas — no es una estimación).
 
 ## Recordatorios y recurrencia (Páginas 6 y 7)
 
