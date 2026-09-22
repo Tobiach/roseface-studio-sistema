@@ -93,11 +93,15 @@ export const AdminComisiones: React.FC = () => {
         </div>
       </div>
 
-      {/* Explicación del cálculo — visible tanto para la dueña como para cada profesional */}
+      {/* Explicación del cálculo — SOLO la dueña. Nombra los % y el modelo de
+          cada una (ej. "Mili 55%, Sharon 45%"), así que una profesional no
+          debe verla nunca — no tiene que saber la modalidad ni el % de las
+          demás, ni cuánto se queda el estudio. */}
+      {!esProfesional && (
       <Card className="bg-sky-50/60 border-sky-200 space-y-2">
         <div className="flex items-center gap-2 text-sky-900 font-bold text-xs uppercase tracking-wider">
           <Info className="w-4 h-4" />
-          <span>¿Cómo se calcula {esProfesional ? 'tu comisión' : 'la comisión de cada profesional'}?</span>
+          <span>¿Cómo se calcula la comisión de cada profesional?</span>
         </div>
         <ul className="text-xs text-sky-950 space-y-1.5 leading-relaxed">
           <li>
@@ -116,6 +120,7 @@ export const AdminComisiones: React.FC = () => {
           </li>
         </ul>
       </Card>
+      )}
 
       {/* Consolidated Summary Banner — solo la dueña ve la facturación total del estudio */}
       {!esProfesional && (
@@ -226,14 +231,18 @@ export const AdminComisiones: React.FC = () => {
                             {formatCurrency(cierre.montoComisionProfesional)}
                           </span>
                         </div>
-                        <div className="flex justify-between py-1 border-b border-pink-50">
-                          <span className="text-rf-charcoal">
-                            Rose Face ({100 - prof.modeloComision.porcentajeProfesional}%):
-                          </span>
-                          <span className="font-bold text-emerald-800">
-                            {formatCurrency(cierre.montoParaEstudio)}
-                          </span>
-                        </div>
+                        {/* El corte del estudio NUNCA se muestra a la profesional —
+                            solo le corresponde saber su propio monto a liquidar. */}
+                        {!esProfesional && (
+                          <div className="flex justify-between py-1 border-b border-pink-50">
+                            <span className="text-rf-charcoal">
+                              Rose Face ({100 - prof.modeloComision.porcentajeProfesional}%):
+                            </span>
+                            <span className="font-bold text-emerald-800">
+                              {formatCurrency(cierre.montoParaEstudio)}
+                            </span>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <>
