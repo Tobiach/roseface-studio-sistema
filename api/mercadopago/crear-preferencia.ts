@@ -141,7 +141,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const montoTotal = Number(servicio.precio);
-    const montoSena = MONTO_SENA_FIJO;
+    const montoSena = calcularMontoSena(servicio);
 
     // Confirmar que el horario sigue libre — el índice único de la base es
     // la última barrera, esto evita pegarle a Mercado Pago innecesariamente.
