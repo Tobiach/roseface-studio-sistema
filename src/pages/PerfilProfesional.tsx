@@ -8,6 +8,7 @@ import { Badge } from '../components/ui/Badge';
 import { formatCurrency } from '../lib/formatters';
 import { Lightbox } from '../components/ui/Lightbox';
 import { VideoYoutube } from '../components/ui/VideoYoutube';
+import { slugDeNombre } from '../lib/profesionalSlug';
 import {
   Star,
   Calendar,
@@ -20,12 +21,12 @@ import {
 } from 'lucide-react';
 
 export const PerfilProfesional: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const { profesionales, servicios } = useApp();
   const [activeTab, setActiveTab] = useState<string>('todos');
   const [imagenActiva, setImagenActiva] = useState<number | null>(null);
 
-  const prof = profesionales.find((p) => p.id === id);
+  const prof = profesionales.find((p) => slugDeNombre(p.nombre) === slug);
 
   if (!prof) {
     return (

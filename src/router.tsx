@@ -120,7 +120,7 @@ export const router = createBrowserRouter([
       { path: 'reserva/confirmacion', element: <ReservaConfirmacion /> },
       { path: 'reserva/transferencia', element: <ReservaTransferencia /> },
       { path: 'profesionales', element: <Profesionales /> },
-      { path: 'profesionales/:id', element: <PerfilProfesional /> },
+      { path: 'profesionales/:slug', element: <PerfilProfesional /> },
     ],
   },
   {

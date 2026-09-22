@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Star, ChevronRight, Sparkles } from 'lucide-react';
+import { slugDeNombre } from '../lib/profesionalSlug';
 
 export const Profesionales: React.FC = () => {
   const { profesionales } = useApp();
@@ -41,7 +42,7 @@ export const Profesionales: React.FC = () => {
           <Card key={prof.id} hoverable className="space-y-5 flex flex-col justify-between">
             <div className="space-y-4">
               <Link
-                to={`/profesionales/${prof.id}`}
+                to={`/profesionales/${slugDeNombre(prof.nombre)}`}
                 className="relative rounded-2xl overflow-hidden border border-pink-100 shadow-xs group block"
               >
                 <img
@@ -88,7 +89,7 @@ export const Profesionales: React.FC = () => {
             </div>
 
             <div className="pt-4 border-t border-pink-100 flex items-center justify-between gap-2">
-              <Link to={`/profesionales/${prof.id}`} className="flex-1">
+              <Link to={`/profesionales/${slugDeNombre(prof.nombre)}`} className="flex-1">
                 <Button variant="outline" size="sm" fullWidth>
                   Ver Perfil & Galería
                 </Button>

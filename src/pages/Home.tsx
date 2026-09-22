@@ -12,6 +12,7 @@ import { Logo } from '../components/ui/Logo';
 import { Lightbox } from '../components/ui/Lightbox';
 import { VideoYoutube } from '../components/ui/VideoYoutube';
 import { urlFor } from '../data/trabajosFotos';
+import { slugDeNombre } from '../lib/profesionalSlug';
 import { Calendar, Star, MapPin, Clock, MessageCircle, Heart, Sparkles, GraduationCap, Gem, ExternalLink } from 'lucide-react';
 
 // Trabajos reales destacados en el Home — nombre de técnica = nombre real
@@ -189,7 +190,7 @@ export const Home: React.FC = () => {
           {profesionales.map((prof) => (
             <Link
               key={prof.id}
-              to={`/profesionales/${prof.id}`}
+              to={`/profesionales/${slugDeNombre(prof.nombre)}`}
               className="flex flex-col items-center gap-2 shrink-0 w-20"
             >
               <img
