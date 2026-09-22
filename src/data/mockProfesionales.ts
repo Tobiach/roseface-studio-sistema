@@ -123,15 +123,16 @@ export const mockProfesionales: Profesional[] = [
     cantidadResenas: 52,
     modeloComision: { tipo: 'alquiler_fijo', montoSemanal: 50000 }, // PLACEHOLDER — alquiler real pendiente
     aliasCbu: 'Anye.studio',
-    // Lunes a sábado 9-16 (último turno). Turnos largos (3-4h) → 2 por día. PLACEHOLDER.
+    // Lunes a sábado 9-16 (último turno), tal cual el formulario real de
+    // Yosy. Turnos largos (3-4h) → 2 por día, fijos 9/13.
     horarioDisponible: {
       ...SIN_HORARIO,
-      lunes: vent('09:00', '20:00'),
-      martes: vent('09:00', '20:00'),
-      miercoles: vent('09:00', '20:00'),
-      jueves: vent('09:00', '20:00'),
-      viernes: vent('09:00', '20:00'),
-      sabado: vent('09:00', '20:00'),
+      lunes: vent('09:00', '16:00'),
+      martes: vent('09:00', '16:00'),
+      miercoles: vent('09:00', '16:00'),
+      jueves: vent('09:00', '16:00'),
+      viernes: vent('09:00', '16:00'),
+      sabado: vent('09:00', '16:00'),
     },
     horariosFijos: {
       lunes: ['09:00', '13:00'],
@@ -185,15 +186,16 @@ export const mockProfesionales: Profesional[] = [
     cantidadResenas: 142,
     modeloComision: { tipo: 'alquiler_fijo', montoSemanal: 48000 }, // PLACEHOLDER
     aliasCbu: 'Aribell.st',
-    // "De 9 a 19", 2h por turno. Días PLACEHOLDER (no los dijo) → lun a sáb.
+    // "De 9 a 19", 2h por turno — tal cual el formulario real de Yosy.
+    // Días PLACEHOLDER (no los dijo) → lun a sáb.
     horarioDisponible: {
       ...SIN_HORARIO,
-      lunes: vent('09:00', '21:00'),
-      martes: vent('09:00', '21:00'),
-      miercoles: vent('09:00', '21:00'),
-      jueves: vent('09:00', '21:00'),
-      viernes: vent('09:00', '21:00'),
-      sabado: vent('09:00', '21:00'),
+      lunes: vent('09:00', '19:00'),
+      martes: vent('09:00', '19:00'),
+      miercoles: vent('09:00', '19:00'),
+      jueves: vent('09:00', '19:00'),
+      viernes: vent('09:00', '19:00'),
+      sabado: vent('09:00', '19:00'),
     },
     horariosFijos: {
       lunes: ['09:00', '11:00', '13:00', '15:00', '17:00'],

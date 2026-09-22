@@ -18,6 +18,12 @@ export const buildWhatsAppUrlPara = (telefono: string, mensaje: string): string 
 // plantilla tiene su propio tono según cuánto falta para el turno — se
 // arma acá para que Yosy solo tenga que revisar y tocar "Enviar" en
 // WhatsApp, no redactar cada vez.
+// Saludo y contenido tomados literal del formulario real de Yosy (8/9/2026):
+// "Hola hola mi niña, te escribo para confirmar tu turno el día tal en el
+// horario tal. Y después el día anterior tenga un recordatorio con la
+// dirección. Incluso si es hasta 72 horas antes mejor."
+const DIRECCION = 'Av. Acoyte 25, piso 5 depto B, Cdad. Autónoma de Buenos Aires';
+
 export function mensajeRecordatorio(
   plantilla: '48h' | '24h' | '4h',
   datos: { nombreClienta: string; servicio: string; fecha: string; hora: string }
@@ -25,10 +31,10 @@ export function mensajeRecordatorio(
   const { nombreClienta, servicio, fecha, hora } = datos;
   switch (plantilla) {
     case '48h':
-      return `Hola ${nombreClienta}! 💗 Te recordamos tu turno en Rose Face Studio para ${servicio} el ${fecha} a las ${hora} hs. ¡Te esperamos!`;
+      return `Hola hola ${nombreClienta}! 💗 Te escribo para confirmar tu turno en Rose Face Studio: ${servicio} el ${fecha} a las ${hora} hs. ¡Te esperamos!`;
     case '24h':
-      return `Hola ${nombreClienta}! Mañana es tu turno en Rose Face Studio (${servicio} a las ${hora} hs). Cualquier cosa avisanos por acá 💕`;
+      return `Hola hola ${nombreClienta}! Mañana es tu turno en Rose Face Studio (${servicio} a las ${hora} hs) 💕 Te dejo la dirección para que la tengas a mano: ${DIRECCION}.`;
     case '4h':
-      return `Hola ${nombreClienta}! En unas horas te esperamos en Rose Face Studio para tu turno de ${servicio} a las ${hora} hs. ¡Nos vemos pronto!`;
+      return `Hola hola ${nombreClienta}! En unas horas te esperamos en Rose Face Studio para tu turno de ${servicio} a las ${hora} hs. ¡Nos vemos pronto!`;
   }
 }
