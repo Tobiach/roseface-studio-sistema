@@ -20,6 +20,9 @@ export const ReservaTransferencia: React.FC = () => {
 
   const turnoId = searchParams.get('turnoId');
   const aliasCbu = searchParams.get('aliasCbu') ?? '';
+  const titular = searchParams.get('titular') ?? '';
+  const cbu = searchParams.get('cbu') ?? '';
+  const banco = searchParams.get('banco') ?? '';
   const servicio = searchParams.get('servicio') ?? '';
   const profesional = searchParams.get('profesional') ?? '';
   const fecha = searchParams.get('fecha') ?? '';
@@ -34,6 +37,11 @@ export const ReservaTransferencia: React.FC = () => {
   const copiarAlias = () => {
     navigator.clipboard?.writeText(aliasCbu);
     showToast('📋 Alias copiado');
+  };
+
+  const copiarCbu = () => {
+    navigator.clipboard?.writeText(cbu);
+    showToast('📋 CBU copiado');
   };
 
   const handleSubir = async () => {
@@ -139,9 +147,17 @@ export const ReservaTransferencia: React.FC = () => {
             <Landmark className="w-4 h-4" />
             <span>Datos para transferir</span>
           </div>
+
+          {titular && (
+            <div className="bg-white rounded-xl border border-sky-200 px-3 py-2.5">
+              <span className="text-[11px] text-gray-400 block">Titular</span>
+              <span className="font-bold text-rf-black text-sm">{titular}</span>
+            </div>
+          )}
+
           <div className="flex items-center justify-between bg-white rounded-xl border border-sky-200 px-3 py-2.5">
             <div>
-              <span className="text-[11px] text-gray-400 block">Alias / CBU de {profesional}</span>
+              <span className="text-[11px] text-gray-400 block">Alias de {profesional}</span>
               <span className="font-bold text-rf-black text-sm">{aliasCbu}</span>
             </div>
             <button
@@ -152,13 +168,37 @@ export const ReservaTransferencia: React.FC = () => {
               <Copy className="w-4 h-4" />
             </button>
           </div>
-          <div className="flex items-center justify-between">
+
+          {cbu && (
+            <div className="flex items-center justify-between bg-white rounded-xl border border-sky-200 px-3 py-2.5">
+              <div>
+                <span className="text-[11px] text-gray-400 block">CBU</span>
+                <span className="font-bold text-rf-black text-sm">{cbu}</span>
+              </div>
+              <button
+                onClick={copiarCbu}
+                className="text-sky-700 hover:text-sky-900 cursor-pointer p-2"
+                aria-label="Copiar CBU"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {banco && (
+            <div className="bg-white rounded-xl border border-sky-200 px-3 py-2.5">
+              <span className="text-[11px] text-gray-400 block">Banco / Billetera</span>
+              <span className="font-bold text-rf-black text-sm">{banco}</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-1">
             <span className="text-xs text-sky-900">Monto a transferir</span>
             <span className="font-extrabold text-sky-900 text-lg">{formatCurrency(montoSena)}</span>
           </div>
           <p className="text-[11px] text-sky-800/80 italic">
-            Podés transferir desde cualquier banco o billetera virtual — no hace falta que sea
-            Mercado Pago.
+            Podés transferir desde cualquier banco o billetera virtual usando el alias o el CBU —
+            no hace falta que sea Mercado Pago.
           </p>
         </div>
 

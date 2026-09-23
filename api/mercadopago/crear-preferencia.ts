@@ -23,6 +23,36 @@ function calcularMontoSena(servicio: { precio: number; categoria: string; requie
   return Math.min(MONTO_SENA_FIJO, servicio.precio);
 }
 
+// Titular/CBU/banco reales de las 3 profesionales de alquiler fijo, del
+// doc "dia a dia Rose Face" (22/9/2026). No vive en Supabase (solo
+// `alias_cbu` está en esa tabla hoy; agregar estas columnas es una
+// migración que todavía no se corrió) — hardcodeado acá a propósito,
+// mismo motivo que MONTO_SENA_FIJO más arriba. Es información bancaria
+// real: si alguna cambia de cuenta, avisar para actualizar esto.
+const DATOS_BANCARIOS: Record<string, { titular: string; cbu: string; banco: string }> = {
+  'prof-alexandra': {
+    titular: 'Ariannys Jisell Pineda Trinitario',
+    cbu: '4530000800015867487963',
+    banco: 'Naranja X',
+  },
+  'prof-martina': {
+    titular: 'Anyelina Urdaneta',
+    cbu: '0000168300000000359706',
+    banco: 'Lemon',
+  },
+  'prof-sofia': {
+    // OJO: el doc trae el titular como "Crisbel Coromoto" (sin apellido
+    // "González", que es como se la conoce en el resto del sistema) —
+    // puede ser un nombre compuesto real (Coromoto es común como segundo
+    // nombre en Venezuela) o estar incompleto. Se dejó literal, sin
+    // completar a ciegas — confirmar con Yosy/Cris antes de que alguien
+    // transfiera guiándose por el nombre.
+    titular: 'Crisbel Coromoto',
+    cbu: '0070012230004025466590',
+    banco: 'Galicia',
+  },
+};
+
 // Hold del horario mientras la clienta paga. Pasado este tiempo sin
 // confirmación, el horario se libera para otra clienta (Fase 3). El
 // circuito de transferencia tiene más margen porque implica un paso manual
@@ -283,10 +313,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Sin Mercado Pago acá: la clienta transfiere por su cuenta y sube el
       // comprobante en /reserva/transferencia. La profesional aprueba desde
       // su propio panel — Yosy no ve ni gestiona este pago (Fase 5).
+      const datosBancarios = DATOS_BANCARIOS[profesionalId];
       res.status(200).json({
         circuito: 'transferencia',
         turnoId: String(turno.id),
         aliasCbu: profesional.alias_cbu,
+        titular: datosBancarios?.titular ?? '',
+        cbu: datosBancarios?.cbu ?? '',
+        banco: datosBancarios?.banco ?? '',
         servicio: servicio.nombre,
         profesional: profesional.nombre,
         fecha,

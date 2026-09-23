@@ -72,8 +72,21 @@ export const Reserva: React.FC = () => {
 
   // Paso 1 ya no es una lista plana infinita — primero se elige una
   // categoría (Pestañas, Cejas, etc.) y recién ahí se despliegan sus
-  // servicios. null = todavía eligiendo categoría.
-  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string | null>(null);
+  // servicios. Vive en la URL (?categoria=X), igual que "paso" — si no,
+  // el botón atrás del celular (o el gesto de swipe) se salta directo a
+  // lo que había antes de /reserva en vez de deshacer la categoría
+  // elegida, porque un useState local no genera una entrada de historial.
+  const categoriaSeleccionada = searchParams.get('categoria');
+  const elegirCategoria = (cat: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('categoria', cat);
+    setSearchParams(next);
+  };
+  const limpiarCategoria = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('categoria');
+    setSearchParams(next);
+  };
 
   // Selected values
   const [servicioSeleccionado, setServicioSeleccionado] = useState<Servicio | null>(null);
@@ -257,6 +270,9 @@ export const Reserva: React.FC = () => {
         const params = new URLSearchParams({
           turnoId: data.turnoId,
           aliasCbu: data.aliasCbu ?? '',
+          titular: data.titular ?? '',
+          cbu: data.cbu ?? '',
+          banco: data.banco ?? '',
           servicio: data.servicio,
           profesional: data.profesional,
           fecha: data.fecha,
@@ -363,7 +379,7 @@ export const Reserva: React.FC = () => {
                     <Card
                       key={cat}
                       hoverable
-                      onClick={() => setCategoriaSeleccionada(cat)}
+                      onClick={() => elegirCategoria(cat)}
                       className="text-center space-y-2 py-6"
                     >
                       <div className="w-12 h-12 mx-auto rounded-full bg-pink-50 border border-rf-gold/40 flex items-center justify-center">
@@ -385,7 +401,7 @@ export const Reserva: React.FC = () => {
           ) : (
             <div className="space-y-4">
               {categoriaSeleccionada && (
-                <Button variant="ghost" size="sm" onClick={() => setCategoriaSeleccionada(null)}>
+                <Button variant="ghost" size="sm" onClick={limpiarCategoria}>
                   <ChevronLeft className="w-3.5 h-3.5" /> Todas las categorías
                 </Button>
               )}
