@@ -12,7 +12,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { formatCurrency, formatDateReadable } from '../lib/formatters';
-import { Landmark, Copy, Upload, CheckCircle2, ArrowRight, Calendar, Clock } from 'lucide-react';
+import { Landmark, Copy, Upload, CheckCircle2, ArrowRight, Calendar, Clock, Plus } from 'lucide-react';
 
 export const ReservaTransferencia: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -74,6 +74,29 @@ export const ReservaTransferencia: React.FC = () => {
           {profesional} va a revisar tu comprobante y confirmar el turno. Te avisamos por WhatsApp
           apenas quede confirmado.
         </p>
+
+        {/* Cross-sell — mismo mensaje que en el circuito de Mercado Pago */}
+        <div className="bg-gradient-to-br from-amber-50 to-white border border-rf-gold/50 rounded-2xl p-5 space-y-3 text-left">
+          <div className="w-10 h-10 mx-auto rounded-full bg-white border border-rf-gold flex items-center justify-center">
+            <Plus className="w-5 h-5 text-rf-gold-bright" />
+          </div>
+          <h3 className="font-display font-bold text-base text-rf-black text-center">
+            ¿Aprovechamos y sumamos otro turno?
+          </h3>
+          <p className="text-xs text-rf-charcoal text-center leading-relaxed">
+            Muchas clientas combinan más de un servicio en la misma visita — por ejemplo Pestañas y
+            Uñas. Tus datos ya quedaron guardados, así que el segundo turno lo reservás en un toque.
+          </p>
+          <div className="text-center">
+            <Link to="/reserva" className="inline-block">
+              <Button variant="outline" size="md">
+                <Plus className="w-4 h-4" />
+                <span>Agregar otro turno</span>
+              </Button>
+            </Link>
+          </div>
+        </div>
+
         <Link to="/" className="inline-block">
           <Button variant="primary" size="lg">
             <span>Volver al inicio</span>

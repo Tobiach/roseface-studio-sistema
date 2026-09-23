@@ -17,6 +17,7 @@ import {
   Sparkles,
   MapPin,
   ArrowRight,
+  Plus,
 } from 'lucide-react';
 
 interface ResumenReserva {
@@ -168,6 +169,28 @@ export const ReservaConfirmacion: React.FC = () => {
           <span>Av. Acoyte 25, piso 5 depto B, Cdad. Autónoma de Buenos Aires.</span>
         </div>
       </div>
+
+      {/* Cross-sell — muchas clientas combinan más de un servicio en la
+          misma visita (ej. pestañas + uñas); tus datos ya quedan
+          recordados para el segundo turno, no hace falta cargarlos de nuevo. */}
+      <Card className="bg-gradient-to-br from-amber-50 to-white border-rf-gold/50 space-y-3 text-center">
+        <div className="w-10 h-10 mx-auto rounded-full bg-white border border-rf-gold flex items-center justify-center">
+          <Plus className="w-5 h-5 text-rf-gold-bright" />
+        </div>
+        <h3 className="font-display font-bold text-base text-rf-black">
+          ¿Aprovechamos y sumamos otro turno?
+        </h3>
+        <p className="text-xs text-rf-charcoal max-w-sm mx-auto leading-relaxed">
+          Muchas clientas combinan más de un servicio en la misma visita — por ejemplo Pestañas y
+          Uñas. Tus datos ya quedaron guardados, así que el segundo turno lo reservás en un toque.
+        </p>
+        <Link to="/reserva" className="inline-block">
+          <Button variant="outline" size="md">
+            <Plus className="w-4 h-4" />
+            <span>Agregar otro turno</span>
+          </Button>
+        </Link>
+      </Card>
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

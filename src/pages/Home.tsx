@@ -11,6 +11,7 @@ import { FAQ } from '../components/ui/FAQ';
 import { Logo } from '../components/ui/Logo';
 import { Lightbox } from '../components/ui/Lightbox';
 import { VideoYoutube } from '../components/ui/VideoYoutube';
+import { ResenasMarquee } from '../components/ui/ResenasMarquee';
 import { urlFor } from '../data/trabajosFotos';
 import { slugDeNombre } from '../lib/profesionalSlug';
 import { Calendar, Star, MapPin, Clock, MessageCircle, Heart, Sparkles, GraduationCap, Gem, ExternalLink } from 'lucide-react';
@@ -207,6 +208,10 @@ export const Home: React.FC = () => {
             </Button>
           </Link>
         </div>
+
+        {/* Reseñas compactas y rápidas acá — para rebatir objeciones justo
+            después de conocer al equipo, antes de que siga bajando. */}
+        <ResenasMarquee variante="compacta" />
       </section>
 
       {/* 5.5 VALORES */}
@@ -347,6 +352,11 @@ export const Home: React.FC = () => {
           <span>Ver reseñas en Google Maps</span>
           <ExternalLink className="w-4 h-4" />
         </a>
+      </section>
+
+      {/* 8.6 RESEÑAS EN MOVIMIENTO — cinta premium con el texto real de Google */}
+      <section className="py-4 max-w-full">
+        <ResenasMarquee variante="premium" />
       </section>
 
       {/* 9. CTA FINAL */}

@@ -22,7 +22,38 @@ import {
   CreditCard,
   User,
   Sparkles,
+  Eye,
+  PenLine,
+  Hand,
+  Zap,
+  Smile,
+  Wind,
+  Plus,
 } from 'lucide-react';
+
+// Mismo orden que ordenarServicios() en src/lib/ordenServicios.ts, para que
+// las categorías se vean en el mismo orden acá y en el resto del sitio.
+const ORDEN_CATEGORIAS_VISUAL = ['Pestañas', 'Cejas', 'Uñas', 'Depilación Láser', 'Faciales', 'Corporales', 'Alisados'];
+
+const CATEGORIA_ICONO: Record<string, React.ComponentType<{ className?: string }>> = {
+  'Pestañas': Eye,
+  'Cejas': PenLine,
+  'Uñas': Hand,
+  'Depilación Láser': Zap,
+  'Faciales': Smile,
+  'Corporales': Sparkles,
+  'Alisados': Wind,
+};
+
+const CATEGORIA_DESCRIPTOR: Record<string, string> = {
+  'Pestañas': 'Miradas con carácter',
+  'Cejas': 'El marco perfecto',
+  'Uñas': 'Detalle que se nota',
+  'Depilación Láser': 'Piel lista, siempre',
+  'Faciales': 'Piel que respira',
+  'Corporales': 'Cuerpo en equilibrio',
+  'Alisados': 'Brillo que se siente',
+};
 
 export const Reserva: React.FC = () => {
   const navigate = useNavigate();
@@ -38,6 +69,11 @@ export const Reserva: React.FC = () => {
     next.set('paso', String(n));
     setSearchParams(next);
   };
+
+  // Paso 1 ya no es una lista plana infinita — primero se elige una
+  // categoría (Pestañas, Cejas, etc.) y recién ahí se despliegan sus
+  // servicios. null = todavía eligiendo categoría.
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string | null>(null);
 
   // Selected values
   const [servicioSeleccionado, setServicioSeleccionado] = useState<Servicio | null>(null);
@@ -78,6 +114,18 @@ export const Reserva: React.FC = () => {
   const serviciosParaElegir = profesionalPreseleccionada
     ? servicios.filter((s) => s.profesionalesQueLoRealizan.includes(profesionalPreseleccionada.id))
     : servicios;
+
+  // Categorías presentes en la lista de arriba, en el orden visual fijo.
+  // Si hay una sola (ej. reservando directo con Ari, que solo hace Uñas),
+  // no tiene sentido pedir que elija categoría — se salta directo a la
+  // lista de servicios.
+  const categoriasEnLista = ORDEN_CATEGORIAS_VISUAL.filter((cat) =>
+    serviciosParaElegir.some((s) => s.categoria === cat)
+  );
+  const mostrarSelectorCategorias = categoriasEnLista.length > 1 && !categoriaSeleccionada;
+  const serviciosDeCategoria = categoriaSeleccionada
+    ? serviciosParaElegir.filter((s) => s.categoria === categoriaSeleccionada)
+    : serviciosParaElegir;
 
   // Profesionales que hacen este servicio (universo elegible, sin filtrar
   // todavía por disponibilidad en un día/hora puntual) — acotado a la
@@ -300,55 +348,95 @@ export const Reserva: React.FC = () => {
         </div>
       )}
 
-      {/* STEP 1: ELEGIR SERVICIO */}
+      {/* STEP 1: ELEGIR CATEGORÍA, LUEGO SERVICIO */}
       {step === 1 && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {serviciosParaElegir.map((serv) => (
-              <Card
-                key={serv.id}
-                hoverable
-                onClick={() => {
-                  setServicioSeleccionado(serv);
-                  irAPaso(2);
-                }}
-                className={`transition-all ${
-                  servicioSeleccionado?.id === serv.id
-                    ? 'ring-2 ring-rf-rose-deep bg-pink-50/30'
-                    : ''
-                }`}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="rose" size="sm">
-                        {serv.categoria}
-                      </Badge>
+          {mostrarSelectorCategorias ? (
+            <div className="space-y-4">
+              <p className="text-sm text-rf-charcoal text-center">¿Qué te querés hacer hoy?</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {categoriasEnLista.map((cat) => {
+                  const Icono = CATEGORIA_ICONO[cat] ?? Sparkles;
+                  const serviciosDeCat = serviciosParaElegir.filter((s) => s.categoria === cat);
+                  const desde = Math.min(...serviciosDeCat.map((s) => s.precio));
+                  return (
+                    <Card
+                      key={cat}
+                      hoverable
+                      onClick={() => setCategoriaSeleccionada(cat)}
+                      className="text-center space-y-2 py-6"
+                    >
+                      <div className="w-12 h-12 mx-auto rounded-full bg-pink-50 border border-rf-gold/40 flex items-center justify-center">
+                        <Icono className="w-6 h-6 text-rf-rose-deep" />
+                      </div>
+                      <h3 className="font-display font-bold text-base text-rf-black">{cat}</h3>
+                      <p className="text-[11px] text-rf-rose-deep italic">
+                        {CATEGORIA_DESCRIPTOR[cat] ?? ''}
+                      </p>
+                      <p className="text-[11px] text-rf-charcoal">
+                        {serviciosDeCat.length} {serviciosDeCat.length === 1 ? 'servicio' : 'servicios'} · Desde{' '}
+                        {formatCurrency(desde)}
+                      </p>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {categoriaSeleccionada && (
+                <Button variant="ghost" size="sm" onClick={() => setCategoriaSeleccionada(null)}>
+                  <ChevronLeft className="w-3.5 h-3.5" /> Todas las categorías
+                </Button>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {serviciosDeCategoria.map((serv) => (
+                  <Card
+                    key={serv.id}
+                    hoverable
+                    onClick={() => {
+                      setServicioSeleccionado(serv);
+                      irAPaso(2);
+                    }}
+                    className={`transition-all ${
+                      servicioSeleccionado?.id === serv.id
+                        ? 'ring-2 ring-rf-rose-deep bg-pink-50/30'
+                        : ''
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="rose" size="sm">
+                            {serv.categoria}
+                          </Badge>
+                        </div>
+                        <h3 className="font-display font-bold text-base text-rf-black">
+                          {serv.nombre}
+                        </h3>
+                        <p className="text-xs text-rf-charcoal">{serv.descripcion}</p>
+                        <div className="flex items-center gap-3 pt-2 text-xs font-medium text-rf-charcoal">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-rf-rose-deep" />
+                            {serv.duracionMinutos} min
+                          </span>
+                          <span className="text-emerald-700 font-semibold">
+                            Seña: {formatCurrency(calcularMontoSena(serv))}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-base font-bold text-rf-black block">
+                          {formatCurrency(serv.precio)}
+                        </span>
+                        <ChevronRight className="w-5 h-5 text-rf-rose-deep ml-auto mt-2" />
+                      </div>
                     </div>
-                    <h3 className="font-display font-bold text-base text-rf-black">
-                      {serv.nombre}
-                    </h3>
-                    <p className="text-xs text-rf-charcoal">{serv.descripcion}</p>
-                    <div className="flex items-center gap-3 pt-2 text-xs font-medium text-rf-charcoal">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-rf-rose-deep" />
-                        {serv.duracionMinutos} min
-                      </span>
-                      <span className="text-emerald-700 font-semibold">
-                        Seña: {formatCurrency(calcularMontoSena(serv))}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="text-base font-bold text-rf-black block">
-                      {formatCurrency(serv.precio)}
-                    </span>
-                    <ChevronRight className="w-5 h-5 text-rf-rose-deep ml-auto mt-2" />
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

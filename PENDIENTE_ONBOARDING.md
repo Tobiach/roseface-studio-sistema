@@ -23,10 +23,13 @@ cargar y dónde impacta.
 
 ## Precios (Página 3) — impacta directo en cobros reales
 
-- ~~Pestañas~~ ✅ **21/9/2026**: repriceo completo con la lista real que
-  mandó Yosy (11 servicios, precios y orden de aparición al reservar) —
-  ya en Supabase y en `mockServicios.ts`. Ver `ordenarServicios()` en
-  `src/lib/ordenServicios.ts` para el orden.
+- ~~Pestañas~~ ✅ **21/9/2026**: repriceo completo, orden de aparición al
+  reservar ya en Supabase y `mockServicios.ts` (ver `ordenarServicios()`
+  en `src/lib/ordenServicios.ts`). ⚠️ **Corregido de nuevo 23/9/2026**:
+  esos 11 precios habían quedado $2.000-3.500 por debajo del formulario
+  original (Tobias señaló el formulario como fuente de verdad) —
+  reconciliados 1:1 contra esa lista (ej. Clásicas Lash pasa de $37.000 a
+  $40.500).
 - ~~Lista de precios de Cejas~~ ✅ **releído el formulario original
   22/9/2026, este doc estaba desactualizado**: SÍ están confirmados desde
   el 8/9 — Perfilado $25.000, Perfilado+Sombreado $36.000, Sombreado
@@ -80,7 +83,9 @@ cargar y dónde impacta.
   **otro local de uñas** — no son trabajos de Rose Face. Se sacaron las 7
   de la galería de Ari; quedan `Unas_1`, `Unas_4`, `Unas_8`. **Hace falta
   pedirle a Yosy/Ari fotos nuevas reales** — el pool actual está casi
-  agotado.
+  agotado. Decisión 22/9/2026: esta vez **las elige Yosy/Ari mismas** y se
+  las pasan a Tobias — no repetir el error de septiembre de tomar
+  cualquier foto de la carpeta sin que ella confirme cuáles quiere mostrar.
 - **Nombre y apellido real completo** — hoy se muestra el apodo en todos
   lados; interno, no bloquea nada.
 - ~~Foto de perfil~~ ✅ **resuelto 22/9/2026** (hubo varias idas y vueltas
@@ -294,3 +299,51 @@ cargar y dónde impacta.
   (`/profesionales/prof-sharon`) y ahora usan el nombre real
   (`/profesionales/sharon`, `/profesionales/ariannys`, etc.) — no quedaba
   profesional que la URL no coincidiera con el nombre de la persona.
+- **22/9/2026**: Instagram real confirmado — `@rosefacestudio` (antes
+  decía `@roseface.studio`, con punto, nunca confirmado). Corregido en el
+  Footer.
+- 🐛 **22/9/2026 — bug crítico de plata encontrado y arreglado**: al
+  implementar el tope de la seña (commit `8326e3c`, mismo día) se agregó
+  la función `calcularMontoSena()` en `crear-preferencia.ts` pero se
+  olvidó reemplazar su uso — el servidor seguía devolviendo $30.000 fijo
+  para TODO. Confirmado con evidencia real de dos formas: (1) un curl
+  directo contra el endpoint de producción mostró `montoSena: 30000` para
+  "Belleza Kids" ($11.000 total); (2) turnos reales en la base a nombre
+  de **Yosy Muñoz** (ella misma probando el sitio, 22/9) mostraban
+  `monto_sena: 30000` sobre un `monto_total: 25000` ("Esmalte y Corte de
+  Uñas") — exactamente la inconsistencia que reportó Tobias ("un monto en
+  el paso de elegir el servicio, otro distinto al ir a transferir"). Ya
+  corregido y re-verificado con curl contra producción (ahora devuelve
+  11000/11000). Los turnos de prueba (los de Yosy y los de la
+  verificación) se borraron de la base.
+- **23/9/2026 — tanda de cambios de estructura y branding**:
+  - Todas las profesionales muestran 5.0 estrellas parejo.
+  - Se sacó "Fundadora de Rose Face Studio" de la bio de Yosy (pedido de
+    ella: mostrar "el equipo", sin remarcar quién es la dueña en las
+    descripciones públicas).
+  - Adicionales de uñas: "French / BabyBoomer" eran 2 precios distintos
+    ($3.000 y $5.000, no uno solo) y faltaba "Chrome/Degradé/Cat Eye
+    $3.000" (la fila cortada en la foto del cartel) — ambos confirmados
+    contra el texto del formulario original, no una foto.
+  - Fotos de uñas sacadas del sitio (perfil de Ari + galería del Home) —
+    Yosy/Ari van a elegir ellas mismas cuáles mostrar.
+  - **Paso 1 de "Reservar Turno" reestructurado**: antes era una lista
+    plana de los ~57 servicios ("se hacía infinito"). Ahora primero se
+    elige una categoría (Pestañas, Cejas, Uñas, etc., con foto/ícono,
+    cantidad de servicios y precio "desde") y recién ahí se despliega la
+    lista de esa categoría. Si una profesional preseleccionada solo tiene
+    una categoría (ej. Ari = Uñas), se salta directo a la lista, sin
+    pedirle que elija.
+  - **Cross-sell después de reservar**: en la pantalla de confirmación
+    (circuito Mercado Pago) y en la de "comprobante enviado" (circuito
+    transferencia) se agregó una tarjeta "¿Aprovechamos y sumamos otro
+    turno?" con botón a `/reserva` — los datos de contacto ya quedan
+    guardados en el navegador, así que el segundo turno no pide
+    recargarlos.
+  - **Reseñas reales de Google en el Home**: se transcribieron 7 reseñas
+    reales (5 estrellas todas) que mandó Tobias en capturas — texto
+    propio en vez de embeber las capturas, para que se vean con el diseño
+    del sitio. Dos cintas animadas (`ResenasMarquee.tsx`, de derecha a
+    izquierda, con recuadro dorado): una grande debajo de la sección de
+    reseñas de Google Maps, y una chica y más rápida debajo de "Conocer
+    al equipo completo".
