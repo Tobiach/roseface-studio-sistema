@@ -32,13 +32,9 @@ const TRABAJOS_DESTACADOS = [
   { archivo: 'Medio_Volumen_2.jpg', tecnica: 'Medio Volumen' },
 ].map((t) => ({ ...t, url: urlFor(t.archivo) }));
 
-const UNAS_DESTACADAS = ['Unas_1.jpg', 'Unas_4.jpg', 'Unas_8.jpg'].map((archivo) => ({
-  archivo,
-  tecnica: 'Uñas',
-  url: urlFor(archivo),
-}));
-
-const GALERIA_HOME = [...TRABAJOS_DESTACADOS, ...UNAS_DESTACADAS];
+// Fotos de uñas sacadas del Home a propósito (23/9/2026) — Yosy/Ari van a
+// elegir ellas mismas cuáles mostrar, no repetir las que se descartaron.
+const GALERIA_HOME = [...TRABAJOS_DESTACADOS];
 
 const CATEGORIA_DESCRIPTOR: Record<string, string> = {
   Pestañas: 'Miradas con carácter',

@@ -28,7 +28,7 @@ export const mockProfesionales: Profesional[] = [
     // incluido volumen ruso" (doc "dia a dia Rose Face") — Yosy también
     // hace pestañas, no solo cejas.
     especialidades: ['Cejas', 'Laminado de Cejas', 'Pestañas'],
-    bio: 'Fundadora de Rose Face Studio. Especialista en cejas, laminado y pestañas — diseño de mirada, cejas definidas y con efecto duradero.',
+    bio: 'Especialista en cejas, laminado y pestañas — diseño de mirada, cejas definidas y con efecto duradero.',
     aniosExperiencia: 8,
     galeria: trabajosPorProfesional['prof-yosy'],
     calificacionPromedio: 5.0,
@@ -63,7 +63,7 @@ export const mockProfesionales: Profesional[] = [
     bio: 'Especialista senior en diseño de mirada y lifting de pestañas. Alta precisión y foco en la belleza natural.',
     aniosExperiencia: 5,
     galeria: trabajosPorProfesional['prof-mili'],
-    calificacionPromedio: 4.9,
+    calificacionPromedio: 5.0,
     cantidadResenas: 86,
     // 55% confirmado por Yosy, texto literal (doc "dia a dia Rose Face",
     // 22/9/2026): "Mili: 55% mili, el 45% estudio". Ya no es placeholder.
@@ -95,7 +95,7 @@ export const mockProfesionales: Profesional[] = [
     bio: 'Experta certificada en extensiones pelo a pelo, volumen ruso y cejas. Enfoque hiper-detallista.',
     aniosExperiencia: 3,
     galeria: trabajosPorProfesional['prof-sharon'],
-    calificacionPromedio: 4.9,
+    calificacionPromedio: 5.0,
     cantidadResenas: 142,
     // 45% CONFIRMADO — Yosy lo reconfirmó directo por WhatsApp con Tobias
     // (22/9/2026), después de que la planilla "Agenda Sharon" diera 50%
@@ -130,7 +130,7 @@ export const mockProfesionales: Profesional[] = [
     bio: 'Especialista en alisados progresivos libres de formol. Cabellos brillantes, sedosos y saludables.',
     aniosExperiencia: 4,
     galeria: trabajosPorProfesional['prof-martina'] ?? [],
-    calificacionPromedio: 4.8,
+    calificacionPromedio: 5.0,
     cantidadResenas: 52,
     modeloComision: { tipo: 'alquiler_fijo', montoSemanal: 50000 }, // PLACEHOLDER — alquiler real pendiente
     aliasCbu: 'Anye.studio',
@@ -162,7 +162,7 @@ export const mockProfesionales: Profesional[] = [
     bio: 'Cosmiatra y masoterapeuta. Cuidado integral de la piel, peeling ultrasónico y masajes descontracturantes.',
     aniosExperiencia: 6,
     galeria: trabajosPorProfesional['prof-sofia'] ?? [],
-    calificacionPromedio: 4.9,
+    calificacionPromedio: 5.0,
     cantidadResenas: 86,
     modeloComision: { tipo: 'alquiler_fijo', montoSemanal: 45000 }, // PLACEHOLDER
     // OJO: el doc "dia a dia Rose Face" escribe el alias como
@@ -202,7 +202,7 @@ export const mockProfesionales: Profesional[] = [
     bio: 'Nail artist. Capping en gel, esculpidas en acrílico y esmaltado semipermanente con nail art personalizado.',
     aniosExperiencia: 4,
     galeria: trabajosPorProfesional['prof-alexandra'],
-    calificacionPromedio: 4.9,
+    calificacionPromedio: 5.0,
     cantidadResenas: 142,
     modeloComision: { tipo: 'alquiler_fijo', montoSemanal: 48000 }, // PLACEHOLDER
     aliasCbu: 'Aribell.st',
@@ -227,15 +227,20 @@ export const mockProfesionales: Profesional[] = [
       sabado: ['09:00', '11:00', '13:00', '15:00', '17:00'],
     },
     // Extras que se suman a un servicio ya reservado — no van al flujo de
-    // Reserva (no son un turno en sí). Lista real del cartel de precios de
-    // Ari (22/9/2026); queda 1 ítem cortado en la foto sin cargar.
+    // Reserva (no son un turno en sí). Verificado 23/9/2026 contra el
+    // formulario original de Yosy (no solo el cartel con la fila cortada):
+    // "French / baby boomer $3000/$5000" son 2 precios distintos, y
+    // "Chrome/ degrade - cat eye $3000" era el ítem que faltaba (la fila
+    // cortada en la foto). Ya completo, 7 ítems.
     adicionales: [
       { nombre: 'Retiro común', precio: 3000 },
       { nombre: 'Retiro Semipermanente', precio: 8000 },
       { nombre: 'Reconstrucciones', precio: 4000 },
       { nombre: 'Parches', precio: 3000 },
       { nombre: 'Decos (desde)', precio: 2000 },
-      { nombre: 'French / BabyBoomer (desde)', precio: 3000 },
+      { nombre: 'French (desde)', precio: 3000 },
+      { nombre: 'BabyBoomer (desde)', precio: 5000 },
+      { nombre: 'Chrome / Degradé / Cat Eye', precio: 3000 },
     ],
   },
   {
@@ -246,7 +251,7 @@ export const mockProfesionales: Profesional[] = [
     bio: 'Sesiones de depilación láser con tecnología Soprano Ice. El día de atención es el 3er viernes de cada mes.',
     aniosExperiencia: 3,
     galeria: trabajosPorProfesional['prof-camila'] ?? [],
-    calificacionPromedio: 4.8,
+    calificacionPromedio: 5.0,
     cantidadResenas: 64,
     modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 0 }, // servicio del estudio, no de una persona
     // Solo viernes (grilla cada 30 min). Los viernes que NO son el 3ro del

@@ -7,6 +7,11 @@ import { Servicio } from '../types';
 export const mockServicios: Servicio[] = [
 
   // ===== PESTAÑAS =====
+  // Precios corregidos 23/9/2026: Tobias señaló el formulario original de
+  // Yosy (sheet 128mRtOCi..., 8/9/2026) como la fuente de verdad y ahí los
+  // 11 precios eran $2.000-3.500 más altos que lo que había cargado acá
+  // (ej. Clásicas Lash $40.500, no $37.000) — corregido 1:1 contra esa
+  // lista. "Remoción de Pestañas" ($16.000) no cambia, ya coincidía.
   // "Quién hace qué" real (doc "dia a dia Rose Face", 22/9/2026): "Mili
   // solo hace clásicas, híbridas, volumen brasilero y efecto húmedo,
   // Lifting de pestañas" — se sacó a Mili de las 5 técnicas que no dijo
@@ -32,7 +37,7 @@ export const mockServicios: Servicio[] = [
     categoria: 'Pestañas',
     descripcion: 'Pelo a pelo. Efecto natural pero definido, ideal para destacar la mirada.',
     duracionMinutos: 90,
-    precio: 37000,
+    precio: 40500,
     requiereSena: true,
     puntosVIP: 10,
     profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon', 'prof-yosy'],
@@ -43,7 +48,7 @@ export const mockServicios: Servicio[] = [
     categoria: 'Pestañas',
     descripcion: 'Incluye tintura e hidratación intensiva de keratina para tus pestañas naturales.',
     duracionMinutos: 60,
-    precio: 37000,
+    precio: 40500,
     requiereSena: true,
     puntosVIP: 10,
     profesionalesQueLoRealizan: ['prof-mili'],
@@ -54,7 +59,7 @@ export const mockServicios: Servicio[] = [
     categoria: 'Pestañas',
     descripcion: 'Combinación ideal entre pelo a pelo y volumen para densidad textura y dimensión.',
     duracionMinutos: 100,
-    precio: 38500,
+    precio: 41000,
     requiereSena: true,
     puntosVIP: 10,
     profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon', 'prof-yosy'],
@@ -65,7 +70,7 @@ export const mockServicios: Servicio[] = [
     categoria: 'Pestañas',
     descripcion: 'Abanicos livianos para un volumen sutil, suave y elegante.',
     duracionMinutos: 100,
-    precio: 39000,
+    precio: 42000,
     requiereSena: true,
     puntosVIP: 10,
     profesionalesQueLoRealizan: ['prof-sharon', 'prof-yosy'],
@@ -76,7 +81,7 @@ export const mockServicios: Servicio[] = [
     categoria: 'Pestañas',
     descripcion: 'Efecto wet-look moderno con textura definida y brillo único en las puntas.',
     duracionMinutos: 110,
-    precio: 40500,
+    precio: 43000,
     requiereSena: true,
     puntosVIP: 12,
     profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon', 'prof-yosy'],
@@ -87,7 +92,7 @@ export const mockServicios: Servicio[] = [
     categoria: 'Pestañas',
     descripcion: 'Fibras especiales en forma de Y para retención prolongada y efecto esponjoso.',
     duracionMinutos: 110,
-    precio: 41000,
+    precio: 44000,
     requiereSena: true,
     puntosVIP: 12,
     profesionalesQueLoRealizan: ['prof-sharon', 'prof-yosy'],
@@ -98,7 +103,7 @@ export const mockServicios: Servicio[] = [
     categoria: 'Pestañas',
     descripcion: 'Densidad intermedia para una mirada con presencia y tupidez balanceada.',
     duracionMinutos: 110,
-    precio: 43000,
+    precio: 46000,
     requiereSena: true,
     puntosVIP: 12,
     profesionalesQueLoRealizan: ['prof-sharon', 'prof-yosy'],
@@ -109,7 +114,7 @@ export const mockServicios: Servicio[] = [
     categoria: 'Pestañas',
     descripcion: 'Diseño exclusivo de autor personalizado al tipo de ojo y rasgos faciales.',
     duracionMinutos: 120,
-    precio: 45000,
+    precio: 48000,
     requiereSena: true,
     puntosVIP: 12,
     profesionalesQueLoRealizan: ['prof-sharon', 'prof-yosy'],
@@ -120,7 +125,7 @@ export const mockServicios: Servicio[] = [
     categoria: 'Pestañas',
     descripcion: 'Técnica brasileña con fibras multidimensionales 4D de textura ultra suave.',
     duracionMinutos: 130,
-    precio: 45000,
+    precio: 48000,
     requiereSena: true,
     puntosVIP: 15,
     profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon', 'prof-yosy'],
@@ -131,7 +136,7 @@ export const mockServicios: Servicio[] = [
     categoria: 'Pestañas',
     descripcion: 'Efecto ultra tupido brasileño en 6D con gran densidad y ligereza.',
     duracionMinutos: 140,
-    precio: 48000,
+    precio: 50000,
     requiereSena: true,
     puntosVIP: 15,
     profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon', 'prof-yosy'],
@@ -142,7 +147,7 @@ export const mockServicios: Servicio[] = [
     categoria: 'Pestañas',
     descripcion: 'Máxima densidad e intensidad para un look dramático de alto impacto.',
     duracionMinutos: 130,
-    precio: 48000,
+    precio: 50000,
     requiereSena: true,
     puntosVIP: 15,
     profesionalesQueLoRealizan: ['prof-sharon', 'prof-yosy'],
