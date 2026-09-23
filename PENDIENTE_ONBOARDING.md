@@ -347,3 +347,20 @@ cargar y dónde impacta.
     izquierda, con recuadro dorado): una grande debajo de la sección de
     reseñas de Google Maps, y una chica y más rápida debajo de "Conocer
     al equipo completo".
+- 🐛 **23/9/2026 — bug de botón atrás en celular, encontrado y arreglado**:
+  la categoría elegida en el Paso 1 de Reservar Turno (agregada el día
+  anterior) vivía en un `useState` local, no en la URL como "paso" — el
+  botón atrás del navegador/gesto de swipe no generaba una entrada de
+  historial para la categoría, así que en vez de volver a la grilla de
+  categorías se salía directo de `/reserva`. Ahora es `?categoria=X`,
+  mismo patrón que `?paso=N`.
+- ✅ **23/9/2026 — Titular/CBU/Banco agregados a la pantalla de
+  transferencia**: antes solo se mostraba el alias de Anye/Cris/Ari. Se
+  agregaron los 3 datos reales (del doc "dia a dia Rose Face") — ver
+  `DATOS_BANCARIOS` en `api/mercadopago/crear-preferencia.ts` (hardcodeado
+  ahí, no en Supabase, mismo motivo que `MONTO_SENA_FIJO`: no hay columnas
+  para esto en la tabla `profesionales` todavía). ⚠️ El titular de Cris
+  que trae el doc es "Crisbel Coromoto" (sin el apellido "González" con el
+  que se la conoce en el resto del sistema) — se dejó literal, sin
+  completarlo a ciegas; confirmar con Yosy/Cris cuál es el nombre completo
+  real antes de que alguien transfiera guiándose por eso.
