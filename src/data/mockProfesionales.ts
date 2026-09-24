@@ -254,11 +254,16 @@ export const mockProfesionales: Profesional[] = [
     calificacionPromedio: 5.0,
     cantidadResenas: 64,
     modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 0 }, // servicio del estudio, no de una persona
-    // Solo viernes (grilla cada 30 min). Los viernes que NO son el 3ro del
-    // mes, Yosy los bloquea a mano desde el panel.
+    // Solo viernes. Turnos de 1 hora cada uno, de 8am a 8pm (confirmado
+    // por Tobias 24/9/2026 — antes usaba la grilla automática cada 30 min,
+    // que no coincidía con la duración real del servicio). Los viernes que
+    // NO son el 3ro del mes, Yosy los bloquea a mano desde el panel.
     horarioDisponible: {
       ...SIN_HORARIO,
       viernes: vent('08:00', '20:00'),
+    },
+    horariosFijos: {
+      viernes: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'],
     },
   },
 ];

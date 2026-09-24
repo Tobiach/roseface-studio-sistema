@@ -98,10 +98,15 @@ export const AdminAgenda: React.FC = () => {
     : [];
 
   // Aviso de recurrencia (Fase 8): clientas cuyo último turno completado de
-  // un servicio con ciclo conocido (ej. retoque de pestañas ~21 días) ya
-  // superó ese ciclo. Yosy decide si le manda el link de auto-agendado de
-  // la profesional habitual. Mientras cicloRecurrenciaDias no esté cargado
-  // (pendiente del formulario de Yosy) esta lista queda vacía a propósito.
+  // un servicio con ciclo conocido (ej. retoque de pestañas ~21 días) está
+  // por cumplir ese ciclo. Pedido explícito de Tobias (24/9/2026): avisar
+  // ~4 días ANTES de que se cumpla el ciclo (no recién el día que ya se
+  // cumplió), para que a Yosy le dé tiempo de escribirle y que la clienta
+  // pueda pagar la seña y sacar turno antes de la fecha ideal — por eso el
+  // corte es `cicloRecurrenciaDias - 4`, no el ciclo exacto. Sigue
+  // apareciendo (cada vez más urgente) si Yosy no llegó a avisarle a
+  // tiempo, hasta que la clienta reserva de nuevo.
+  const DIAS_ANTICIPACION_RECURRENCIA = 4;
   const avisosRecurrencia = !esProfesional
     ? (() => {
         const hoy = new Date();
@@ -113,14 +118,14 @@ export const AdminAgenda: React.FC = () => {
           if (!actual || t.fecha > actual.fecha) ultimoPorClientaYServicio.set(key, t);
         }
 
-        const resultados: { clienta: Clienta; servicio: Servicio; profesional?: Profesional; diasSinVisitar: number }[] = [];
+        const resultados: { clienta: Clienta; servicio: Servicio; profesional?: Profesional; diasSinVisitar: number; diasParaElCiclo: number }[] = [];
         for (const [, turno] of ultimoPorClientaYServicio) {
           const servicio = servicios.find((s) => s.id === turno.servicioId);
           if (!servicio?.cicloRecurrenciaDias) continue;
           const diasSinVisitar = Math.floor(
             (hoy.getTime() - new Date(`${turno.fecha}T12:00:00`).getTime()) / (1000 * 60 * 60 * 24)
           );
-          if (diasSinVisitar < servicio.cicloRecurrenciaDias) continue;
+          if (diasSinVisitar < servicio.cicloRecurrenciaDias - DIAS_ANTICIPACION_RECURRENCIA) continue;
           const clienta = clientas.find((c) => c.id === turno.clientaId);
           if (!clienta) continue;
           resultados.push({
@@ -128,9 +133,10 @@ export const AdminAgenda: React.FC = () => {
             servicio,
             profesional: profesionales.find((p) => p.id === turno.profesionalId),
             diasSinVisitar,
+            diasParaElCiclo: servicio.cicloRecurrenciaDias - diasSinVisitar,
           });
         }
-        return resultados.sort((a, b) => b.diasSinVisitar - a.diasSinVisitar).slice(0, 8);
+        return resultados.sort((a, b) => a.diasParaElCiclo - b.diasParaElCiclo).slice(0, 8);
       })()
     : [];
 
@@ -658,30 +664,31 @@ export const AdminAgenda: React.FC = () => {
                 <span>Avisos de Recurrencia ({avisosRecurrencia.length})</span>
               </div>
               <div className="space-y-3">
-                {avisosRecurrencia.map(({ clienta, servicio, profesional, diasSinVisitar }) => (
+                {avisosRecurrencia.map(({ clienta, servicio, profesional, diasParaElCiclo }) => (
                   <div key={`${clienta.id}-${servicio.id}`} className="bg-rf-cream rounded-xl border border-pink-100 p-3 space-y-1.5 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-rf-black">{clienta.nombre}</span>
-                      <Badge variant="warning" size="sm">{diasSinVisitar} días</Badge>
+                      <Badge variant={diasParaElCiclo < 0 ? 'danger' : 'warning'} size="sm">
+                        {diasParaElCiclo >= 0
+                          ? `Faltan ${diasParaElCiclo} días`
+                          : `Atrasada ${Math.abs(diasParaElCiclo)} días`}
+                      </Badge>
                     </div>
                     <p className="text-[11px] text-rf-charcoal">
                       {servicio.nombre} con {profesional?.nombre ?? 'su profesional habitual'}
                     </p>
-                    {profesional?.linkAutoagenda ? (
+                    {profesional && (
                       <button
                         onClick={() => {
-                          navigator.clipboard?.writeText(profesional.linkAutoagenda!);
-                          showToast('🔗 Link de auto-agendado copiado');
+                          const link = `${window.location.origin}/reserva?profesionalId=${profesional.id}`;
+                          navigator.clipboard?.writeText(link);
+                          showToast('🔗 Link para que reserve copiado — mandaselo por WhatsApp');
                         }}
                         className="flex items-center gap-1.5 text-sky-700 font-semibold hover:underline cursor-pointer"
                       >
                         <LinkIcon className="w-3 h-3" />
-                        <span>Copiar link de auto-agendado</span>
+                        <span>Copiar link para que reserve con {profesional.nombre}</span>
                       </button>
-                    ) : (
-                      <p className="text-[10px] text-gray-400 italic">
-                        Falta el link de auto-agendado de {profesional?.nombre ?? 'esta profesional'}
-                      </p>
                     )}
                   </div>
                 ))}
