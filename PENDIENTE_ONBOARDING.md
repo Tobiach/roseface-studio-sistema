@@ -364,3 +364,37 @@ cargar y dónde impacta.
   que se la conoce en el resto del sistema) — se dejó literal, sin
   completarlo a ciegas; confirmar con Yosy/Cris cuál es el nombre completo
   real antes de que alguien transfiera guiándose por eso.
+- ✅ **24/9/2026 — Avisos de Recurrencia con datos reales**: se cargó
+  `ciclo_recurrencia_dias` (pendiente desde hacía semanas) — 21 días en
+  las técnicas de Pestañas y Uñas que se hacen de nuevo por regrowth, 30
+  en Depilación Láser. El widget del panel de Yosy ahora avisa ~4 días
+  ANTES de que se cumpla el ciclo (antes recién avisaba el día que ya se
+  había cumplido) y el botón genera el link de reserva del propio sitio
+  en vez de depender de `linkAutoagenda` (nunca se cargó — se dejó de
+  usar ese campo).
+- ⚠️ **Depilación Láser — pendiente el precio real, foto no llegó
+  todavía**: Tobias mencionó una foto de Yosy con el precio nuevo (por
+  WhatsApp) pero no llegó a este chat — el $15.000 actual sigue siendo el
+  sospechoso de siempre (ver más arriba). Sí se aplicó lo que confirmó por
+  texto: turnos de 1 hora (antes 30 min), de 8am a 8pm.
+- **Notificaciones a Yosy — 3 opciones charladas 24/9/2026, ninguna
+  implementada todavía**:
+  1. Mail a Yosy en cada reserva/pago confirmado — la más simple y barata
+     (un servicio tipo Resend, gratis hasta miles de mails/mes para este
+     volumen). Falta que Tobias/Yosy creen la cuenta y pasen el API key.
+  2. WhatsApp 100% automático (sin que Yosy tenga que tocar "enviar") —
+     ESTO SÍ TIENE COSTO REAL: requiere WhatsApp Business Platform (Meta),
+     verificación de negocio, un número de WhatsApp Business dedicado (no
+     puede ser el personal), y se paga por conversación después de cierto
+     volumen gratis. Se recomienda como upsell de Fase 2, no gratis.
+  3. Google Calendar automático — ya hay un punto de entrada marcado con
+     TODO en `AdminAgenda.tsx` (`sincronizarConGoogleCalendar`, solo
+     visual hoy). Requiere que Yosy autorice acceso OAuth a su Google
+     Calendar. Sin costo de por sí, pero es una integración nueva a armar.
+- **Comprobantes de transferencia — ya funcionan, no es un gap**: se
+  suben a un bucket de Supabase Storage y cada profesional de alquiler
+  fijo (Anye/Cris/Ari) los ve y aprueba en su propio panel de Agenda
+  ("Comprobantes a Revisar") — Yosy nunca los ve, por diseño (doble
+  circuito de pago del PDF firmado). Idea de upsell que surgió: verificar
+  el comprobante automático (OCR) en vez de que la profesional lo mire a
+  ojo — ver `project_roseface_upsell_postentrega.md` en la memoria.
