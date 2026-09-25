@@ -38,3 +38,11 @@ export function mensajeRecordatorio(
       return `Hola hola ${nombreClienta}! En unas horas te esperamos en Rose Face Studio para tu turno de ${servicio} a las ${hora} hs. ¡Nos vemos pronto!`;
   }
 }
+
+// Panel "Clientas Recurrentes" (25/9/2026): mensaje con el link personalizado
+// de auto-agendado (ya trae su nombre/teléfono cargados) para avisarle que
+// le toca volver — mismo saludo real de Yosy que el resto de los mensajes.
+export function mensajeClientaRecurrente(datos: { nombreClienta: string; servicio: string; link: string }): string {
+  const { nombreClienta, servicio, link } = datos;
+  return `Hola hola ${nombreClienta}! 💕 Vimos que ya te toca volver para tu retoque de ${servicio}. Te dejamos el link para que reserves cuando quieras: ${link}`;
+}

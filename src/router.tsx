@@ -20,6 +20,7 @@ import { PerfilProfesional } from './pages/PerfilProfesional';
 import { AdminAgenda } from './pages/admin/AdminAgenda';
 import { AdminHorario } from './pages/admin/AdminHorario';
 import { AdminComisiones } from './pages/admin/AdminComisiones';
+import { AdminClientasRecurrentes } from './pages/admin/AdminClientasRecurrentes';
 import { AdminCaja } from './pages/admin/AdminCaja';
 import { AdminVIP } from './pages/admin/AdminVIP';
 
@@ -75,10 +76,13 @@ const AdminLayout: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
-  // Un profesional solo puede ver su Agenda y sus Comisiones — Caja y VIP son exclusivos de la dueña
+  // Un profesional solo puede ver su Agenda y sus Comisiones — Caja, VIP y
+  // Clientas Recurrentes son exclusivos de la dueña.
   const rutaRestringidaParaProfesional =
     rolActivo === 'profesional' &&
-    (location.pathname.startsWith('/admin/caja') || location.pathname.startsWith('/admin/vip'));
+    (location.pathname.startsWith('/admin/caja') ||
+      location.pathname.startsWith('/admin/vip') ||
+      location.pathname.startsWith('/admin/clientas-recurrentes'));
 
   if (rutaRestringidaParaProfesional) {
     return <Navigate to="/admin/agenda" replace />;
@@ -131,6 +135,7 @@ export const router = createBrowserRouter([
       { path: 'agenda', element: <AdminAgenda /> },
       { path: 'horario', element: <AdminHorario /> },
       { path: 'comisiones', element: <AdminComisiones /> },
+      { path: 'clientas-recurrentes', element: <AdminClientasRecurrentes /> },
       { path: 'caja', element: <AdminCaja /> },
       { path: 'vip', element: <AdminVIP /> },
     ],

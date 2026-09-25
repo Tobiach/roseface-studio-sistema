@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Clock,
   CircleDollarSign,
+  Repeat,
   TrendingUp,
   Crown,
   Eye,
@@ -43,6 +44,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ abierta = false, onCerrar }) =
       path: '/admin/comisiones',
       icon: CircleDollarSign,
       description: 'Cierre semanal del equipo',
+    },
+    {
+      label: 'Clientas Recurrentes',
+      path: '/admin/clientas-recurrentes',
+      icon: Repeat,
+      description: 'Quién ya debería estar volviendo',
     },
     {
       label: 'Caja & KPIs',
