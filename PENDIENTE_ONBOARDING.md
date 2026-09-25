@@ -381,7 +381,10 @@ cargar y dónde impacta.
   implementada todavía**:
   1. Mail a Yosy en cada reserva/pago confirmado — la más simple y barata
      (un servicio tipo Resend, gratis hasta miles de mails/mes para este
-     volumen). Falta que Tobias/Yosy creen la cuenta y pasen el API key.
+     volumen). ✅ **25/9/2026: la casilla destino ya está confirmada —
+     `rosefacestudio@gmail.com`.** Sigue faltando el API key de un
+     servicio de envío (Resend o similar) para poder mandar el mail de
+     verdad — sin eso, no hay forma de enviarlo aunque ya sepamos a dónde.
   2. WhatsApp 100% automático (sin que Yosy tenga que tocar "enviar") —
      ESTO SÍ TIENE COSTO REAL: requiere WhatsApp Business Platform (Meta),
      verificación de negocio, un número de WhatsApp Business dedicado (no
@@ -398,3 +401,9 @@ cargar y dónde impacta.
   circuito de pago del PDF firmado). Idea de upsell que surgió: verificar
   el comprobante automático (OCR) en vez de que la profesional lo mire a
   ojo — ver `project_roseface_upsell_postentrega.md` en la memoria.
+- ✅ **25/9/2026 — Clientas Recurrentes pasa a ser su propia sección del
+  panel** (antes vivía como widget adentro de Agenda), exclusiva de Yosy.
+  El botón de acción ya no copia un link para pegarlo a mano: abre
+  WhatsApp directo al número de la clienta con el mensaje y el link ya
+  escritos — 2 clicks (abrir WhatsApp, tocar enviar), mismo patrón que
+  "Yosy Recordatorios". Ver `src/pages/admin/AdminClientasRecurrentes.tsx`.
