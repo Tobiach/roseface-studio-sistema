@@ -656,12 +656,19 @@ export const AdminAgenda: React.FC = () => {
             </Card>
           )}
 
-          {/* Aviso de recurrencia (Fase 8) */}
+          {/* Clientas Recurrentes (Fase 8, renombrado 25/9/2026 a pedido de
+              Tobias) — el link ya no es genérico: lleva el nombre y
+              teléfono de ESA clienta puntual, así al abrirlo en cualquier
+              celular (no hace falta que sea el mismo donde reservó antes)
+              esos datos ya vienen cargados en el Paso de pago, listo para
+              que solo elija servicio/horario y pague la seña. Queda
+              registrado en el turno de dónde vino, para poder sacar
+              números después (cuántas fieles volvieron por este link). */}
           {avisosRecurrencia.length > 0 && (
             <Card className="space-y-3">
               <div className="flex items-center gap-2 text-rf-black font-bold text-sm">
                 <Repeat className="w-4 h-4 text-rf-rose-deep" />
-                <span>Avisos de Recurrencia ({avisosRecurrencia.length})</span>
+                <span>Clientas Recurrentes ({avisosRecurrencia.length})</span>
               </div>
               <div className="space-y-3">
                 {avisosRecurrencia.map(({ clienta, servicio, profesional, diasParaElCiclo }) => (
@@ -680,14 +687,20 @@ export const AdminAgenda: React.FC = () => {
                     {profesional && (
                       <button
                         onClick={() => {
-                          const link = `${window.location.origin}/reserva?profesionalId=${profesional.id}`;
+                          const params = new URLSearchParams({
+                            profesionalId: profesional.id,
+                            nombre: clienta.nombre,
+                            telefono: clienta.telefono ?? '',
+                            origen: 'recurrencia',
+                          });
+                          const link = `${window.location.origin}/reserva?${params.toString()}`;
                           navigator.clipboard?.writeText(link);
-                          showToast('🔗 Link para que reserve copiado — mandaselo por WhatsApp');
+                          showToast(`🔗 Link personalizado para ${clienta.nombre} copiado — mandaselo por WhatsApp`);
                         }}
                         className="flex items-center gap-1.5 text-sky-700 font-semibold hover:underline cursor-pointer"
                       >
                         <LinkIcon className="w-3 h-3" />
-                        <span>Copiar link para que reserve con {profesional.nombre}</span>
+                        <span>Copiar link para {clienta.nombre} (ya con sus datos)</span>
                       </button>
                     )}
                   </div>

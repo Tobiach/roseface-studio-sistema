@@ -76,6 +76,10 @@ interface CrearPreferenciaBody {
   hora: string;
   horaFin: string;
   clienta: { nombre: string; telefono?: string; email?: string };
+  // Marca de dónde vino la reserva (ej. "recurrencia" = vino del link que
+  // Yosy le manda a una clienta fiel desde "Clientas Recurrentes") — solo
+  // para poder filtrar/contar después, no cambia ninguna lógica de pago.
+  origen?: string;
 }
 
 const ESTADO_CANCELADO = 'cancelado';
@@ -93,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const body = req.body as Partial<CrearPreferenciaBody>;
-  const { servicioId, profesionalId, fecha, hora, horaFin, clienta } = body ?? {};
+  const { servicioId, profesionalId, fecha, hora, horaFin, clienta, origen } = body ?? {};
 
   if (!servicioId || !profesionalId || !fecha || !hora || !horaFin || !clienta?.nombre) {
     res.status(400).json({ error: 'Faltan datos de la reserva' });
@@ -290,7 +294,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         monto_sena: montoSena,
         sena_verificada_automaticamente: false,
         origen_reserva: 'web',
-        notas_internas: `Reserva web cliente: ${clienta.nombre} (${clienta.telefono ?? ''})`,
+        notas_internas: `Reserva web cliente: ${clienta.nombre} (${clienta.telefono ?? ''})${
+          origen === 'recurrencia' ? ' — vino del link de Clientas Recurrentes' : ''
+        }`,
         expira_en: new Date(
           Date.now() + (circuito === 'mercado_pago' ? HOLD_MINUTOS_MP : HOLD_MINUTOS_TRANSFERENCIA) * 60 * 1000
         ).toISOString(),

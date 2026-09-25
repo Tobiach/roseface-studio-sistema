@@ -94,13 +94,28 @@ export const Reserva: React.FC = () => {
   const [fechaSeleccionada, setFechaSeleccionada] = useState<string>(mananaISO());
   const [horaSeleccionada, setHoraSeleccionada] = useState<string>('');
   
-  // Client details — si el navegador ya reservó antes acá, se auto-completa
-  // con esos datos (guardados en localStorage) en vez de arrancar en blanco.
+  // Client details — 2 formas de auto-completar, la de la URL gana:
+  // 1) Link personalizado para una clienta puntual (ej. "Clientas
+  //    Recurrentes" en el panel de Yosy le manda /reserva?nombre=...
+  //    &telefono=...) — sirve aunque sea un celular donde nunca reservó.
+  // 2) Si no vino nada en la URL, lo que ya haya guardado este navegador
+  //    de una reserva anterior (localStorage).
   const clienteRecordado = leerClienteRecordado();
-  const [nombreClienta, setNombreClienta] = useState<string>(clienteRecordado?.nombre ?? '');
-  const [telefonoClienta, setTelefonoClienta] = useState<string>(clienteRecordado?.telefono ?? '');
+  const nombreDesdeLink = searchParams.get('nombre');
+  const telefonoDesdeLink = searchParams.get('telefono');
+  const [nombreClienta, setNombreClienta] = useState<string>(
+    nombreDesdeLink ?? clienteRecordado?.nombre ?? ''
+  );
+  const [telefonoClienta, setTelefonoClienta] = useState<string>(
+    telefonoDesdeLink ?? clienteRecordado?.telefono ?? ''
+  );
   const [emailClienta, setEmailClienta] = useState<string>(clienteRecordado?.email ?? '');
   const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
+
+  // Marca de dónde vino la reserva, para poder "sacar números" después
+  // (ej. cuántas clientas fieles volvieron desde el link que les mandó
+  // Yosy). Viaja como nota interna del turno, no cambia el flujo.
+  const origenParam = searchParams.get('origen');
 
   // Si se viene del perfil de una profesional puntual ("Reservar turno con
   // X"), toda la reserva queda acotada a ella — nunca se le ofrecen otras.
@@ -229,6 +244,7 @@ export const Reserva: React.FC = () => {
           hora: horaSeleccionada,
           horaFin,
           clienta: { nombre: nombreClienta, telefono: telefonoClienta, email: emailClienta },
+          origen: origenParam ?? undefined,
         }),
       });
 
@@ -304,7 +320,9 @@ export const Reserva: React.FC = () => {
         senaVerificadaAutomaticamente: false,
         origenReserva: 'web',
         idTransaccionMP: null,
-        notasInternas: `Reserva web cliente: ${nombreClienta} (${telefonoClienta})`,
+        notasInternas: `Reserva web cliente: ${nombreClienta} (${telefonoClienta})${
+          origenParam === 'recurrencia' ? ' — vino del link de Clientas Recurrentes' : ''
+        }`,
       });
 
       setTimeout(async () => {
