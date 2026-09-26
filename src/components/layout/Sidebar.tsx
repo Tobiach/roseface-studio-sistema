@@ -2,6 +2,7 @@
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { Logo } from '../ui/Logo';
+import { NotificacionesBell } from './NotificacionesBell';
 import { useApp } from '../../context/AppContext';
 import {
   CalendarDays,
@@ -109,7 +110,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ abierta = false, onCerrar }) =
             <span className="text-[11px] font-semibold text-rf-rose-deep tracking-wide uppercase">
               {esProfesional ? 'Panel de Profesional' : 'Panel Administrativo'}
             </span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="flex items-center gap-1.5">
+              {!esProfesional && <NotificacionesBell />}
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
           </div>
         </div>
 
