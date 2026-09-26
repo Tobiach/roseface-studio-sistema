@@ -376,6 +376,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((t) => (t.id === turnoId ? { ...t, estado: 'sena_confirmada', aprobadoPorProfesional: true } : t))
     );
     showToast('✅ Comprobante aprobado — turno confirmado.');
+
+    // Avisarle a Yosy por mail — sin bloquear el flujo si falla (el turno
+    // ya quedó confirmado arriba de todas formas).
+    fetch('/api/notificar-turno-confirmado', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ turnoId }),
+    }).catch(() => {});
   };
 
   // Auto-edición de horario: la profesional (o Yosy) cambia sus días y sus

@@ -18,6 +18,29 @@ function getSupabaseAdmin() {
   return createClient(url, key);
 }
 
+// Mail a Yosy por cada turno confirmado (25/9/2026) — duplicado en
+// aprobar-comprobante.ts por el mismo motivo de siempre (Vercel no
+// empaqueta código compartido). No falla nunca el flujo de pago si el
+// mail falla: el turno ya quedó confirmado antes de llamar a esto.
+async function avisarleAYosy(asunto: string, html: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'Rose Face Studio <onboarding@resend.dev>',
+        to: 'rosefacestudio@gmail.com',
+        subject: asunto,
+        html,
+      }),
+    });
+  } catch (err) {
+    console.error('[avisarleAYosy] No se pudo mandar el mail:', err);
+  }
+}
+
 // Documentación de la firma: https://www.mercadopago.com.ar/developers/es/docs/checkout-pro/additional-content/security/signature
 function firmaValida(req: VercelRequest): boolean {
   const secret = process.env.MP_WEBHOOK_SECRET;
@@ -99,7 +122,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // alcance de este roadmap).
       const { data: turnoActual } = await supabaseAdmin
         .from('turnos')
-        .select('id, profesional_id, fecha, hora_inicio, estado')
+        .select('id, profesional_id, clienta_id, servicio_id, fecha, hora_inicio, estado, monto_sena')
         .eq('id', turnoId)
         .single();
 
@@ -148,6 +171,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (error) {
           console.error('[mercadopago/webhook] Error actualizando turno', turnoId, error);
+        } else {
+          const [{ data: clienta }, { data: servicio }, { data: profesional }] = await Promise.all([
+            supabaseAdmin.from('clientas').select('nombre, telefono').eq('id', turnoActual.clienta_id).single(),
+            supabaseAdmin.from('servicios').select('nombre').eq('id', turnoActual.servicio_id).single(),
+            supabaseAdmin.from('profesionales').select('nombre').eq('id', turnoActual.profesional_id).single(),
+          ]);
+          await avisarleAYosy(
+            `Nuevo turno confirmado — ${servicio?.nombre ?? 'servicio'} el ${turnoActual.fecha}`,
+            `<p>Se confirmó un turno pagado por Mercado Pago.</p>
+             <ul>
+               <li><strong>Clienta:</strong> ${clienta?.nombre ?? '—'} (${clienta?.telefono ?? '—'})</li>
+               <li><strong>Servicio:</strong> ${servicio?.nombre ?? '—'}</li>
+               <li><strong>Profesional:</strong> ${profesional?.nombre ?? '—'}</li>
+               <li><strong>Fecha:</strong> ${turnoActual.fecha} a las ${turnoActual.hora_inicio} hs</li>
+               <li><strong>Seña pagada:</strong> $${turnoActual.monto_sena}</li>
+             </ul>`
+          );
         }
       }
     }
