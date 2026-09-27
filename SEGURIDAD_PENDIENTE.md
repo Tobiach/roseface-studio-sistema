@@ -52,7 +52,7 @@ clienta pública y Yosy logueada, misma clave): `turnos`, `clientas`,
 | `crearTurno` (fallback demo) | `turnos` | INSERT | Reserva.tsx si falla la API real |
 | `actualizarEstadoTurno` | `turnos` | `estado`, notas | AdminAgenda (marcar completado/cancelado) |
 | `reprogramarTurno` | `turnos` | fecha/hora | AdminAgenda |
-| `subirComprobante` | `turnos` | `comprobante_transferencia_url` | ReservaTransferencia.tsx (clienta) |
+| ~~`subirComprobante`~~ (el UPDATE) | ~~`turnos`~~ | ~~`comprobante_transferencia_url`~~ | ✅ **migrado (26/9) a `/api/guardar-comprobante.ts`** — el upload al bucket sigue siendo del cliente |
 | ~~`aprobarComprobante`~~ | ~~`turnos`~~ | ~~`estado`, `aprobado_por_profesional`~~ | ✅ **migrado (26/9) a `/api/aprobar-comprobante.ts`** |
 | auto-edición horario | `profesionales` | `horario_disponible` | AdminHorario |
 | `crearBloqueo` / borrar | `bloqueos_horario` | INSERT/DELETE | AdminAgenda |
@@ -74,10 +74,13 @@ servidor** (mismo patrón que ya existe en `crear-preferencia.ts` /
    Absorbió la lógica que antes vivía en `notificar-turno-confirmado.ts`
    (ese archivo se borró, ya no lo llamaba nadie más). Verificado con
    curl: turno inexistente → 404; turno sin comprobante → 400.
-2. **`subirComprobante` → el UPLOAD del archivo puede seguir siendo del
-   cliente (bucket de Storage, tiene sus propias políticas — revisar esas
-   también), pero el UPDATE de `comprobante_transferencia_url` en
-   `turnos` que pasa después, mover a un endpoint chico.** (siguiente)
+2. ✅ **`subirComprobante` → `/api/guardar-comprobante.ts`** — hecho y
+   deployado el 26/9. El upload en sí sigue siendo del cliente (bucket de
+   Storage, tiene sus propias políticas — **eso todavía no se revisó,
+   queda pendiente**), pero el UPDATE de `comprobante_transferencia_url`
+   en `turnos` ahora lo hace el servidor, validando que la URL apunte al
+   bucket público de este mismo proyecto y que el turno esté realmente
+   `reservado` en circuito transferencia.
 3. **`actualizarEstadoTurno` → `/api/actualizar-estado-turno.ts`** (la más
    usada, tocar de última porque es la que más superficie tiene).
 

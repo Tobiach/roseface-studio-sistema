@@ -326,7 +326,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Circuito de transferencia (Fase 5): la clienta sube su comprobante
   // directo a Supabase Storage y lo asocia al turno — todavía no confirma
-  // el turno, eso lo hace la profesional al aprobarlo.
+  // el turno, eso lo hace la profesional al aprobarlo. El UPDATE en
+  // `turnos` migrado a /api/guardar-comprobante.ts (26/9/2026,
+  // SEGURIDAD_PENDIENTE.md prioridad 2): el upload en sí sigue siendo del
+  // cliente (bucket con sus propias políticas), pero pisar el campo en la
+  // tabla ya no lo puede hacer cualquiera con el anon key.
   const subirComprobante = async (turnoId: string, file: File): Promise<void> => {
     if (!supabaseEnabled || !supabase) {
       showToast('📎 Comprobante recibido (modo demo, no se guardó el archivo).');
@@ -341,14 +345,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const { data: publicUrlData } = supabase.storage.from('comprobantes').getPublicUrl(path);
-    const { error: updateError } = await supabase
-      .from('turnos')
-      .update({ comprobante_transferencia_url: publicUrlData.publicUrl })
-      .eq('id', turnoId);
 
-    if (updateError) {
+    const resp = await fetch('/api/guardar-comprobante', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ turnoId, url: publicUrlData.publicUrl }),
+    });
+    const data = (await resp.json().catch(() => ({}))) as { ok?: boolean };
+    if (!resp.ok || !data.ok) {
       showToast('❌ No se pudo guardar el comprobante en el turno.');
-      throw updateError;
+      throw new Error('No se pudo guardar el comprobante en el turno');
     }
 
     setTurnos((prev) =>
