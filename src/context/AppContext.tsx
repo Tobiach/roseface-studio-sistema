@@ -284,13 +284,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTurnos((prev) => [turno, ...prev]);
   };
 
+  // Migrado a /api/actualizar-estado-turno.ts (26/9/2026,
+  // SEGURIDAD_PENDIENTE.md prioridad 3) — antes era un UPDATE directo con
+  // el anon key, que cualquiera podía llamar para marcar cualquier turno
+  // como completado/cancelado/con la seña confirmada.
   const actualizarEstadoTurno = async (id: string, nuevoEstado: EstadoTurno, notasInternas?: string) => {
     if (supabaseEnabled && supabase) {
-      const patch: Record<string, unknown> = { estado: nuevoEstado };
-      if (notasInternas !== undefined) patch.notas_internas = notasInternas;
-
-      const { error } = await supabase.from('turnos').update(patch).eq('id', id);
-      if (error) {
+      try {
+        const resp = await fetch('/api/actualizar-estado-turno', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ turnoId: id, nuevoEstado, notasInternas }),
+        });
+        const data = (await resp.json().catch(() => ({}))) as { ok?: boolean };
+        if (!resp.ok || !data.ok) {
+          showToast('❌ No se pudo actualizar el turno.');
+          return;
+        }
+      } catch {
         showToast('❌ No se pudo actualizar el turno.');
         return;
       }

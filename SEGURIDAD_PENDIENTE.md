@@ -50,7 +50,7 @@ clienta pública y Yosy logueada, misma clave): `turnos`, `clientas`,
 | Función (`AppContext.tsx`) | Tabla | Qué escribe | Quién la usa hoy |
 |---|---|---|---|
 | `crearTurno` (fallback demo) | `turnos` | INSERT | Reserva.tsx si falla la API real |
-| `actualizarEstadoTurno` | `turnos` | `estado`, notas | AdminAgenda (marcar completado/cancelado) |
+| ~~`actualizarEstadoTurno`~~ | ~~`turnos`~~ | ~~`estado`, notas~~ | ✅ **migrado (26/9) a `/api/actualizar-estado-turno.ts`** |
 | `reprogramarTurno` | `turnos` | fecha/hora | AdminAgenda |
 | ~~`subirComprobante`~~ (el UPDATE) | ~~`turnos`~~ | ~~`comprobante_transferencia_url`~~ | ✅ **migrado (26/9) a `/api/guardar-comprobante.ts`** — el upload al bucket sigue siendo del cliente |
 | ~~`aprobarComprobante`~~ | ~~`turnos`~~ | ~~`estado`, `aprobado_por_profesional`~~ | ✅ **migrado (26/9) a `/api/aprobar-comprobante.ts`** |
@@ -81,12 +81,14 @@ servidor** (mismo patrón que ya existe en `crear-preferencia.ts` /
    en `turnos` ahora lo hace el servidor, validando que la URL apunte al
    bucket público de este mismo proyecto y que el turno esté realmente
    `reservado` en circuito transferencia.
-3. **`actualizarEstadoTurno` → `/api/actualizar-estado-turno.ts`** (la más
-   usada, tocar de última porque es la que más superficie tiene).
+3. ✅ **`actualizarEstadoTurno` → `/api/actualizar-estado-turno.ts`** — hecho
+   y deployado el 26/9. Valida que el estado nuevo sea uno de los 5 válidos
+   (antes se podía mandar cualquier string). **Con esto el Paso 1 completo
+   está terminado y verificado con curl contra producción.**
 
-**Paso 2 — recién ahí, correr esto en SQL** (sin este paso 1 antes, esto
-ROMPE el aprobar-comprobante, subir-comprobante y marcar-completado
-actuales):
+**Paso 2 — ahora que el Paso 1 está completo, correr esto en SQL** (correrlo
+ANTES habría roto aprobar-comprobante, guardar-comprobante y
+actualizar-estado-turno — ya no, los 3 usan el service_role):
 
 ```sql
 revoke update on turnos from anon;
