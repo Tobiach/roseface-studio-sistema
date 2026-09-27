@@ -53,7 +53,7 @@ clienta pública y Yosy logueada, misma clave): `turnos`, `clientas`,
 | `actualizarEstadoTurno` | `turnos` | `estado`, notas | AdminAgenda (marcar completado/cancelado) |
 | `reprogramarTurno` | `turnos` | fecha/hora | AdminAgenda |
 | `subirComprobante` | `turnos` | `comprobante_transferencia_url` | ReservaTransferencia.tsx (clienta) |
-| `aprobarComprobante` | `turnos` | `estado`, `aprobado_por_profesional` | Panel de cada profesional — **la más peligrosa** |
+| ~~`aprobarComprobante`~~ | ~~`turnos`~~ | ~~`estado`, `aprobado_por_profesional`~~ | ✅ **migrado (26/9) a `/api/aprobar-comprobante.ts`** |
 | auto-edición horario | `profesionales` | `horario_disponible` | AdminHorario |
 | `crearBloqueo` / borrar | `bloqueos_horario` | INSERT/DELETE | AdminAgenda |
 | toggle recordatorio | `recordatorios_config` | UPSERT | AdminAgenda |
@@ -63,17 +63,21 @@ clienta pública y Yosy logueada, misma clave): `turnos`, `clientas`,
 
 **Paso 1 — migrar las 3 escrituras más sensibles a un endpoint de
 servidor** (mismo patrón que ya existe en `crear-preferencia.ts` /
-`webhook.ts` / `notificar-turno-confirmado.ts`: el navegador llama a
-`/api/algo`, el servidor usa el `service_role` key, nunca el navegador):
+`webhook.ts`: el navegador llama a `/api/algo`, el servidor usa el
+`service_role` key, nunca el navegador):
 
-1. **`aprobarComprobante` → `/api/aprobar-comprobante.ts`** (prioridad 1,
-   es la que permite falsificar un pago). Reusar la lógica de
-   `notificar-turno-confirmado.ts` que ya existe — este nuevo endpoint
-   hace el UPDATE y al final llama al aviso por mail, todo server-side.
+1. ✅ **`aprobarComprobante` → `/api/aprobar-comprobante.ts`** (prioridad 1,
+   es la que permite falsificar un pago) — **hecho y deployado el 26/9**.
+   El endpoint valida que el turno sea circuito transferencia, tenga
+   comprobante subido y no esté ya confirmado, hace el UPDATE con el
+   service_role y al final manda el aviso por mail — todo server-side.
+   Absorbió la lógica que antes vivía en `notificar-turno-confirmado.ts`
+   (ese archivo se borró, ya no lo llamaba nadie más). Verificado con
+   curl: turno inexistente → 404; turno sin comprobante → 400.
 2. **`subirComprobante` → el UPLOAD del archivo puede seguir siendo del
    cliente (bucket de Storage, tiene sus propias políticas — revisar esas
    también), pero el UPDATE de `comprobante_transferencia_url` en
-   `turnos` que pasa después, mover a un endpoint chico.**
+   `turnos` que pasa después, mover a un endpoint chico.** (siguiente)
 3. **`actualizarEstadoTurno` → `/api/actualizar-estado-turno.ts`** (la más
    usada, tocar de última porque es la que más superficie tiene).
 
@@ -110,25 +114,22 @@ sola):
 propósito, para no arriesgar romper el sitio en producción sin que Tobias
 decida el orden/alcance primero.
 
-## 🟡 Importante — estas sí son seguras de aplicar ya, bajo riesgo
+## 🟡 Importante — APLICADO Y VERIFICADO (26/9/2026)
 
-1. **PIN sin límite de intentos** (`api/verificar-pin.ts`): un PIN de 4
-   dígitos son 10.000 combinaciones, sin rate-limit se puede probar todas
-   por script. Agregar un límite simple (ej. por IP o por lapso de
-   tiempo, usando una tabla chica de intentos o Vercel KV/Upstash si hay
-   presupuesto, o aunque sea un `setTimeout` artificial + límite en
-   memoria como primera capa).
-2. **HTML sin sanitizar en los mails automáticos** (`webhook.ts` y
-   `notificar-turno-confirmado.ts`, agregados el 25/9): el nombre de la
-   clienta se interpola directo en el HTML del mail. Si alguien reserva
-   con un nombre que trae `<script>` u otro HTML, entra crudo al mail que
-   recibe Yosy. Gmail neutraliza `<script>` casi siempre, pero no hay que
-   confiar en eso — hay que escapar `<`, `>`, `&`, `"` antes de interpolar
-   nombre/servicio/profesional en el HTML de ambos archivos.
-3. **Sin límite de pedidos a `crear-preferencia.ts`**: alguien podría
-   spamear holds de turnos (se autolimpian solos a los 15 min, daño
-   acotado, pero podría molestar la disponibilidad real un rato). Menor
-   prioridad que los 2 de arriba.
+Los 3 fixes de abajo ya están en producción (commit `1aca1ea`), verificados
+con evidencia real (curl contra prod, no supuestos):
+
+1. ✅ **Rate-limit en el PIN** (`api/verificar-pin.ts`): límite en memoria
+   por IP (8 intentos / 10 min, best-effort — se resetea si Vercel levanta
+   una instancia nueva, pero frena un script contra la misma instancia
+   caliente). Verificado: 8 pedidos con PIN inválido devuelven 200, el 9°
+   en adelante devuelve 429. Un PIN correcto resetea el contador de esa IP.
+2. ✅ **HTML escapado en los mails automáticos** (`webhook.ts` y
+   `notificar-turno-confirmado.ts`): `escapeHtml()` aplicado a
+   nombre/teléfono de clienta, servicio y profesional antes de
+   interpolarlos en el HTML.
+3. ✅ **Rate-limit en `crear-preferencia.ts`**: mismo patrón, 20 pedidos /
+   10 min por IP. Verificado: pedido 21 en adelante devuelve 429.
 
 ## Estado de los datos (auditado 26/9/2026)
 

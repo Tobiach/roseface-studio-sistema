@@ -359,14 +359,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // La profesional (nunca Yosy) aprueba el comprobante y recién ahí el
   // turno pasa a confirmado — mismo efecto que el webhook de MP, pero
-  // disparado a mano.
+  // disparado a mano. Escritura migrada a /api/aprobar-comprobante.ts
+  // (26/9/2026, SEGURIDAD_PENDIENTE.md): antes era un UPDATE directo con el
+  // anon key, que cualquiera podía llamar sin pasar por la profesional.
   const aprobarComprobante = async (turnoId: string): Promise<void> => {
     if (supabaseEnabled && supabase) {
-      const { error } = await supabase
-        .from('turnos')
-        .update({ estado: 'sena_confirmada', aprobado_por_profesional: true })
-        .eq('id', turnoId);
-      if (error) {
+      try {
+        const resp = await fetch('/api/aprobar-comprobante', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ turnoId }),
+        });
+        const data = (await resp.json().catch(() => ({}))) as { ok?: boolean };
+        if (!resp.ok || !data.ok) {
+          showToast('❌ No se pudo aprobar el comprobante.');
+          return;
+        }
+      } catch {
         showToast('❌ No se pudo aprobar el comprobante.');
         return;
       }
@@ -376,14 +385,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((t) => (t.id === turnoId ? { ...t, estado: 'sena_confirmada', aprobadoPorProfesional: true } : t))
     );
     showToast('✅ Comprobante aprobado — turno confirmado.');
-
-    // Avisarle a Yosy por mail — sin bloquear el flujo si falla (el turno
-    // ya quedó confirmado arriba de todas formas).
-    fetch('/api/notificar-turno-confirmado', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ turnoId }),
-    }).catch(() => {});
   };
 
   // Auto-edición de horario: la profesional (o Yosy) cambia sus días y sus
