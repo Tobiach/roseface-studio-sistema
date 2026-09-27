@@ -23,6 +23,15 @@ function getSupabaseAdmin() {
   return createClient(url, key);
 }
 
+function escapeHtml(valor: string): string {
+  return valor
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function avisarleAYosy(asunto: string, html: string) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return;
@@ -73,16 +82,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       supabaseAdmin.from('profesionales').select('nombre').eq('id', turno.profesional_id).single(),
     ]);
 
+    const nombreClienta = escapeHtml(clienta?.nombre ?? '—');
+    const telefonoClienta = escapeHtml(clienta?.telefono ?? '—');
+    const nombreServicio = escapeHtml(servicio?.nombre ?? 'servicio');
+    const nombreProfesional = escapeHtml(profesional?.nombre ?? 'la profesional');
     await avisarleAYosy(
-      `Nuevo turno confirmado — ${servicio?.nombre ?? 'servicio'} el ${turno.fecha}`,
-      `<p>Se confirmó un turno por transferencia (aprobado por ${profesional?.nombre ?? 'la profesional'}).</p>
+      `Nuevo turno confirmado — ${nombreServicio} el ${turno.fecha}`,
+      `<p>Se confirmó un turno por transferencia (aprobado por ${nombreProfesional}).</p>
        <ul>
-         <li><strong>Clienta:</strong> ${clienta?.nombre ?? '—'} (${clienta?.telefono ?? '—'})</li>
-         <li><strong>Servicio:</strong> ${servicio?.nombre ?? '—'}</li>
-         <li><strong>Profesional:</strong> ${profesional?.nombre ?? '—'}</li>
+         <li><strong>Clienta:</strong> ${nombreClienta} (${telefonoClienta})</li>
+         <li><strong>Servicio:</strong> ${nombreServicio}</li>
+         <li><strong>Profesional:</strong> ${nombreProfesional}</li>
          <li><strong>Fecha:</strong> ${turno.fecha} a las ${turno.hora_inicio} hs</li>
        </ul>
-       <p style="color:#888;font-size:12px">El monto de este turno es entre la clienta y ${profesional?.nombre ?? 'la profesional'} — no se incluye acá.</p>`
+       <p style="color:#888;font-size:12px">El monto de este turno es entre la clienta y ${nombreProfesional} — no se incluye acá.</p>`
     );
 
     res.status(200).json({ ok: true });

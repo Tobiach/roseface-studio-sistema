@@ -22,6 +22,15 @@ function getSupabaseAdmin() {
 // aprobar-comprobante.ts por el mismo motivo de siempre (Vercel no
 // empaqueta código compartido). No falla nunca el flujo de pago si el
 // mail falla: el turno ya quedó confirmado antes de llamar a esto.
+function escapeHtml(valor: string): string {
+  return valor
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function avisarleAYosy(asunto: string, html: string) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return;
@@ -177,13 +186,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             supabaseAdmin.from('servicios').select('nombre').eq('id', turnoActual.servicio_id).single(),
             supabaseAdmin.from('profesionales').select('nombre').eq('id', turnoActual.profesional_id).single(),
           ]);
+          const nombreClienta = escapeHtml(clienta?.nombre ?? '—');
+          const telefonoClienta = escapeHtml(clienta?.telefono ?? '—');
+          const nombreServicio = escapeHtml(servicio?.nombre ?? 'servicio');
+          const nombreProfesional = escapeHtml(profesional?.nombre ?? '—');
           await avisarleAYosy(
-            `Nuevo turno confirmado — ${servicio?.nombre ?? 'servicio'} el ${turnoActual.fecha}`,
+            `Nuevo turno confirmado — ${nombreServicio} el ${turnoActual.fecha}`,
             `<p>Se confirmó un turno pagado por Mercado Pago.</p>
              <ul>
-               <li><strong>Clienta:</strong> ${clienta?.nombre ?? '—'} (${clienta?.telefono ?? '—'})</li>
-               <li><strong>Servicio:</strong> ${servicio?.nombre ?? '—'}</li>
-               <li><strong>Profesional:</strong> ${profesional?.nombre ?? '—'}</li>
+               <li><strong>Clienta:</strong> ${nombreClienta} (${telefonoClienta})</li>
+               <li><strong>Servicio:</strong> ${nombreServicio}</li>
+               <li><strong>Profesional:</strong> ${nombreProfesional}</li>
                <li><strong>Fecha:</strong> ${turnoActual.fecha} a las ${turnoActual.hora_inicio} hs</li>
                <li><strong>Seña pagada:</strong> $${turnoActual.monto_sena}</li>
              </ul>`

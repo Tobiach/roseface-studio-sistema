@@ -84,9 +84,38 @@ interface CrearPreferenciaBody {
 
 const ESTADO_CANCELADO = 'cancelado';
 
+// Rate limit en memoria — primera capa, best-effort (ver mismo patrón y
+// motivo en api/verificar-pin.ts). Acá el límite es más alto porque una
+// clienta real puede reintentar varias veces si se equivoca de horario.
+const VENTANA_MS = 10 * 60 * 1000; // 10 minutos
+const LIMITE_PEDIDOS = 20;
+const pedidosPorIp = new Map<string, { conteo: number; desde: number }>();
+
+function ipDelPedido(req: VercelRequest): string {
+  const xff = req.headers['x-forwarded-for'];
+  const primera = Array.isArray(xff) ? xff[0] : xff;
+  return (primera ?? req.socket?.remoteAddress ?? 'desconocida').split(',')[0].trim();
+}
+
+function excedioLimite(ip: string): boolean {
+  const ahora = Date.now();
+  const registro = pedidosPorIp.get(ip);
+  if (!registro || ahora - registro.desde > VENTANA_MS) {
+    pedidosPorIp.set(ip, { conteo: 1, desde: ahora });
+    return false;
+  }
+  registro.conteo += 1;
+  return registro.conteo > LIMITE_PEDIDOS;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido' });
+    return;
+  }
+
+  if (excedioLimite(ipDelPedido(req))) {
+    res.status(429).json({ error: 'Demasiados pedidos, esperá unos minutos.' });
     return;
   }
 
