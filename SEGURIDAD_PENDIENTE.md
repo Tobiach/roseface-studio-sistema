@@ -1,0 +1,148 @@
+# Seguridad pendiente — Rose Face Studio
+
+Auditoría hecha el 26/9/2026, con evidencia real corrida contra producción
+(no supuestos). Este doc es la fuente de verdad de qué falta en seguridad —
+mismo criterio que `PENDIENTE_ONBOARDING.md` para los datos de Yosy.
+
+## 🔴 Hallazgo crítico — RLS abierto de par en par
+
+Usando el `anon key` real (el mismo que viaja público en el bundle del
+sitio — cualquiera lo puede sacar de las devtools del navegador, no hace
+falta login), confirmé con pruebas reales contra producción:
+
+- **Lectura total de `clientas`**: nombre, teléfono, mail de todas.
+- **Lectura total de `turnos`**: de cualquier clienta, cualquier profesional.
+- **Lectura total de `profesionales`** incluido `modelo_comision` (% real
+  de cada una) y `alias_cbu`.
+- **Escritura sin bloqueo sobre `turnos`**: probado en vivo sobre un turno
+  real (se pudo actualizar un campo y revertirlo, sin ningún error de
+  permiso).
+- **Inserción libre** en `clientas` (probado, se creó una fila de prueba
+  sin fricción).
+
+Osea: el PIN de 4 dígitos para entrar al panel de Yosy **no protege la
+base de datos** — solo esconde la interfaz. Cualquiera que sepa pegar 3
+líneas de JS contra la URL pública de Supabase puede leer todo y, peor,
+puede **marcar su propio comprobante de transferencia como aprobado sin
+que la profesional lo revise**, falsificando un turno "pagado" sin pagar
+nada.
+
+### ⚠️ Corrección importante a lo que dije antes de cortar el chat
+
+Dije que había un "fix rápido, sin riesgo" para esto. **Eso estaba mal
+dicho** — lo revisé bien antes de cerrar el contexto y no es así. La razón:
+**no hay autenticación real** (el PIN es un parche de UI, no genera una
+sesión ni un token que Postgres pueda usar para distinguir "esto lo pide
+Yosy desde su panel" de "esto lo pide cualquiera desde afuera"). Los dos
+casos usan literalmente la misma clave.
+
+Esto significa que **toda la lectura/escritura actual del panel admin
+depende de que el anon key tenga acceso amplio** — no se puede simplemente
+"cerrar todo" sin romper el sitio en producción. Mapeé exactamente qué usa
+el navegador directo contra Supabase (sin pasar por ningún servidor), en
+`src/context/AppContext.tsx`:
+
+**Lecturas directas** (se hacen apenas carga la app, para TODOS —
+clienta pública y Yosy logueada, misma clave): `turnos`, `clientas`,
+`servicios`, `profesionales`, `bloqueos_horario`, `recordatorios_config`.
+
+**Escrituras directas desde el navegador**:
+| Función (`AppContext.tsx`) | Tabla | Qué escribe | Quién la usa hoy |
+|---|---|---|---|
+| `crearTurno` (fallback demo) | `turnos` | INSERT | Reserva.tsx si falla la API real |
+| `actualizarEstadoTurno` | `turnos` | `estado`, notas | AdminAgenda (marcar completado/cancelado) |
+| `reprogramarTurno` | `turnos` | fecha/hora | AdminAgenda |
+| `subirComprobante` | `turnos` | `comprobante_transferencia_url` | ReservaTransferencia.tsx (clienta) |
+| `aprobarComprobante` | `turnos` | `estado`, `aprobado_por_profesional` | Panel de cada profesional — **la más peligrosa** |
+| auto-edición horario | `profesionales` | `horario_disponible` | AdminHorario |
+| `crearBloqueo` / borrar | `bloqueos_horario` | INSERT/DELETE | AdminAgenda |
+| toggle recordatorio | `recordatorios_config` | UPSERT | AdminAgenda |
+| `buscarOCrearClienta` | `clientas` | INSERT | Reserva.tsx (fallback y flujo real) |
+
+### La solución real (no es de una tarde, pero está bien acotada)
+
+**Paso 1 — migrar las 3 escrituras más sensibles a un endpoint de
+servidor** (mismo patrón que ya existe en `crear-preferencia.ts` /
+`webhook.ts` / `notificar-turno-confirmado.ts`: el navegador llama a
+`/api/algo`, el servidor usa el `service_role` key, nunca el navegador):
+
+1. **`aprobarComprobante` → `/api/aprobar-comprobante.ts`** (prioridad 1,
+   es la que permite falsificar un pago). Reusar la lógica de
+   `notificar-turno-confirmado.ts` que ya existe — este nuevo endpoint
+   hace el UPDATE y al final llama al aviso por mail, todo server-side.
+2. **`subirComprobante` → el UPLOAD del archivo puede seguir siendo del
+   cliente (bucket de Storage, tiene sus propias políticas — revisar esas
+   también), pero el UPDATE de `comprobante_transferencia_url` en
+   `turnos` que pasa después, mover a un endpoint chico.**
+3. **`actualizarEstadoTurno` → `/api/actualizar-estado-turno.ts`** (la más
+   usada, tocar de última porque es la que más superficie tiene).
+
+**Paso 2 — recién ahí, correr esto en SQL** (sin este paso 1 antes, esto
+ROMPE el aprobar-comprobante, subir-comprobante y marcar-completado
+actuales):
+
+```sql
+revoke update on turnos from anon;
+grant update (fecha, hora_inicio, hora_fin, notas_internas) on turnos to anon;
+```
+
+Esto deja que el navegador siga pudiendo reprogramar (fecha/hora) y tocar
+notas, pero nunca más `estado`, `aprobado_por_profesional`, `monto_sena`,
+`monto_total`, `id_transaccion_mp`, `sena_verificada_automaticamente`,
+`comprobante_transferencia_url` — esos quedan exclusivos del servidor.
+
+**Paso 3 — la lectura completa (`clientas`, `profesionales` con datos
+sensibles) sigue abierta después de esto**, porque el panel de Yosy la
+necesita y no hay forma de restringirla sin resolver primero el problema
+de fondo: no hay sesión real. La solución de fondo ahí es una de estas
+dos, a decidir con Tobias (impacto/costo, no una decisión técnica mía
+sola):
+- **A) Token liviano al validar el PIN** — `verificar-pin.ts` devuelve un
+  token firmado (HMAC, con expiración) en vez de solo `{ok:true}`; el
+  navegador lo manda en cada pedido a partir de ahí; RLS o los nuevos
+  endpoints lo validan antes de devolver datos sensibles. Es la opción
+  más prolija, varios días de trabajo repartido.
+- **B) Supabase Auth real** — la opción "correcta" a largo plazo, pero es
+  directamente el login de verdad que se había descartado como fuera del
+  alcance del PDF firmado. Si se hace esto, se resuelve todo de raíz.
+
+**No toqué nada de esto todavía** — ni el paso 1 ni el paso 2 — a
+propósito, para no arriesgar romper el sitio en producción sin que Tobias
+decida el orden/alcance primero.
+
+## 🟡 Importante — estas sí son seguras de aplicar ya, bajo riesgo
+
+1. **PIN sin límite de intentos** (`api/verificar-pin.ts`): un PIN de 4
+   dígitos son 10.000 combinaciones, sin rate-limit se puede probar todas
+   por script. Agregar un límite simple (ej. por IP o por lapso de
+   tiempo, usando una tabla chica de intentos o Vercel KV/Upstash si hay
+   presupuesto, o aunque sea un `setTimeout` artificial + límite en
+   memoria como primera capa).
+2. **HTML sin sanitizar en los mails automáticos** (`webhook.ts` y
+   `notificar-turno-confirmado.ts`, agregados el 25/9): el nombre de la
+   clienta se interpola directo en el HTML del mail. Si alguien reserva
+   con un nombre que trae `<script>` u otro HTML, entra crudo al mail que
+   recibe Yosy. Gmail neutraliza `<script>` casi siempre, pero no hay que
+   confiar en eso — hay que escapar `<`, `>`, `&`, `"` antes de interpolar
+   nombre/servicio/profesional en el HTML de ambos archivos.
+3. **Sin límite de pedidos a `crear-preferencia.ts`**: alguien podría
+   spamear holds de turnos (se autolimpian solos a los 15 min, daño
+   acotado, pero podría molestar la disponibilidad real un rato). Menor
+   prioridad que los 2 de arriba.
+
+## Estado de los datos (auditado 26/9/2026)
+
+- ✅ `clientas_recurrentes_estado` ya existe en la base — Tobias corrió el
+  SQL bien la segunda vez. Contactada/nota/silenciar en "Clientas
+  Recurrentes" están funcionando de verdad.
+- ✅ Anye, Cris y Ari tienen `alias_cbu` cargado — circuito de
+  transferencia completo para las 3.
+- ⚠️ **Clienta real nueva encontrada: "Juana marco" (1134263788)** —
+  intentó reservar 4 veces (27, 28 y 29/9) y las 4 veces el hold venció
+  sin pagar. Vale la pena que Yosy le escriba para ver si tuvo un
+  problema pagando, antes de perderla como clienta.
+- 🧹 **Datos de prueba sin limpiar todavía** (pendiente confirmación de
+  Tobias antes de borrar): 5 clientas "TEST VERIFICACION..." de pruebas
+  de esta semana, más las 2 demos de Clientas Recurrentes (Tobias/Muñe,
+  turnos 318/319), más "Ejdje" y "Maria Fernandez" (preguntado hace unos
+  días, todavía sin resolver si son reales o de prueba).
