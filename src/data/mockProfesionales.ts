@@ -245,15 +245,24 @@ export const mockProfesionales: Profesional[] = [
   },
   {
     id: 'prof-camila',
-    nombre: 'Depilación Láser',
+    // 29/9/2026: Yosy mandó una foto real con el nombre "Vero" para este
+    // slot — antes era genérico ("Depilación Láser", sin persona asignada,
+    // ver project_roseface_datos_reales_yosy.md). Pasa a tener nombre e
+    // identidad propia como el resto del equipo. El id interno no cambia
+    // (nunca cambian, son solo claves de URL históricas).
+    nombre: 'Vero',
     fotoUrl: fotoCamila,
     especialidades: ['Depilación Láser'],
-    bio: 'Sesiones de depilación láser con tecnología Soprano Ice. El día de atención es el 3er viernes de cada mes.',
+    bio: 'Especialista en depilación láser con tecnología Soprano Ice — sesiones rápidas, seguras y con resultados duraderos.',
     aniosExperiencia: 3,
     galeria: trabajosPorProfesional['prof-camila'] ?? [],
     calificacionPromedio: 5.0,
     cantidadResenas: 64,
-    modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 0 }, // servicio del estudio, no de una persona
+    // ⚠️ Sigue en 0% — era el valor placeholder de cuando esto era un slot
+    // genérico sin persona. Ahora que Vero tiene nombre propio, confirmar
+    // con Yosy su comisión real (¿alquiler fijo como Anye/Cris/Ari, o
+    // porcentaje como Sharon/Mili?) — no inventado, dato pendiente real.
+    modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 0 },
     // Solo viernes. Turnos de 1 hora cada uno, de 8am a 8pm (confirmado
     // por Tobias 24/9/2026 — antes usaba la grilla automática cada 30 min,
     // que no coincidía con la duración real del servicio). Los viernes que

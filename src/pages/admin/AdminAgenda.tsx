@@ -27,6 +27,7 @@ import {
   FileImage,
   Ban,
   Trash2,
+  X,
 } from 'lucide-react';
 
 // TODO: Fase de integración OAuth — punto de entrada para conectar la API real de
@@ -706,9 +707,10 @@ export const AdminAgenda: React.FC = () => {
                   setTurnoSeleccionadoModal(null);
                   setReprogramando(false);
                 }}
-                className="text-gray-400 hover:text-rf-black cursor-pointer"
+                aria-label="Cerrar"
+                className="-m-2 p-2.5 rounded-xl text-gray-400 hover:text-rf-black hover:bg-rf-cream active:bg-rf-cream transition-colors cursor-pointer shrink-0"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 

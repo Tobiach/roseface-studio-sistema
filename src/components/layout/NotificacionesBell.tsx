@@ -64,7 +64,7 @@ export const NotificacionesBell: React.FC = () => {
       </button>
 
       {abierta && (
-        <div className="absolute left-0 top-full mt-2 w-72 max-h-96 overflow-y-auto bg-white rounded-2xl border border-pink-200 shadow-xl z-50 p-2">
+        <div className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-2.5rem))] max-h-96 overflow-y-auto bg-white rounded-2xl border border-pink-200 shadow-xl z-50 p-2">
           <p className="text-[10px] font-bold uppercase tracking-wide text-rf-charcoal px-2 py-1.5">
             Turnos confirmados recientes
           </p>

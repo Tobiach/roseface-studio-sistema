@@ -9,9 +9,8 @@ import { slugDeNombre } from '../lib/profesionalSlug';
 export const Profesionales: React.FC = () => {
   const { profesionales } = useApp();
 
-  // Orden en la página de equipo — Depilación Láser (prof-camila) va al
-  // final, es el slot del equipamiento, no una persona, pero Yosy quiere
-  // que igual aparezca en la grilla del equipo.
+  // Orden en la página de equipo — Vero (prof-camila, depilación láser)
+  // va al final del equipo.
   const ordenDeseado = ['prof-yosy', 'prof-mili', 'prof-sharon', 'prof-alexandra', 'prof-martina', 'prof-sofia', 'prof-camila'];
 
   const profesionalesOrdenados = [...profesionales].sort((a, b) => {

@@ -61,12 +61,13 @@ export const trabajosPorProfesional: Record<string, string[]> = {
     'Volumen_Tecnologico_5.jpg',
     'Volumen_Tecnologico_6.jpg',
   ].map(urlFor),
-  // "prof-camila" ahora es el slot de Depilación Láser, no una persona —
-  // sin galería (no hay fotos de láser).
+  // Vero (depilación láser) — sin fotos de trabajos todavía.
   'prof-camila': [],
-  // Vacío a propósito (23/9/2026): de las 10 fotos originales, 7 no
-  // servían como muestra (nudillos/anillos, duplicadas, o con el cartel de
-  // OTRO local de uñas de fondo) y las 3 que quedaban se sacaron también —
-  // Yosy/Ari van a elegir ellas mismas qué fotos mostrar acá.
-  'prof-alexandra': [],
+  // 29/9/2026: de las 3 que habían quedado como "buenas" (Unas_1/4/8),
+  // solo Unas_8 se ve realmente limpia (nada de fondo, foco en la uña).
+  // Unas_1 tiene un watermark chico abajo (podría ser el logo propio del
+  // estudio, sin confirmar) y Unas_4 está dominada por un anillo/nudillos,
+  // casi no se ve la uña — quedan afuera hasta confirmar. Se puede sumar
+  // más cuando Yosy/Ari elijan directamente cuáles mostrar.
+  'prof-alexandra': ['Unas_8.jpg'].map(urlFor),
 };

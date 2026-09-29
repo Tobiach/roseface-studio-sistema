@@ -40,6 +40,8 @@ export const AdminClientasRecurrentes: React.FC = () => {
   const [verSilenciadas, setVerSilenciadas] = useState(false);
   const [notaAbierta, setNotaAbierta] = useState<string | null>(null); // key `${clientaId}|${servicioId}`
   const [notaBorrador, setNotaBorrador] = useState('');
+  const [verTodasAtrasadas, setVerTodasAtrasadas] = useState(false);
+  const [verTodasPorVencer, setVerTodasPorVencer] = useState(false);
 
   const cargarEstados = async () => {
     if (!supabaseEnabled || !supabase) return;
@@ -274,8 +276,53 @@ export const AdminClientasRecurrentes: React.FC = () => {
           </p>
         </Card>
       ) : (
+        <>
+          {renderGrupo({
+            titulo: '🔴 Atrasadas',
+            items: listaVisible.filter((i) => i.diasParaElCiclo < 0),
+            verTodas: verTodasAtrasadas,
+            onVerTodas: () => setVerTodasAtrasadas(true),
+          })}
+          {renderGrupo({
+            titulo: '🟡 Por vencer pronto',
+            items: listaVisible.filter((i) => i.diasParaElCiclo >= 0),
+            verTodas: verTodasPorVencer,
+            onVerTodas: () => setVerTodasPorVencer(true),
+          })}
+        </>
+      )}
+    </div>
+  );
+
+  // Agrupa en secciones con encabezado propio (en vez de una grilla única
+  // interminable) y limita cuántas se ven de entrada — "Ver todas" recién
+  // muestra el resto, así la página no queda con scroll infinito.
+  function renderGrupo({
+    titulo,
+    items,
+    verTodas,
+    onVerTodas,
+  }: {
+    titulo: string;
+    items: typeof listaVisible;
+    verTodas: boolean;
+    onVerTodas: () => void;
+  }) {
+    if (items.length === 0) return null;
+    const LIMITE_INICIAL = 6;
+    const visibles = verTodas ? items : items.slice(0, LIMITE_INICIAL);
+    const restantes = items.length - visibles.length;
+
+    return (
+      <div className="space-y-3">
+        <h2 className="text-sm font-bold text-rf-black flex items-center gap-2">
+          {titulo}
+          <span className="text-xs font-semibold text-rf-charcoal bg-rf-cream px-2 py-0.5 rounded-full">
+            {items.length}
+          </span>
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {listaVisible.map(({ clienta, servicio, profesional, turno, diasParaElCiclo, contactada, estado }) => {
+          {visibles.map(({ clienta, servicio, profesional, turno, diasParaElCiclo, contactada, estado }) => {
             const key = claveEstado(clienta.id, servicio.id);
             return (
               <Card key={key} className="space-y-3">
@@ -367,7 +414,15 @@ export const AdminClientasRecurrentes: React.FC = () => {
             );
           })}
         </div>
-      )}
-    </div>
-  );
+        {restantes > 0 && (
+          <button
+            onClick={onVerTodas}
+            className="w-full text-center text-xs font-bold text-rf-rose-deep bg-rf-blush/50 hover:bg-rf-blush py-2.5 rounded-xl transition-colors cursor-pointer"
+          >
+            Ver las {restantes} restantes
+          </button>
+        )}
+      </div>
+    );
+  }
 };
