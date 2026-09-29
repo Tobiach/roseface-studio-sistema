@@ -692,8 +692,13 @@ export const AdminAgenda: React.FC = () => {
       {/* MODAL EDITAR ESTADO TURNO */}
       {turnoSeleccionadoModal && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 border border-pink-100 shadow-2xl animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-pink-100">
+          {/* max-h + overflow-y-auto: con reprogramar/recordatorios abiertos el
+              contenido puede superar la altura de la pantalla — antes la caja
+              se estiraba sin límite y el encabezado (con la X) quedaba arriba,
+              fuera de la vista. El header queda "sticky" para seguir accesible
+              aunque se scrollee el resto. */}
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-5 border border-pink-100 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="sticky top-0 -mx-6 -mt-6 px-6 pt-6 pb-3 bg-white z-10 flex items-center justify-between border-b border-pink-100">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-rf-rose-deep">
                   Gestión de Turno
@@ -933,14 +938,15 @@ export const AdminAgenda: React.FC = () => {
       {/* MODAL BLOQUEAR HORARIO */}
       {modalBloqueoAbierto && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 border border-pink-100 shadow-2xl animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-pink-100">
+          <div className="bg-white rounded-3xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-4 border border-pink-100 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="sticky top-0 -mx-6 -mt-6 px-6 pt-6 pb-3 bg-white z-10 flex items-center justify-between border-b border-pink-100">
               <h3 className="font-display font-bold text-lg text-rf-black">Bloquear Horario</h3>
               <button
                 onClick={() => setModalBloqueoAbierto(false)}
-                className="text-gray-400 hover:text-rf-black cursor-pointer"
+                aria-label="Cerrar"
+                className="-m-2 p-2.5 rounded-xl text-gray-400 hover:text-rf-black hover:bg-rf-cream active:bg-rf-cream transition-colors cursor-pointer shrink-0"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 

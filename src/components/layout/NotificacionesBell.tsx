@@ -64,7 +64,12 @@ export const NotificacionesBell: React.FC = () => {
       </button>
 
       {abierta && (
-        <div className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-2.5rem))] max-h-96 overflow-y-auto bg-white rounded-2xl border border-pink-200 shadow-xl z-50 p-2">
+        // `fixed`, no `absolute`: el Sidebar tiene un transform (translate-x
+        // del drawer mobile) que crea su propio "containing block" para
+        // fixed — este panel queda anclado a la caja ENTERA del Sidebar
+        // (72/64) en vez de al wrapper chico de la campanita, así nunca se
+        // sale por el costado sin importar dónde caiga el ícono.
+        <div className="fixed top-36 left-3 right-3 md:left-auto md:right-2 md:w-56 max-h-[65vh] overflow-y-auto bg-white rounded-2xl border border-pink-200 shadow-xl z-50 p-2">
           <p className="text-[10px] font-bold uppercase tracking-wide text-rf-charcoal px-2 py-1.5">
             Turnos confirmados recientes
           </p>
