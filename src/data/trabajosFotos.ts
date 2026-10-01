@@ -63,11 +63,14 @@ export const trabajosPorProfesional: Record<string, string[]> = {
   ].map(urlFor),
   // Vero (depilación láser) — sin fotos de trabajos todavía.
   'prof-camila': [],
-  // 29/9/2026: de las 3 que habían quedado como "buenas" (Unas_1/4/8),
-  // solo Unas_8 se ve realmente limpia (nada de fondo, foco en la uña).
-  // Unas_1 tiene un watermark chico abajo (podría ser el logo propio del
-  // estudio, sin confirmar) y Unas_4 está dominada por un anillo/nudillos,
-  // casi no se ve la uña — quedan afuera hasta confirmar. Se puede sumar
-  // más cuando Yosy/Ari elijan directamente cuáles mostrar.
-  'prof-alexandra': ['Unas_8.jpg'].map(urlFor),
+  // 1/10/2026: Ari mandó 6 fotos profesionales propias (carpeta de Drive),
+  // reemplazan la única que había quedado antes (Unas_8.jpg, ya borrada).
+  'prof-alexandra': [
+    'Unas_Esculpidas_1.jpg',
+    'Unas_SoftGel_1.jpg',
+    'Unas_SpaDePies_1.jpg',
+    'Unas_Semipermanente_1.jpg',
+    'Unas_Tradicional_1.jpg',
+    'Unas_Capping_1.jpg',
+  ].map(urlFor),
 };
