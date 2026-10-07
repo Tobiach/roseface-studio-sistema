@@ -19,7 +19,7 @@ function getSupabaseAdmin() {
 // Rate limit en memoria — primera capa, best-effort (se resetea si Vercel
 // levanta una instancia nueva, pero frena un script que prueba las 10.000
 // combinaciones del PIN de 4 dígitos contra la MISMA instancia caliente).
-// No depende de una tabla nueva a propósito (ver SEGURIDAD_PENDIENTE.md).
+// No depende de una tabla nueva a propósito (ver docs/SEGURIDAD_PENDIENTE.md).
 const VENTANA_MS = 10 * 60 * 1000; // 10 minutos
 const LIMITE_INTENTOS = 8;
 const intentosPorIp = new Map<string, { conteo: number; desde: number }>();

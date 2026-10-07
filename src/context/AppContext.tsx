@@ -285,7 +285,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Migrado a /api/actualizar-estado-turno.ts (26/9/2026,
-  // SEGURIDAD_PENDIENTE.md prioridad 3) — antes era un UPDATE directo con
+  // docs/SEGURIDAD_PENDIENTE.md prioridad 3) — antes era un UPDATE directo con
   // el anon key, que cualquiera podía llamar para marcar cualquier turno
   // como completado/cancelado/con la seña confirmada.
   const actualizarEstadoTurno = async (id: string, nuevoEstado: EstadoTurno, notasInternas?: string) => {
@@ -339,7 +339,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // directo a Supabase Storage y lo asocia al turno — todavía no confirma
   // el turno, eso lo hace la profesional al aprobarlo. El UPDATE en
   // `turnos` migrado a /api/guardar-comprobante.ts (26/9/2026,
-  // SEGURIDAD_PENDIENTE.md prioridad 2): el upload en sí sigue siendo del
+  // docs/SEGURIDAD_PENDIENTE.md prioridad 2): el upload en sí sigue siendo del
   // cliente (bucket con sus propias políticas), pero pisar el campo en la
   // tabla ya no lo puede hacer cualquiera con el anon key.
   const subirComprobante = async (turnoId: string, file: File): Promise<void> => {
@@ -377,7 +377,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // La profesional (nunca Yosy) aprueba el comprobante y recién ahí el
   // turno pasa a confirmado — mismo efecto que el webhook de MP, pero
   // disparado a mano. Escritura migrada a /api/aprobar-comprobante.ts
-  // (26/9/2026, SEGURIDAD_PENDIENTE.md): antes era un UPDATE directo con el
+  // (26/9/2026, docs/SEGURIDAD_PENDIENTE.md): antes era un UPDATE directo con el
   // anon key, que cualquiera podía llamar sin pasar por la profesional.
   const aprobarComprobante = async (turnoId: string): Promise<void> => {
     if (supabaseEnabled && supabase) {

@@ -1,6 +1,6 @@
 // api/aprobar-comprobante.ts
 //
-// Paso 1 del plan crítico de SEGURIDAD_PENDIENTE.md (26/9/2026): la
+// Paso 1 del plan crítico de docs/SEGURIDAD_PENDIENTE.md (26/9/2026): la
 // escritura más peligrosa de todo el sistema (marcar un turno como
 // "sena_confirmada" + "aprobado_por_profesional") ya no la hace el
 // navegador con el anon key — la hace este endpoint con el service_role.

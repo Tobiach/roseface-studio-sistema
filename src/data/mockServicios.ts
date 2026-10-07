@@ -678,7 +678,7 @@ export const mockServicios: Servicio[] = [
   // Duración corregida 24/9/2026 — Tobias confirmó "el rango es de una hora
   // cada persona" (antes 30 min, no coincidía con la grilla horaria real).
   // ⚠️ El precio sigue en $15.000 (placeholder, ya marcado como sospechoso
-  // en PENDIENTE_ONBOARDING.md) — Tobias mencionó una foto con el precio
+  // en docs/PENDIENTE_ONBOARDING.md) — Tobias mencionó una foto con el precio
   // nuevo que todavía no llegó a este chat; falta cargarlo cuando llegue.
   {
     id: 'serv-laser-sesion',

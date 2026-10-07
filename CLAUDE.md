@@ -15,14 +15,14 @@ https://github.com/Tobiach/roseface-studio-sistema
 
 Sistema operativo digital para Rose Face Studio (centro de estética facial): reserva de turnos online para clientas + panel admin de agenda, comisiones, caja y fidelización VIP. Reemplaza WhatsApp/papel para gestionar la operación del salón.
 
-Origen: generado en Google AI Studio, importado acá para deploy y ajustes reales.
+Origen: generado en Google AI Studio, importado acá para deploy y ajustes reales — ya no queda residuo de esa plantilla (limpiado 7/10/2026).
 
 ---
 
 ## STACK
 
 React 19 · Vite 6 · TypeScript · Tailwind 4 · react-router-dom 7 · Framer Motion (`motion`) · Lucide React · Recharts · Vercel
-Backend: ninguno todavía — todo el estado (turnos, clientas, profesionales, VIP) vive en `src/data/mock*.ts` servido vía `AppContext`. Se resetea en cada refresh. Pendiente migrar a Supabase cuando haya que persistir reservas reales.
+Backend: **Supabase real, en producción** (no mocks). `src/data/mock*.ts` sigue existiendo como catálogo base/fallback de demo, pero `AppContext.tsx` lee y escribe contra Supabase cuando `supabaseEnabled` es true. Escrituras sensibles (aprobar comprobante, actualizar estado de turno, etc.) pasan por endpoints server-side en `api/*.ts` con el `service_role` key — nunca el navegador directo. Ver `docs/SEGURIDAD_PENDIENTE.md` para el detalle de esa migración y lo que sigue abierto.
 
 Rubro sin playbook propio en `controlevo-os/playbooks/industry/` (no es gastronomy/retail/hospitality). Más cercano a hospitality por la lógica de reservas, pero con motor de comisiones propio de salón de belleza.
 
@@ -30,17 +30,18 @@ Rubro sin playbook propio en `controlevo-os/playbooks/industry/` (no es gastrono
 
 ## SUPABASE
 
-No aplica todavía. Cuando se migre de mocks a datos reales: región South America (São Paulo), seguir el patrón null-safe de `controlevo-os/playbooks/technical/supabase-setup.md`.
+Proyecto real en producción, región South America (São Paulo) — ver `docs/SEGURIDAD_PENDIENTE.md` y `docs/PENDIENTE_ONBOARDING.md` para el estado de datos, RLS y pendientes conocidos antes de tocar cualquier tabla o política.
 
 ---
 
 ## ARQUITECTURA
 
-- `src/router.tsx` — rutas públicas (`/`, `/reserva`, `/reserva/confirmacion`, `/profesionales`, `/profesionales/:id`) bajo `PublicLayout` (Header+Footer); rutas `/admin/*` (agenda, comisiones, caja, vip) bajo `AdminLayout` (Sidebar).
-- `src/context/AppContext.tsx` — único estado global de la app (turnos, clientas, profesionales, servicios, beneficios VIP). Todas las mutaciones (`crearTurno`, `actualizarEstadoTurno`, `canjearBeneficio`, etc.) viven acá, en memoria.
+- `src/router.tsx` — rutas públicas (`/`, `/reserva`, `/reserva/confirmacion`, `/profesionales`, `/profesionales/:id`) bajo `PublicLayout` (Header+Footer); rutas `/admin/*` (agenda, horario, comisiones, caja, vip, clientas-recurrentes) bajo `AdminLayout` (Sidebar).
+- `src/context/AppContext.tsx` — único estado global de la app (turnos, clientas, profesionales, servicios, beneficios VIP). Todas las mutaciones viven acá; las sensibles llaman a `api/*.ts` en vez de escribir directo a Supabase.
+- `api/*.ts` — funciones serverless de Vercel (Mercado Pago, aprobar/guardar comprobante, actualizar estado de turno, verificar PIN). Vercel no empaqueta código compartido entre funciones — cada archivo duplica su propio `getSupabaseAdmin()`, es a propósito.
 - `src/lib/comisionesEngine.ts` — cálculo de comisiones por profesional.
-- `src/data/mock*.ts` — seed data. Es lo primero que hay que reemplazar por Supabase real.
-- `package.json` trae `express`/`dotenv`/`@google/genai` como residuo de la plantilla de AI Studio — no están en uso en `src/` (verificado por grep). No tocar/limpiar salvo que se pida explícitamente.
+- `src/data/mock*.ts` — catálogo base (servicios, profesionales) usado como seed/fallback.
+- `scripts/` — utilidades puntuales (seed de Supabase), no forman parte del flujo normal de la app.
 
 ---
 
@@ -61,16 +62,14 @@ No aplica todavía. Cuando se migre de mocks a datos reales: región South Ameri
 
 ## DEPLOY
 
-Proyecto Vercel ya linkeado (`tobiachs-projects/roseface-studio-sistema`), deploy directo desde PC B — ver PAT-012 en `controlevo-os/PATTERNS.md`.
+Proyecto Vercel ya linkeado (`tobiachs-projects/roseface-studio-sistema`), deploy directo desde PC B (sesión de `vercel` ya autenticada localmente, no hace falta pasar token a mano).
 
-```powershell
+```bash
 npm run lint
 npm run build
 git add -A && git commit -m "descripcion"
 git push origin main
-
-$token = [System.Environment]::GetEnvironmentVariable("VERCEL_TOKEN","User")
-npx vercel deploy --prod --token "$token" --yes
+npx vercel --yes --prod
 ```
 
 Sigue siendo acción de producción — confirmar con Tobias antes de correr el deploy, no asumir.
@@ -104,7 +103,7 @@ Carpeta **"fotos integrar app"** = fotos ya curadas por Yosy para secciones espe
 
 ## LO QUE NO HACER NUNCA
 
-- No asumir que hay persistencia real: hoy todo son mocks en memoria, se pierden al refrescar la página.
 - No confundir con Control.Evo Puntos (Premia.ar) — proyecto de cliente distinto, repo distinto.
 - No deployar a producción sin avisar a Tobias, aunque el token esté linkeado.
-- No inventar precios de Cejas/Uñas ni fotos de Alisados/Masajes — pedir el material real a Yosy primero.
+- No inventar datos del negocio (precios, horarios, comisiones, fotos) — verificar contra `docs/PENDIENTE_ONBOARDING.md` o pedirle el material real a Yosy primero.
+- No tocar políticas de RLS en Supabase sin leer `docs/SEGURIDAD_PENDIENTE.md` antes — el panel admin depende hoy de que el `anon key` tenga cierto acceso; cerrarlo de golpe rompe producción.

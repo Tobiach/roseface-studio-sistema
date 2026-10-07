@@ -1,6 +1,6 @@
 // api/guardar-comprobante.ts
 //
-// Paso 1 del plan crítico de SEGURIDAD_PENDIENTE.md (26/9/2026), prioridad
+// Paso 1 del plan crítico de docs/SEGURIDAD_PENDIENTE.md (26/9/2026), prioridad
 // 2: el UPLOAD del archivo a Supabase Storage sigue siendo del cliente (ese
 // bucket tiene sus propias políticas, no el mismo problema de RLS de las
 // tablas), pero el UPDATE de `turnos.comprobante_transferencia_url` que

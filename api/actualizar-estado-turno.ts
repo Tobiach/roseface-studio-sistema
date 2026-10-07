@@ -1,6 +1,6 @@
 // api/actualizar-estado-turno.ts
 //
-// Paso 1 del plan crítico de SEGURIDAD_PENDIENTE.md (26/9/2026), prioridad
+// Paso 1 del plan crítico de docs/SEGURIDAD_PENDIENTE.md (26/9/2026), prioridad
 // 3 (la de más superficie de uso: marcar completado/cancelado desde
 // AdminAgenda, y el fallback de demo de Reserva.tsx cuando no hay Mercado
 // Pago real disponible). Antes era un UPDATE directo desde el navegador con
