@@ -27,13 +27,12 @@ import {
   Hand,
   Zap,
   Smile,
-  Wind,
   Plus,
 } from 'lucide-react';
 
 // Mismo orden que ordenarServicios() en src/lib/ordenServicios.ts, para que
 // las categorías se vean en el mismo orden acá y en el resto del sitio.
-const ORDEN_CATEGORIAS_VISUAL = ['Pestañas', 'Cejas', 'Uñas', 'Depilación Láser', 'Faciales', 'Corporales', 'Alisados'];
+const ORDEN_CATEGORIAS_VISUAL = ['Pestañas', 'Cejas', 'Uñas', 'Depilación Láser', 'Faciales', 'Corporales'];
 
 const CATEGORIA_ICONO: Record<string, React.ComponentType<{ className?: string }>> = {
   'Pestañas': Eye,
@@ -42,7 +41,6 @@ const CATEGORIA_ICONO: Record<string, React.ComponentType<{ className?: string }
   'Depilación Láser': Zap,
   'Faciales': Smile,
   'Corporales': Sparkles,
-  'Alisados': Wind,
 };
 
 const CATEGORIA_DESCRIPTOR: Record<string, string> = {
@@ -52,7 +50,6 @@ const CATEGORIA_DESCRIPTOR: Record<string, string> = {
   'Depilación Láser': 'Piel lista, siempre',
   'Faciales': 'Piel que respira',
   'Corporales': 'Cuerpo en equilibrio',
-  'Alisados': 'Brillo que se siente',
 };
 
 export const Reserva: React.FC = () => {

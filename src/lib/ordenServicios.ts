@@ -20,7 +20,8 @@ const ORDEN_PESTANAS: Record<string, number> = {
 
 // Orden de categorías pedido por Tobias para el Paso 1 de Reserva
 // (22/9/2026): Pestañas, Cejas, Uñas, Depilación Láser, Faciales
-// (Limpiezas Faciales), Corporales (Masajes Corporales), Alisados.
+// (Limpiezas Faciales), Corporales (Masajes Corporales).
+// Alisados se sacó del todo (10/10/2026) — ya no se ofrece.
 const ORDEN_CATEGORIAS: Record<string, number> = {
   'Pestañas': 0,
   'Cejas': 1,
@@ -28,7 +29,6 @@ const ORDEN_CATEGORIAS: Record<string, number> = {
   'Depilación Láser': 3,
   'Faciales': 4,
   'Corporales': 5,
-  'Alisados': 6,
 };
 
 // La tabla 'servicios' de Supabase no tiene columna de orden y el SELECT

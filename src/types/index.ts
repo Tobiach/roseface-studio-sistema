@@ -42,7 +42,7 @@ export interface DisponibilidadSemanal {
 export interface Servicio {
   id: string;
   nombre: string;
-  categoria: 'Pestañas' | 'Cejas' | 'Uñas' | 'Alisados' | 'Depilación Láser' | 'Faciales' | 'Corporales';
+  categoria: 'Pestañas' | 'Cejas' | 'Uñas' | 'Depilación Láser' | 'Faciales' | 'Corporales';
   descripcion: string;
   duracionMinutos: number;
   precio: number;                  // ARS

@@ -47,20 +47,11 @@ export const trabajosPorProfesional: Record<string, string[]> = {
     'Perfilado_de_Cejas_3.jpg',
     'Perfilado_de_Cejas_4.jpg',
   ].map(urlFor),
-  'prof-sharon': [
-    'Clasicas_Lash_2.jpg',
-    'Efecto_Humedo_2.jpg',
-    'Hibrida_Lash_3.jpg',
-    'Medio_Volumen_3.jpg',
-    'Lash_Rose_Face_1.jpg',
-    'Lash_Lifting_1.jpg',
-    'Volumen_Brasilero_4D_3.jpg',
-    'Volumen_Brasilero_4D_4.jpg',
-    'Volumen_Brasilero_6D_1.jpg',
-    'Volumen_Tecnologico_4.jpg',
-    'Volumen_Tecnologico_5.jpg',
-    'Volumen_Tecnologico_6.jpg',
-  ].map(urlFor),
+  // 10/10/2026: Sharon se va, Roma la reemplaza (mismo id prof-sharon) —
+  // esas 12 fotos eran trabajos reales de Sharon, no de Roma, así que se
+  // sacan de acá (quedan en el repo sin usar, por si hace falta rearmar
+  // la galería con fotos reales de Roma más adelante).
+  'prof-sharon': [],
   // Vero (depilación láser) — sin fotos de trabajos todavía.
   'prof-camila': [],
   // 1/10/2026: Ari mandó 6 fotos profesionales propias (carpeta de Drive),

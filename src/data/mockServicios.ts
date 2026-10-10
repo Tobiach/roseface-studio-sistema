@@ -400,56 +400,9 @@ export const mockServicios: Servicio[] = [
     profesionalesQueLoRealizan: ['prof-alexandra'],
   },
 
-  // ===== ALISADOS =====
-  // Reestructurado 22/9/2026 desde el cartel real de precios de Anye
-  // (Photon Lizze SUPREME + Nano Tecnología sin formol) — antes era un
-  // solo servicio a precio fijo ($65.000 placeholder), en realidad son 4
-  // niveles por largo de cabello. Duración PLACEHOLDER (Anye no la dio),
-  // escalada de forma razonable según largo — falta confirmar.
-  {
-    id: 'serv-alisado-corto',
-    nombre: 'Alisado Corto',
-    categoria: 'Alisados',
-    descripcion: 'Photon Lizze Supreme + Nano Tecnología sin formol. Antes de comenzar el cuello. +30% adicional en caso de abundancia.',
-    duracionMinutos: 180,
-    precio: 95000,
-    requiereSena: true,
-    puntosVIP: 27,
-    profesionalesQueLoRealizan: ['prof-martina'],
-  },
-  {
-    id: 'serv-alisado-medio',
-    nombre: 'Alisado Medio',
-    categoria: 'Alisados',
-    descripcion: 'Photon Lizze Supreme + Nano Tecnología sin formol. Comienzo de cuello. +30% adicional en caso de abundancia.',
-    duracionMinutos: 200,
-    precio: 110000,
-    requiereSena: true,
-    puntosVIP: 31,
-    profesionalesQueLoRealizan: ['prof-martina'],
-  },
-  {
-    id: 'serv-alisado-largo',
-    nombre: 'Alisado Largo',
-    categoria: 'Alisados',
-    descripcion: 'Photon Lizze Supreme + Nano Tecnología sin formol. Comienzo de corpiño. +30% adicional en caso de abundancia.',
-    duracionMinutos: 220,
-    precio: 125000,
-    requiereSena: true,
-    puntosVIP: 36,
-    profesionalesQueLoRealizan: ['prof-martina'],
-  },
-  {
-    id: 'serv-alisado-extra-largo',
-    nombre: 'Alisado Extra Largo',
-    categoria: 'Alisados',
-    descripcion: 'Photon Lizze Supreme + Nano Tecnología sin formol. Altura de la cintura. +30% adicional en caso de abundancia.',
-    duracionMinutos: 240,
-    precio: 140000,
-    requiereSena: true,
-    puntosVIP: 40,
-    profesionalesQueLoRealizan: ['prof-martina'],
-  },
+  // Categoría Alisados eliminada (10/10/2026, pedido de Tobias) — ya no se
+  // va a ofrecer más. Anye (prof-martina) se queda en el sistema pero sin
+  // ningún servicio asociado por ahora.
 
   // ===== FACIALES =====
   // Reestructurado 22/9/2026 desde el cartel real de precios de Cris —

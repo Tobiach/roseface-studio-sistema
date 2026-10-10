@@ -8,7 +8,6 @@
 import { Profesional } from '../types';
 import fotoYosy from '../assets/images/profesionales/prof-yosy.jpg';
 import fotoMili from '../assets/images/profesionales/prof-mili.jpg';
-import fotoSharon from '../assets/images/profesionales/prof-sharon.jpg';
 import fotoMartina from '../assets/images/profesionales/prof-martina.jpg';
 import fotoSofia from '../assets/images/profesionales/prof-sofia.jpg';
 import fotoAlexandra from '../assets/images/profesionales/prof-alexandra.jpg';
@@ -18,6 +17,21 @@ import { trabajosPorProfesional } from './trabajosFotos';
 // Helpers para armar la semana
 const SIN_HORARIO = { lunes: null, martes: null, miercoles: null, jueves: null, viernes: null, sabado: null, domingo: null } as const;
 const vent = (desde: string, hasta: string) => ({ desde, hasta });
+
+// Placeholder genérico (silueta, sin cara) para Roma (10/10/2026) — Sharon
+// se va, Roma la reemplaza pero todavía no mandó foto/video reales. No se
+// reusa la foto de Sharon (sería mostrar la cara de otra persona con el
+// nombre de Roma) ni se inventa una foto — placeholder honesto hasta que
+// llegue el material real.
+const fotoRomaPlaceholder =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+      <rect width="200" height="200" fill="#F7E7E1"/>
+      <circle cx="100" cy="78" r="34" fill="#C9A07A" opacity="0.55"/>
+      <path d="M40 172c6-38 34-60 60-60s54 22 60 60" fill="#C9A07A" opacity="0.55"/>
+    </svg>`
+  );
 
 export const mockProfesionales: Profesional[] = [
   {
@@ -86,14 +100,18 @@ export const mockProfesionales: Profesional[] = [
     },
   },
   {
+    // 10/10/2026: Sharon deja el estudio, Roma toma su lugar (mismo id
+    // interno — nunca cambian). Sin foto/video reales todavía (placeholder
+    // genérico, no la foto de Sharon). La bio/especialidades quedan con el
+    // mismo rol que tenía Sharon (pestañas/cejas) como punto de partida —
+    // confirmar con Roma su bio y años de experiencia reales cuando se
+    // pueda, lo de abajo es genérico a propósito, no un dato inventado.
     id: 'prof-sharon',
-    nombre: 'Sharon',
-    fotoUrl: fotoSharon,
-    // Sumado 'Cejas' (22/9/2026), mismo dato que en Yosy: "Sharon y Yosy
-    // hacemos todo" — Sharon también hace cejas, no solo pestañas.
+    nombre: 'Roma',
+    fotoUrl: fotoRomaPlaceholder,
     especialidades: ['Pestañas', 'Volumen Ruso', 'Cejas'],
-    bio: 'Experta certificada en extensiones pelo a pelo, volumen ruso y cejas. Enfoque hiper-detallista.',
-    aniosExperiencia: 3,
+    bio: 'Especialista en pestañas, volumen ruso y cejas.',
+    aniosExperiencia: 1, // placeholder — pedir el número real
     galeria: trabajosPorProfesional['prof-sharon'],
     calificacionPromedio: 5.0,
     cantidadResenas: 142,
@@ -126,8 +144,11 @@ export const mockProfesionales: Profesional[] = [
     id: 'prof-martina',
     nombre: 'Anye',
     fotoUrl: fotoMartina,
-    especialidades: ['Alisados', 'Alisado Brasilero'],
-    bio: 'Especialista en alisados progresivos libres de formol. Cabellos brillantes, sedosos y saludables.',
+    // 10/10/2026: se sacó Alisados del todo (pedido de Tobias) — Anye
+    // queda sin especialidad/servicio asignado hasta que se defina qué va
+    // a hacer. No se inventa una especialidad nueva acá.
+    especialidades: [],
+    bio: 'Especialidad a confirmar.',
     aniosExperiencia: 4,
     galeria: trabajosPorProfesional['prof-martina'] ?? [],
     calificacionPromedio: 5.0,

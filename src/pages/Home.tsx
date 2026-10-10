@@ -41,7 +41,6 @@ const CATEGORIA_DESCRIPTOR: Record<string, string> = {
   Pestañas: 'Miradas con carácter',
   Cejas: 'El marco perfecto',
   Uñas: 'Detalle que se nota',
-  Alisados: 'Brillo que se siente',
   'Depilación Láser': 'Piel lista, siempre',
   Faciales: 'Piel que respira',
   Corporales: 'Cuerpo en equilibrio',
