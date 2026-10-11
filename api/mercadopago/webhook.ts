@@ -31,6 +31,40 @@ function escapeHtml(valor: string): string {
     .replace(/'/g, '&#39;');
 }
 
+// Doble reserva (10/10/2026, pedido de Tobias): si la misma clienta tiene
+// otro turno activo (cualquier profesional/servicio/fecha), se suma acá para
+// que el mail a Yosy muestre ambas reservas juntas — ej. pestañas y uñas.
+// Duplicado en aprobar-comprobante.ts por el mismo motivo de siempre.
+async function otrosTurnosActivosHtml(
+  supabaseAdmin: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
+  clientaId: string,
+  turnoIdActual: string
+): Promise<string> {
+  const { data: otros } = await supabaseAdmin
+    .from('turnos')
+    .select('fecha, hora_inicio, servicio_id, profesional_id')
+    .eq('clienta_id', clientaId)
+    .neq('id', turnoIdActual)
+    .neq('estado', 'cancelado');
+
+  if (!otros || otros.length === 0) return '';
+
+  const [{ data: servicios }, { data: profesionales }] = await Promise.all([
+    supabaseAdmin.from('servicios').select('id, nombre'),
+    supabaseAdmin.from('profesionales').select('id, nombre'),
+  ]);
+
+  const items = otros
+    .map((o) => {
+      const nombreServ = escapeHtml(servicios?.find((s) => s.id === o.servicio_id)?.nombre ?? 'servicio');
+      const nombreProf = escapeHtml(profesionales?.find((p) => p.id === o.profesional_id)?.nombre ?? '—');
+      return `<li>${nombreServ} con ${nombreProf} el ${o.fecha} a las ${o.hora_inicio} hs</li>`;
+    })
+    .join('');
+
+  return `<p style="color:#B23A48"><strong>⚠️ Esta clienta tiene otra reserva activa:</strong></p><ul>${items}</ul>`;
+}
+
 async function avisarleAYosy(asunto: string, html: string) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return;
@@ -190,6 +224,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const telefonoClienta = escapeHtml(clienta?.telefono ?? '—');
           const nombreServicio = escapeHtml(servicio?.nombre ?? 'servicio');
           const nombreProfesional = escapeHtml(profesional?.nombre ?? '—');
+          const otrosHtml = await otrosTurnosActivosHtml(supabaseAdmin, turnoActual.clienta_id, turnoId);
           await avisarleAYosy(
             `Nuevo turno confirmado — ${nombreServicio} el ${turnoActual.fecha}`,
             `<p>Se confirmó un turno pagado por Mercado Pago.</p>
@@ -199,7 +234,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                <li><strong>Profesional:</strong> ${nombreProfesional}</li>
                <li><strong>Fecha:</strong> ${turnoActual.fecha} a las ${turnoActual.hora_inicio} hs</li>
                <li><strong>Seña pagada:</strong> $${turnoActual.monto_sena}</li>
-             </ul>`
+             </ul>${otrosHtml}`
           );
         }
       }

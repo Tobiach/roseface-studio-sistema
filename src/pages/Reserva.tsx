@@ -742,6 +742,17 @@ export const Reserva: React.FC = () => {
                   <strong className="text-sky-900">{formatCurrency(montoSena)}</strong> con Mercado Pago. Tu reserva queda confirmada al instante.
                 </p>
 
+                {/* Cartel de urgencia (10/10/2026, pedido de Tobias): al público
+                    se le dice 10 minutos aunque el hold real del servidor sea de
+                    13 (colchón técnico) — ver HOLD_MINUTOS_MP en
+                    crear-preferencia.ts. No sincronizar ambos números. */}
+                <div className="flex items-center gap-2 bg-amber-50 border border-amber-400 rounded-xl px-3 py-2 animate-pulse">
+                  <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                  <p className="text-[11px] font-bold text-amber-900 leading-snug">
+                    ¡Apurate! Tenés 10 minutos para completar el pago una vez que confirmes. Pasado ese tiempo, el horario puede ser tomado por otra clienta.
+                  </p>
+                </div>
+
                 <div className="space-y-2 pt-2">
                   <Button
                     variant="primary"

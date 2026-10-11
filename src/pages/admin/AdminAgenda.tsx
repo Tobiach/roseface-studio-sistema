@@ -28,6 +28,7 @@ import {
   Ban,
   Trash2,
   X,
+  Link2,
 } from 'lucide-react';
 
 // TODO: Fase de integración OAuth — punto de entrada para conectar la API real de
@@ -221,6 +222,13 @@ export const AdminAgenda: React.FC = () => {
     return profesionales.find((p) => p.id === id);
   };
 
+  // Doble reserva (10/10/2026, pedido de Tobias): si la misma clienta tiene
+  // otro turno activo (con cualquier profesional/servicio/fecha), tanto Yosy
+  // como la propia profesional lo ven en la tarjeta — ej. reservó pestañas y
+  // también uñas. Cálculo en memoria, no hace falta nada nuevo en la base.
+  const otrosTurnosActivos = (turno: Turno) =>
+    turnos.filter((t) => t.id !== turno.id && t.clientaId === turno.clientaId && t.estado !== 'cancelado');
+
   // Profesionales a mostrar en la grilla del calendario: todas, o solo la
   // seleccionada/filtrada (o la propia, en el rol Profesional).
   const profesionalesParaGrilla =
@@ -252,6 +260,7 @@ export const AdminAgenda: React.FC = () => {
   const renderTurnoCard = (turno: Turno) => {
     const prof = getProfesional(turno.profesionalId);
     const isCancelled = turno.estado.startsWith('cancelado');
+    const otrosTurnos = otrosTurnosActivos(turno);
     return (
       <Card
         key={turno.id}
@@ -295,6 +304,21 @@ export const AdminAgenda: React.FC = () => {
             </span>
           </div>
         </div>
+
+        {otrosTurnos.length > 0 && (
+          <div className="text-[11px] bg-sky-50 p-2 rounded-lg text-sky-800 border border-sky-200 space-y-1">
+            {otrosTurnos.map((o) => (
+              <div key={o.id} className="flex items-start gap-1.5">
+                <Link2 className="w-3 h-3 mt-0.5 shrink-0" />
+                <span>
+                  También tiene <strong>{getServicioNombre(o.servicioId)}</strong> con{' '}
+                  <strong>{getProfesional(o.profesionalId)?.nombre}</strong> el {formatDateShort(o.fecha)} a las{' '}
+                  {o.horaInicio} hs
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {turno.notasInternas && (
           <p className="text-[11px] bg-rf-cream p-2 rounded-lg text-rf-charcoal italic border border-pink-100">

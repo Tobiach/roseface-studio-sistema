@@ -57,7 +57,14 @@ const DATOS_BANCARIOS: Record<string, { titular: string; cbu: string; banco: str
 // confirmación, el horario se libera para otra clienta (Fase 3). El
 // circuito de transferencia tiene más margen porque implica un paso manual
 // (ir al banco/app y volver a subir el comprobante), no un checkout online.
-const HOLD_MINUTOS_MP = 15;
+//
+// 10/10/2026 (pedido de Tobias): a la clienta se le comunica "10 minutos"
+// en el sitio (mensaje de urgencia, ver Reserva.tsx) pero el hold real es de
+// 13 — ese colchón de 3 minutos evita que alguien que pagó justo a tiempo
+// pierda el horario por streaming/latencia de la confirmación de MP. Si se
+// cambia este número, el texto de Reserva.tsx NO tiene que moverse junto
+// (son dos cosas separadas a propósito).
+const HOLD_MINUTOS_MP = 13;
 const HOLD_MINUTOS_TRANSFERENCIA = 60;
 
 // Vercel no empaqueta carpetas compartidas fuera de cada función individual
