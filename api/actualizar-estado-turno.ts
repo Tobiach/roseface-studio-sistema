@@ -23,7 +23,17 @@ function getSupabaseAdmin() {
   return createClient(url, key);
 }
 
-const ESTADOS_VALIDOS = ['reservado', 'sena_confirmada', 'recordatorio_enviado', 'completado', 'cancelado'] as const;
+// 11/10/2026 — auditoría de seguridad: 'sena_confirmada' se sacó a propósito
+// de los estados permitidos acá. Este endpoint no verifica que haya un pago
+// real detrás (no hay sesión, cualquiera con la URL pública puede llamarlo
+// con cualquier turnoId) — sin este límite, cualquiera podía marcar
+// cualquier turno como "seña pagada" sin pagar nada. Esa transición ahora
+// SOLO puede pasar por los 2 caminos que sí verifican plata de verdad:
+// api/mercadopago/webhook.ts (confirma contra la API real de MP) y
+// api/aprobar-comprobante.ts (requiere comprobante ya subido). Ni
+// AdminAgenda.tsx ni ningún otro uso legítimo de este endpoint necesitaba
+// 'sena_confirmada' — confirmado por grep antes de sacarlo.
+const ESTADOS_VALIDOS = ['reservado', 'recordatorio_enviado', 'completado', 'cancelado'] as const;
 type EstadoTurno = (typeof ESTADOS_VALIDOS)[number];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

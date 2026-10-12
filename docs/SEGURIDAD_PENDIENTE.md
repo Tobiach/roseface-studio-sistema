@@ -1,5 +1,68 @@
 # Seguridad pendiente — Rose Face Studio
 
+## 🔴 Auditoría de seguimiento (11/10/2026) — hallazgos nuevos, no cubiertos por la de abajo
+
+Pedido explícito de Tobias: "otra investigación a profundidad de posibles
+errores, inconsistencias, hackeos posibles". Probado en vivo contra
+producción con el anon key público (igual que la auditoría del 26/9).
+
+**El hallazgo más grave de los dos: `api/actualizar-estado-turno.ts`
+dejaba marcar CUALQUIER turno como `sena_confirmada` sin ninguna
+verificación de pago.** Este endpoint se creó el 26/9 para sacar el UPDATE
+directo del navegador (bien), pero nunca se le puso un límite a qué
+estados podía setear — incluía `sena_confirmada`, la misma transición que
+`webhook.ts` y `aprobar-comprobante.ts` sí verifican contra un pago real.
+Cualquiera podía hacer `POST /api/actualizar-estado-turno` con cualquier
+`turnoId` (son enteros secuenciales chicos, fáciles de adivinar) y
+`nuevoEstado: "sena_confirmada"` y conseguir una reserva confirmada gratis,
+sin pasar por Mercado Pago ni por ninguna profesional. **Arreglado
+(11/10/2026, commiteado):** se sacó `sena_confirmada` de los estados
+permitidos por este endpoint — confirmado por grep que ningún uso legítimo
+(ni `AdminAgenda.tsx` ni nada más) lo necesitaba ahí.
+
+**Relacionado:** el fallback "modo demo" de `Reserva.tsx` (cuando
+`crear-preferencia` tira cualquier error) creaba un turno directo desde el
+navegador y lo marcaba confirmado usando ese mismo endpoint ahora
+corregido. Antes corría ante CUALQUIER falla de red, no solo cuando
+Supabase no está configurado — un timeout real en producción le daba a
+cualquier clienta una reserva "confirmada" gratis sin querer. **Arreglado
+(11/10/2026):** ese camino ahora solo corre si `!supabaseEnabled` (demo
+local real, sin backend); en producción, si la API falla, se le avisa a la
+clienta y puede reintentar.
+
+**El segundo hallazgo: RLS con más agujeros de los que cubrió el Paso 2 de
+abajo.** Probado en vivo con el anon key (filtros que no matchean ninguna
+fila real, cero riesgo de tocar datos):
+
+| Tabla | Operación abierta encontrada | ¿Algo legítimo la usa? |
+|---|---|---|
+| `codigos_acceso` (los PINs) | UPDATE | No, nunca — solo lee el server con service_role. Con esto, alguien que adivine el `id` (son predecibles: `admin-yosy`, `prof-mili`...) podía cambiarle el PIN a Yosy y entrar como Admin. |
+| `servicios` | UPDATE (probablemente INSERT/DELETE también) | No — los precios los carga el desarrollador con service_role, nunca el navegador. |
+| `turnos` | DELETE | No — no hay ningún `.delete()` sobre turnos en todo `AppContext.tsx`. |
+| `profesionales` | UPDATE de la fila entera, incluido `modelo_comision` (el % real) y `alias_cbu` (CBU real) | Solo `horario_disponible` (función `guardarHorario`, AdminHorario.tsx) — el resto de la fila no debería ser escribible. |
+| `clientas` | UPDATE y DELETE de cualquier clienta | Solo INSERT (`buscarOCrearClienta`) — ninguna función del navegador actualiza o borra una clienta. |
+
+**SQL para correr en el editor de Supabase (mismo patrón que el Paso 2 de
+abajo — Tobias lo corre él mismo, no rompe nada de lo que ya funciona):**
+
+```sql
+revoke insert, update, delete on codigos_acceso from anon;
+revoke insert, update, delete on servicios from anon;
+revoke delete on turnos from anon;
+revoke update on profesionales from anon;
+grant update (horario_disponible) on profesionales to anon;
+revoke update, delete on clientas from anon;
+```
+
+**No se tocó (queda igual que antes, a propósito):** la lectura completa
+de `clientas`/`profesionales`/`turnos` sigue abierta — es el mismo Paso 3
+de abajo (no hay sesión real todavía, decisión de negocio pendiente). El
+INSERT en `bloqueos_horario` y `clientas`, y el INSERT en `turnos` (el
+fallback de demo) también quedan como están — documentados como riesgo
+aceptado hasta que se resuelva el Paso 3.
+
+---
+
 Auditoría hecha el 26/9/2026, con evidencia real corrida contra producción
 (no supuestos). Este doc es la fuente de verdad de qué falta en seguridad —
 mismo criterio que `PENDIENTE_ONBOARDING.md` para los datos de Yosy.

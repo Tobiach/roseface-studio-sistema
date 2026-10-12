@@ -11,6 +11,7 @@ import { formatCurrency, formatDateReadable } from '../lib/formatters';
 import { calcularHorariosDisponibles, sumarMinutos, hoyISO, mananaISO } from '../lib/disponibilidad';
 import { calcularMontoSena } from '../lib/pricing';
 import { leerClienteRecordado, guardarClienteRecordado } from '../lib/clienteRecordado';
+import { supabaseEnabled } from '../lib/supabase';
 import {
   Clock,
   Star,
@@ -176,6 +177,26 @@ export const Reserva: React.FC = () => {
       ).sort()
     : [];
 
+  // Cuántas profesionales hay libres en cada horario del Paso 2 — para que
+  // no sorprenda llegar al Paso 3 y ver una sola (11/10/2026, pedido de
+  // Tobias: algunos horarios genuinamente solo los cubre una profesional,
+  // porque cada una tiene su propia grilla de horarios fijos).
+  const disponiblesPorHora: Record<string, number> = {};
+  if (servicioSeleccionado) {
+    for (const prof of profesionalesDisponibles) {
+      const horas = calcularHorariosDisponibles(
+        prof,
+        fechaSeleccionada,
+        servicioSeleccionado.duracionMinutos,
+        turnos,
+        bloqueos
+      );
+      for (const hora of horas) {
+        disponiblesPorHora[hora] = (disponiblesPorHora[hora] ?? 0) + 1;
+      }
+    }
+  }
+
   const profesionalesEnEseHorario =
     servicioSeleccionado && horaSeleccionada
       ? profesionalesDisponibles.filter((p) =>
@@ -300,9 +321,22 @@ export const Reserva: React.FC = () => {
       if (!data.initPoint) throw new Error('crear-preferencia no devolvió initPoint');
 
       window.location.href = data.initPoint;
-    } catch {
-      // Sin Mercado Pago real disponible todavía — simulamos la confirmación
-      // instantánea como hacía el flujo anterior, para que la demo no se rompa.
+    } catch (err) {
+      // 11/10/2026 — auditoría de seguridad: este camino simulado (crea el
+      // turno directo desde el navegador y lo marca "pagado" sin pasar por
+      // Mercado Pago) ahora SOLO corre si Supabase ni siquiera está
+      // configurado (demo local real, sin backend). Antes corría ante
+      // CUALQUIER error de la llamada a crear-preferencia — un timeout o un
+      // blip de red en producción le daba a cualquiera una reserva
+      // "confirmada" gratis. En producción, si la API real falla, se le
+      // avisa a la clienta y puede reintentar; no se inventa un turno.
+      if (supabaseEnabled) {
+        console.error('[Reserva] crear-preferencia falló en producción:', err);
+        showToast('❌ No se pudo procesar el pago. Probá de nuevo en un momento.');
+        setIsProcessingPayment(false);
+        return;
+      }
+
       const clientaId = await buscarOCrearClienta(nombreClienta, telefonoClienta, emailClienta);
       const turnoReservado = await crearTurno({
         clientaId,
@@ -506,19 +540,31 @@ export const Reserva: React.FC = () => {
                 </p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {horariosDelDia.map((hora) => (
-                    <button
-                      key={hora}
-                      onClick={() => elegirHora(hora)}
-                      className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                        horaSeleccionada === hora
-                          ? 'bg-rf-rose-deep text-white border-rf-rose-deep shadow-xs'
-                          : 'bg-white text-rf-black border-pink-100 hover:border-rf-rose'
-                      }`}
-                    >
-                      {hora} hs
-                    </button>
-                  ))}
+                  {horariosDelDia.map((hora) => {
+                    const cantidad = disponiblesPorHora[hora] ?? 0;
+                    return (
+                      <button
+                        key={hora}
+                        onClick={() => elegirHora(hora)}
+                        className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                          horaSeleccionada === hora
+                            ? 'bg-rf-rose-deep text-white border-rf-rose-deep shadow-xs'
+                            : 'bg-white text-rf-black border-pink-100 hover:border-rf-rose'
+                        }`}
+                      >
+                        <span className="block">{hora} hs</span>
+                        {cantidad > 1 && (
+                          <span
+                            className={`block text-[9px] font-normal normal-case mt-0.5 ${
+                              horaSeleccionada === hora ? 'text-white/80' : 'text-rf-charcoal'
+                            }`}
+                          >
+                            {cantidad} disponibles
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
