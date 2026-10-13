@@ -184,7 +184,7 @@ export const Home: React.FC = () => {
         </div>
 
         <div className="flex gap-5 overflow-x-auto pb-2 px-1 scrollbar-none sm:justify-center sm:flex-wrap">
-          {profesionales.map((prof) => (
+          {profesionales.filter((p) => p.activa !== false).map((prof) => (
             <Link
               key={prof.id}
               to={`/profesionales/${slugDeNombre(prof.nombre)}`}

@@ -121,6 +121,7 @@ export const AdminClientasRecurrentes: React.FC = () => {
       profesional?: Profesional;
       turno: Turno;
       diasParaElCiclo: number;
+      manual: boolean;
     }[] = [];
     for (const [, turno] of ultimoPorClientaYServicio) {
       const servicio = servicios.find((s) => s.id === turno.servicioId);
@@ -137,10 +138,37 @@ export const AdminClientasRecurrentes: React.FC = () => {
         profesional: profesionales.find((p) => p.id === turno.profesionalId),
         turno,
         diasParaElCiclo: servicio.cicloRecurrenciaDias - diasSinVisitar,
+        manual: false,
       });
     }
+
+    // Marcadas a mano por Yosy desde la Agenda (13/10/2026) — el servicio no
+    // tiene ciclo definido, así que nunca entrarían por el camino de arriba.
+    // Se reconocen por la nota fija que pone `marcarClienteRecurrente` en
+    // AdminAgenda.tsx; no duplica si el mismo par clienta+servicio ya entró
+    // por el camino automático.
+    const yaListados = new Set(resultados.map((r) => `${r.clienta.id}|${r.servicio.id}`));
+    for (const estado of estados) {
+      if (estado.nota !== 'Marcada a mano desde la Agenda') continue;
+      const key = `${estado.clienta_id}|${estado.servicio_id}`;
+      if (yaListados.has(key)) continue;
+      const turno = turnos.find((t) => String(t.id) === String(estado.turno_id_ancla));
+      const servicio = servicios.find((s) => s.id === estado.servicio_id);
+      const clienta = clientas.find((c) => c.id === estado.clienta_id);
+      if (!turno || !servicio || !clienta) continue;
+      resultados.push({
+        clienta,
+        servicio,
+        profesional: profesionales.find((p) => p.id === turno.profesionalId),
+        turno,
+        diasParaElCiclo: 0,
+        manual: true,
+      });
+      yaListados.add(key);
+    }
+
     return resultados.sort((a, b) => a.diasParaElCiclo - b.diasParaElCiclo);
-  }, [turnos, servicios, clientas, profesionales]);
+  }, [turnos, servicios, clientas, profesionales, estados]);
 
   const listaConEstado = listaBase.map((item) => {
     const estado = obtenerEstado(item.clienta.id, item.servicio.id);
@@ -180,6 +208,11 @@ export const AdminClientasRecurrentes: React.FC = () => {
     }
     const params = new URLSearchParams({
       profesionalId: profesional.id,
+      // 13/10/2026 (pedido de Tobias/Yosy): antes el link solo traía la
+      // profesional, la clienta tenía que volver a elegir el servicio de
+      // cero. Con servicioId, Reserva.tsx lo auto-selecciona y salta
+      // directo al Paso 2 (día y horario) — mucho más directo.
+      servicioId: servicio.id,
       nombre: clienta.nombre,
       telefono: clienta.telefono,
       origen: 'recurrencia',
@@ -322,15 +355,19 @@ export const AdminClientasRecurrentes: React.FC = () => {
           </span>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {visibles.map(({ clienta, servicio, profesional, turno, diasParaElCiclo, contactada, estado }) => {
+          {visibles.map(({ clienta, servicio, profesional, turno, diasParaElCiclo, contactada, estado, manual }) => {
             const key = claveEstado(clienta.id, servicio.id);
             return (
               <Card key={key} className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-display font-bold text-base text-rf-black">{clienta.nombre}</span>
-                  <Badge variant={diasParaElCiclo < 0 ? 'danger' : 'warning'} size="sm">
-                    {diasParaElCiclo >= 0 ? `Faltan ${diasParaElCiclo} días` : `Atrasada ${Math.abs(diasParaElCiclo)} días`}
-                  </Badge>
+                  {manual ? (
+                    <Badge variant="rose" size="sm">Agregada a mano</Badge>
+                  ) : (
+                    <Badge variant={diasParaElCiclo < 0 ? 'danger' : 'warning'} size="sm">
+                      {diasParaElCiclo >= 0 ? `Faltan ${diasParaElCiclo} días` : `Atrasada ${Math.abs(diasParaElCiclo)} días`}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-xs text-rf-charcoal">
                   {servicio.nombre} con {profesional?.nombre ?? 'su profesional habitual'}

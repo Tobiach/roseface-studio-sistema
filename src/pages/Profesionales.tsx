@@ -13,7 +13,9 @@ export const Profesionales: React.FC = () => {
   // va al final del equipo.
   const ordenDeseado = ['prof-yosy', 'prof-mili', 'prof-sharon', 'prof-alexandra', 'prof-martina', 'prof-sofia', 'prof-camila'];
 
-  const profesionalesOrdenados = [...profesionales].sort((a, b) => {
+  const profesionalesOrdenados = profesionales
+    .filter((p) => p.activa !== false)
+    .sort((a, b) => {
     const idxA = ordenDeseado.indexOf(a.id);
     const idxB = ordenDeseado.indexOf(b.id);
     return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);

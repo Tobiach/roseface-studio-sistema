@@ -29,6 +29,12 @@ export interface Profesional {
   // Extras que se suman a un servicio ya reservado (no se agendan solos,
   // por eso no son un Servicio más) — hoy solo Ari (uñas).
   adicionales?: { nombre: string; precio: number }[];
+  // false = ya no trabaja en el estudio (13/10/2026, primer caso: Anye).
+  // El id NUNCA se borra (quedan turnos históricos con esa FK) — esto solo
+  // la saca de las páginas públicas (Home, Equipo). Por defecto true;
+  // ausente en el resto del plantel a propósito (no hace falta tocar a
+  // nadie más).
+  activa?: boolean;
 }
 
 export type ModeloComision =

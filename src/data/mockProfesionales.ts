@@ -130,6 +130,11 @@ export const mockProfesionales: Profesional[] = [
     id: 'prof-martina',
     nombre: 'Anye',
     fotoUrl: fotoMartina,
+    // 13/10/2026: Anye ya no trabaja en Rose Face (confirmado por Tobias,
+    // charlado con Yosy). `activa: false` la saca de Home/Equipo — el id
+    // se mantiene porque hay turnos históricos con esta FK. No se borra
+    // nada de ella.
+    activa: false,
     // 10/10/2026: se sacó Alisados del todo (pedido de Tobias) — Anye
     // queda sin especialidad/servicio asignado hasta que se defina qué va
     // a hacer. No se inventa una especialidad nueva acá.

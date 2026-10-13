@@ -1,6 +1,7 @@
 // src/pages/admin/AdminAgenda.tsx
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { supabase, supabaseEnabled } from '../../lib/supabase';
 import { Turno, EstadoTurno } from '../../types';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -11,6 +12,7 @@ import { CalendarioGrilla } from '../../components/admin/CalendarioGrilla';
 import { formatCurrency, formatDateReadable, formatDateShort } from '../../lib/formatters';
 import { mensajeRecordatorio, buildWhatsAppUrlPara } from '../../lib/whatsapp';
 import { hoyISO, sumarDiasISO, calcularHorariosDisponibles, sumarMinutos } from '../../lib/disponibilidad';
+import { calcularMontoSena } from '../../lib/pricing';
 import {
   CalendarDays,
   Clock,
@@ -29,6 +31,8 @@ import {
   Trash2,
   X,
   Link2,
+  Plus,
+  Repeat,
 } from 'lucide-react';
 
 // TODO: Fase de integración OAuth — punto de entrada para conectar la API real de
@@ -66,6 +70,8 @@ export const AdminAgenda: React.FC = () => {
     aprobarComprobante,
     crearBloqueo,
     eliminarBloqueo,
+    crearTurno,
+    buscarOCrearClienta,
     toggleRecordatorio,
     showToast,
   } = useApp();
@@ -133,6 +139,110 @@ export const AdminAgenda: React.FC = () => {
   const [bloqueoHoraInicio, setBloqueoHoraInicio] = useState('09:00');
   const [bloqueoHoraFin, setBloqueoHoraFin] = useState('19:00');
   const [bloqueoMotivo, setBloqueoMotivo] = useState('');
+
+  // Turno manual (13/10/2026, pedido de Tobias/Yosy): cargar un turno a
+  // mano sin pasar por el asistente público — para una clienta que llama
+  // por teléfono, un walk-in que cambia de idea sobre el servicio, o que
+  // suma un servicio extra en el mismo día. Usa las mismas funciones que
+  // ya existen (crearTurno/buscarOCrearClienta), no hace falta un endpoint
+  // nuevo — el INSERT directo con el anon key ya está permitido hoy
+  // (ver docs/SEGURIDAD_PENDIENTE.md, es el mismo camino que usa el
+  // fallback de demo de Reserva.tsx).
+  const [modalTurnoManualAbierto, setModalTurnoManualAbierto] = useState(false);
+  const [tmNombre, setTmNombre] = useState('');
+  const [tmTelefono, setTmTelefono] = useState('');
+  const [tmProfesionalId, setTmProfesionalId] = useState('');
+  const [tmServicioId, setTmServicioId] = useState('');
+  const [tmFecha, setTmFecha] = useState(hoyISO());
+  const [tmHora, setTmHora] = useState('');
+  const [tmEstado, setTmEstado] = useState<EstadoTurno>('sena_confirmada');
+  const [tmMontoTotal, setTmMontoTotal] = useState<number | ''>('');
+  const [tmMontoSena, setTmMontoSena] = useState<number | ''>('');
+  const [tmGuardando, setTmGuardando] = useState(false);
+
+  const tmServicio = servicios.find((s) => s.id === tmServicioId);
+  const tmServiciosDeLaProfesional = tmProfesionalId
+    ? servicios.filter((s) => s.profesionalesQueLoRealizan.includes(tmProfesionalId))
+    : servicios;
+
+  const abrirTurnoManual = () => {
+    setTmNombre('');
+    setTmTelefono('');
+    setTmProfesionalId(esProfesional ? profesionalActivoId ?? '' : '');
+    setTmServicioId('');
+    setTmFecha(fechaFiltro);
+    setTmHora('');
+    setTmEstado('sena_confirmada');
+    setTmMontoTotal('');
+    setTmMontoSena('');
+    setModalTurnoManualAbierto(true);
+  };
+
+  const elegirServicioManual = (servicioId: string) => {
+    setTmServicioId(servicioId);
+    const serv = servicios.find((s) => s.id === servicioId);
+    if (serv) {
+      setTmMontoTotal(serv.precio);
+      setTmMontoSena(calcularMontoSena(serv));
+    }
+  };
+
+  const handleCrearTurnoManual = async () => {
+    if (!tmNombre.trim() || !tmProfesionalId || !tmServicioId || !tmFecha || !tmHora || !tmServicio) return;
+    setTmGuardando(true);
+    try {
+      const clientaId = await buscarOCrearClienta(tmNombre.trim(), tmTelefono.trim());
+      const horaFin = sumarMinutos(tmHora, tmServicio.duracionMinutos);
+      await crearTurno({
+        clientaId,
+        profesionalId: tmProfesionalId,
+        servicioId: tmServicioId,
+        fecha: tmFecha,
+        horaInicio: tmHora,
+        horaFin,
+        estado: tmEstado,
+        montoTotal: Number(tmMontoTotal) || tmServicio.precio,
+        montoSena: Number(tmMontoSena) || 0,
+        senaVerificadaAutomaticamente: false,
+        origenReserva: 'manual',
+        idTransaccionMP: null,
+        notasInternas: 'Turno cargado a mano desde el panel (no vino del sitio público).',
+      });
+      setModalTurnoManualAbierto(false);
+    } finally {
+      setTmGuardando(false);
+    }
+  };
+
+  // Marcar clienta recurrente a mano (13/10/2026, pedido de Yosy): hoy
+  // "Clientas Recurrentes" solo detecta automático si el servicio tiene un
+  // ciclo definido (cicloRecurrenciaDias). Esto escribe el mismo registro
+  // que ya usa esa pantalla (`clientas_recurrentes_estado`) para que
+  // aparezca igual aunque el servicio no tenga ciclo — AdminClientasRecurrentes.tsx
+  // tiene que sumar esta lista "marcada a mano" aparte de la automática.
+  const marcarClienteRecurrente = async (turno: Turno) => {
+    if (!supabaseEnabled || !supabase) {
+      showToast('❌ No disponible sin conexión a la base.');
+      return;
+    }
+    const { error } = await supabase.from('clientas_recurrentes_estado').upsert(
+      {
+        clienta_id: turno.clientaId,
+        servicio_id: turno.servicioId,
+        turno_id_ancla: turno.id,
+        contactada: false,
+        contactada_en: null,
+        nota: 'Marcada a mano desde la Agenda',
+        silenciada: false,
+      },
+      { onConflict: 'clienta_id,servicio_id' }
+    );
+    if (error) {
+      showToast('❌ No se pudo marcar como recurrente.');
+      return;
+    }
+    showToast('🔁 Marcada como clienta recurrente — ya aparece en Clientas Recurrentes.');
+  };
 
   // Un profesional solo ve su propia agenda — el filtro queda fijo en su id
   const profesionalFiltroEfectivo = esProfesional ? profesionalActivoId ?? 'todos' : profesionalFiltro;
@@ -375,6 +485,11 @@ export const AdminAgenda: React.FC = () => {
           >
             <Ban className="w-3.5 h-3.5 text-rf-rose-deep" />
             <span>Bloquear horario</span>
+          </Button>
+
+          <Button variant="primary" size="sm" onClick={abrirTurnoManual}>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Turno manual</span>
           </Button>
         </div>
       </div>
@@ -760,6 +875,18 @@ export const AdminAgenda: React.FC = () => {
               </p>
             </div>
 
+            {!esProfesional && (
+              <Button
+                variant="outline"
+                size="sm"
+                fullWidth
+                onClick={() => marcarClienteRecurrente(turnoSeleccionadoModal)}
+              >
+                <Repeat className="w-3.5 h-3.5 text-rf-rose-deep" />
+                <span>Marcar como clienta recurrente de este servicio</span>
+              </Button>
+            )}
+
             {reprogramando ? (
               (() => {
                 const profReprog = getProfesional(turnoSeleccionadoModal.profesionalId);
@@ -1057,6 +1184,162 @@ export const AdminAgenda: React.FC = () => {
               <Button variant="primary" size="sm" onClick={handleCrearBloqueo}>
                 <Ban className="w-3.5 h-3.5" />
                 <span>Bloquear</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL TURNO MANUAL (13/10/2026) */}
+      {modalTurnoManualAbierto && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-4 border border-pink-100 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="sticky top-0 -mx-6 -mt-6 px-6 pt-6 pb-3 bg-white z-10 flex items-center justify-between border-b border-pink-100">
+              <h3 className="font-display font-bold text-lg text-rf-black">Turno Manual</h3>
+              <button
+                onClick={() => setModalTurnoManualAbierto(false)}
+                aria-label="Cerrar"
+                className="-m-2 p-2.5 rounded-xl text-gray-400 hover:text-rf-black hover:bg-rf-cream active:bg-rf-cream transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-[11px] text-rf-charcoal bg-rf-cream border border-pink-100 rounded-xl p-2.5">
+              Para una clienta que llamó por teléfono, un walk-in que cambió de idea sobre el servicio, o que suma un servicio extra el mismo día. No pasa por el sitio público ni por Mercado Pago.
+            </p>
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-rf-black block mb-1">Nombre de la clienta</label>
+                  <input
+                    type="text"
+                    value={tmNombre}
+                    onChange={(e) => setTmNombre(e.target.value)}
+                    placeholder="Nombre y apellido"
+                    className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-rf-black block mb-1">Teléfono</label>
+                  <input
+                    type="text"
+                    value={tmTelefono}
+                    onChange={(e) => setTmTelefono(e.target.value)}
+                    placeholder="Opcional"
+                    className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-rf-black block mb-1">Profesional</label>
+                <select
+                  value={tmProfesionalId}
+                  onChange={(e) => {
+                    setTmProfesionalId(e.target.value);
+                    setTmServicioId('');
+                    setTmMontoTotal('');
+                    setTmMontoSena('');
+                  }}
+                  disabled={esProfesional}
+                  className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold disabled:bg-rf-cream"
+                >
+                  <option value="">Elegí una profesional</option>
+                  {profesionales.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-rf-black block mb-1">Servicio</label>
+                <select
+                  value={tmServicioId}
+                  onChange={(e) => elegirServicioManual(e.target.value)}
+                  disabled={!tmProfesionalId}
+                  className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold disabled:bg-rf-cream"
+                >
+                  <option value="">Elegí un servicio</option>
+                  {tmServiciosDeLaProfesional.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nombre} — {formatCurrency(s.precio)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-rf-black block mb-1">Fecha</label>
+                  <input
+                    type="date"
+                    value={tmFecha}
+                    onChange={(e) => setTmFecha(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-rf-black block mb-1">Hora</label>
+                  <input
+                    type="time"
+                    value={tmHora}
+                    onChange={(e) => setTmHora(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-rf-black block mb-1">Monto total</label>
+                  <input
+                    type="number"
+                    value={tmMontoTotal}
+                    onChange={(e) => setTmMontoTotal(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-rf-black block mb-1">Seña</label>
+                  <input
+                    type="number"
+                    value={tmMontoSena}
+                    onChange={(e) => setTmMontoSena(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-rf-black block mb-1">Estado</label>
+                <select
+                  value={tmEstado}
+                  onChange={(e) => setTmEstado(e.target.value as EstadoTurno)}
+                  className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
+                >
+                  <option value="sena_confirmada">Seña confirmada (ya resuelto en el estudio)</option>
+                  <option value="reservado">Reservado (todavía falta cobrar la seña)</option>
+                  <option value="completado">Completado</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button variant="ghost" size="sm" onClick={() => setModalTurnoManualAbierto(false)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={tmGuardando || !tmNombre.trim() || !tmProfesionalId || !tmServicioId || !tmFecha || !tmHora}
+                onClick={handleCrearTurnoManual}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{tmGuardando ? 'Guardando...' : 'Crear turno'}</span>
               </Button>
             </div>
           </div>
