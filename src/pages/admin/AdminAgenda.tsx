@@ -150,9 +150,8 @@ export const AdminAgenda: React.FC = () => {
   // por teléfono, un walk-in que cambia de idea sobre el servicio, o que
   // suma un servicio extra en el mismo día. Usa las mismas funciones que
   // ya existen (crearTurno/buscarOCrearClienta), no hace falta un endpoint
-  // nuevo — el INSERT directo con el anon key ya está permitido hoy
-  // (ver docs/SEGURIDAD_PENDIENTE.md, es el mismo camino que usa el
-  // fallback de demo de Reserva.tsx).
+  // nuevo — el INSERT directo con el anon key solo está permitido para turnos
+  // en estado 'reservado' (ver handleCrearTurnoManual).
   const [modalTurnoManualAbierto, setModalTurnoManualAbierto] = useState(false);
   const [tmNombre, setTmNombre] = useState('');
   const [tmTelefono, setTmTelefono] = useState('');
@@ -160,7 +159,7 @@ export const AdminAgenda: React.FC = () => {
   const [tmServicioId, setTmServicioId] = useState('');
   const [tmFecha, setTmFecha] = useState(hoyISO());
   const [tmHora, setTmHora] = useState('');
-  const [tmEstado, setTmEstado] = useState<EstadoTurno>('sena_confirmada');
+  const [tmEstado, setTmEstado] = useState<EstadoTurno>('reservado');
   const [tmMontoTotal, setTmMontoTotal] = useState<number | ''>('');
   const [tmMontoSena, setTmMontoSena] = useState<number | ''>('');
   const [tmGuardando, setTmGuardando] = useState(false);
@@ -177,7 +176,7 @@ export const AdminAgenda: React.FC = () => {
     setTmServicioId('');
     setTmFecha(fechaFiltro);
     setTmHora('');
-    setTmEstado('sena_confirmada');
+    setTmEstado('reservado');
     setTmMontoTotal('');
     setTmMontoSena('');
     setModalTurnoManualAbierto(true);
@@ -198,14 +197,18 @@ export const AdminAgenda: React.FC = () => {
     try {
       const clientaId = await buscarOCrearClienta(tmNombre.trim(), tmTelefono.trim());
       const horaFin = sumarMinutos(tmHora, tmServicio.duracionMinutos);
-      await crearTurno({
+      // La base solo deja insertar desde el navegador turnos en estado
+      // 'reservado' (RLS de turnos, 15/10/2026: si no, cualquiera podría
+      // crearse un turno ya pagado). Por eso se crea siempre 'reservado' y,
+      // si se pidió 'completado', se pasa después por el endpoint del servidor.
+      const nuevo = await crearTurno({
         clientaId,
         profesionalId: tmProfesionalId,
         servicioId: tmServicioId,
         fecha: tmFecha,
         horaInicio: tmHora,
         horaFin,
-        estado: tmEstado,
+        estado: 'reservado',
         montoTotal: Number(tmMontoTotal) || tmServicio.precio,
         montoSena: Number(tmMontoSena) || 0,
         senaVerificadaAutomaticamente: false,
@@ -213,7 +216,10 @@ export const AdminAgenda: React.FC = () => {
         idTransaccionMP: null,
         notasInternas: 'Turno cargado a mano desde el panel (no vino del sitio público).',
       });
+      if (tmEstado === 'completado') await actualizarEstadoTurno(nuevo.id, 'completado');
       setModalTurnoManualAbierto(false);
+    } catch {
+      // crearTurno ya avisó con un toast; el modal queda abierto para reintentar.
     } finally {
       setTmGuardando(false);
     }
@@ -1367,9 +1373,8 @@ export const AdminAgenda: React.FC = () => {
                   onChange={(e) => setTmEstado(e.target.value as EstadoTurno)}
                   className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
                 >
-                  <option value="sena_confirmada">Seña confirmada (ya resuelto en el estudio)</option>
-                  <option value="reservado">Reservado (todavía falta cobrar la seña)</option>
-                  <option value="completado">Completado</option>
+                  <option value="reservado">Reservado (seña cobrada o a cobrar en el estudio)</option>
+                  <option value="completado">Completado (ya vino)</option>
                 </select>
               </div>
             </div>
