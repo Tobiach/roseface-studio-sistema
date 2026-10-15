@@ -56,6 +56,11 @@ interface AppContextType {
   // Confirma que la clienta vino (o corrige el desglose de un turno ya completado)
   // con los servicios extra hechos presencialmente. Devuelve true si se guardó.
   guardarServiciosTurno: (id: string, extras: ServicioExtra[], nuevoEstado?: EstadoTurno) => Promise<boolean>;
+  // Registra (o deshace) que se abonó la seña de un turno cargado a mano. Exige
+  // PIN reciente (token de sesión); devuelve true si se guardó.
+  marcarSenaManual: (id: string, abonada: boolean) => Promise<boolean>;
+  // true si hay una sesión con token vigente (o no hay base real, donde no hace falta).
+  sesionConToken: boolean;
   reprogramarTurno: (id: string, fecha: string, horaInicio: string, horaFin: string) => Promise<void>;
   subirComprobante: (turnoId: string, file: File) => Promise<void>;
   aprobarComprobante: (turnoId: string) => Promise<void>;
@@ -87,14 +92,14 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 // viviera en un useEffect, AdminLayout alcanzaría a redirigir a "/" en el
 // primer render (rolActivo todavía 'clienta') antes de que el efecto
 // restaure el acceso guardado, rompiendo el bookmark directo a /admin.
-function leerAccesoGuardado(): { rol: RolUsuario; profesionalId: string | null } {
+function leerAccesoGuardado(): { rol: RolUsuario; profesionalId: string | null; token: string | null } {
   try {
     const raw = localStorage.getItem(CLAVE_ACCESO);
-    if (!raw) return { rol: 'clienta', profesionalId: null };
-    const guardado = JSON.parse(raw) as { rol?: RolUsuario; profesionalId?: string };
-    return { rol: guardado.rol ?? 'clienta', profesionalId: guardado.profesionalId ?? null };
+    if (!raw) return { rol: 'clienta', profesionalId: null, token: null };
+    const guardado = JSON.parse(raw) as { rol?: RolUsuario; profesionalId?: string; token?: string };
+    return { rol: guardado.rol ?? 'clienta', profesionalId: guardado.profesionalId ?? null, token: guardado.token ?? null };
   } catch {
-    return { rol: 'clienta', profesionalId: null };
+    return { rol: 'clienta', profesionalId: null, token: null };
   }
 }
 
@@ -102,6 +107,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [accesoInicial] = useState(leerAccesoGuardado);
   const [rolActivo, setRolActivo] = useState<RolUsuario>(accesoInicial.rol);
   const [profesionalActivoId, setProfesionalActivoId] = useState<string | null>(accesoInicial.profesionalId);
+  // Token firmado que entrega /api/verificar-pin (vale 12 hs). Las sesiones
+  // iniciadas antes de que existiera no lo tienen: hay que volver a ingresar el PIN.
+  const [sesionToken, setSesionToken] = useState<string | null>(accesoInicial.token);
   // Arranca con los mocks (dev sin Supabase configurado, o mientras carga el
   // fetch real) y se reemplaza por datos reales apenas responde Supabase.
   const [turnos, setTurnos] = useState<Turno[]>(mockTurnos);
@@ -142,10 +150,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setRolActivo(data.rol);
       if (data.profesionalId) setProfesionalActivoId(data.profesionalId);
+      setSesionToken(data.token ?? null);
       try {
         localStorage.setItem(
           CLAVE_ACCESO,
-          JSON.stringify({ rol: data.rol, profesionalId: data.profesionalId ?? undefined })
+          JSON.stringify({ rol: data.rol, profesionalId: data.profesionalId ?? undefined, token: data.token ?? undefined })
         );
       } catch {
         // no crítico si no se puede persistir
@@ -164,6 +173,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const cambiarUsuario = () => {
     setRolActivo('clienta');
     setProfesionalActivoId(null);
+    setSesionToken(null);
     try {
       localStorage.removeItem(CLAVE_ACCESO);
     } catch {
@@ -378,6 +388,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
     showToast(nuevoEstado === 'completado' ? '✓ Turno completado y servicios registrados' : '✓ Servicios del turno actualizados');
+    return true;
+  };
+
+  const marcarSenaManual = async (id: string, abonada: boolean): Promise<boolean> => {
+    if (supabaseEnabled && supabase) {
+      const pedirPinDeNuevo = () => {
+        showToast('🔑 Para registrar la seña volvé a ingresar tu PIN (la sesión venció).');
+        setSesionToken(null);
+        abrirPinModal(rolActivo === 'admin' ? 'admin' : 'profesional');
+      };
+      if (!sesionToken) {
+        pedirPinDeNuevo();
+        return false;
+      }
+      try {
+        const resp = await fetch('/api/marcar-sena-manual', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sesionToken}` },
+          body: JSON.stringify({ turnoId: id, abonada }),
+        });
+        if (resp.status === 401) {
+          pedirPinDeNuevo();
+          return false;
+        }
+        const data = (await resp.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+        if (!resp.ok || !data.ok) {
+          showToast(`❌ ${data.error ?? 'No se pudo registrar la seña.'}`);
+          return false;
+        }
+      } catch {
+        showToast('❌ No se pudo registrar la seña.');
+        return false;
+      }
+    }
+
+    setTurnos((prev) => prev.map((t) => (t.id === id ? { ...t, aprobadoPorProfesional: abonada } : t)));
+    showToast(abonada ? '✓ Seña registrada como pagada' : 'Seña marcada como pendiente');
     return true;
   };
 
@@ -645,6 +692,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         registrarTurnoLocal,
         actualizarEstadoTurno,
         guardarServiciosTurno,
+        marcarSenaManual,
+        sesionConToken: !supabaseEnabled || !!sesionToken,
         reprogramarTurno,
         subirComprobante,
         aprobarComprobante,

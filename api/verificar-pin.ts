@@ -8,12 +8,27 @@
 // solo este endpoint con el service_role puede leerla.
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { createHmac } from 'node:crypto';
 
 function getSupabaseAdmin() {
   const url = process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
   return createClient(url, key);
+}
+
+// Token de sesión (15/10/2026): un PIN válido ahora devuelve también un token
+// firmado (HMAC con el service_role como secreto, nunca sale del servidor) que
+// vale 12 hs. Es el primer paso del "Paso 3" de docs/SEGURIDAD_PENDIENTE.md y
+// hoy lo exige solo api/marcar-sena-manual.ts — el resto de los endpoints sigue
+// como estaba. Mismo formato de firma que el verificador de ese archivo
+// (Vercel no comparte código entre funciones, por eso se repite).
+const DURACION_TOKEN_MS = 12 * 60 * 60 * 1000;
+
+function firmarToken(secreto: string, rol: string, profesionalId: string | null): string {
+  const payload = Buffer.from(JSON.stringify({ rol, pid: profesionalId, exp: Date.now() + DURACION_TOKEN_MS })).toString('base64url');
+  const firma = createHmac('sha256', secreto).update(`rf-sesion-v1.${payload}`).digest('base64url');
+  return `${payload}.${firma}`;
 }
 
 // Rate limit en memoria — primera capa, best-effort (se resetea si Vercel
@@ -89,5 +104,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     nombre = prof?.nombre ?? null;
   }
 
-  res.status(200).json({ ok: true, rol: codigo.rol, profesionalId: codigo.profesional_id, nombre });
+  const token = firmarToken(process.env.SUPABASE_SERVICE_ROLE_KEY as string, codigo.rol, codigo.profesional_id);
+  res.status(200).json({ ok: true, rol: codigo.rol, profesionalId: codigo.profesional_id, nombre, token });
 }

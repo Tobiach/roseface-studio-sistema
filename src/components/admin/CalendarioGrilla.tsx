@@ -9,6 +9,7 @@
 import React, { useMemo } from 'react';
 import { Profesional, Turno, BloqueoHorario } from '../../types';
 import { DIAS_SEMANA, generarFranjas, estadoDeFranja, sumarMinutos, turnoBloqueaHorario } from '../../lib/disponibilidad';
+import { estadoSena } from '../../lib/recordatorios';
 
 interface CalendarioGrillaProps {
   profesionales: Profesional[];
@@ -109,7 +110,10 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
           <span className="w-3 h-3 rounded-sm bg-white border border-pink-200 inline-block" /> Libre
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-sm bg-amber-100 border border-amber-300 inline-block" /> Reservado / seña
+          <span className="w-3 h-3 rounded-sm bg-amber-100 border border-amber-300 inline-block" /> Seña pendiente
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-sm bg-rf-gold-bright/40 border border-rf-gold inline-block" /> Seña pagada
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded-sm bg-emerald-100 border border-emerald-300 inline-block" /> Completado
@@ -157,12 +161,19 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
                         {enFranja.map((t) => {
                           const empiezaAca = t.horaInicio >= franja && t.horaInicio < franjaFin;
                           const horaSuelta = !t.horaInicio.endsWith(':00') && !t.horaInicio.endsWith(':30');
-                          const colorClase = COLOR_POR_ESTADO[t.estado] ?? 'bg-pink-100 border-pink-300 text-rf-black';
+                          // Color según la seña: ámbar = pendiente, dorado = pagada.
+                          const sena = estadoSena(t);
+                          const colorClase =
+                            (t.estado === 'reservado' && sena === 'pagada'
+                              ? COLOR_POR_ESTADO.sena_confirmada
+                              : COLOR_POR_ESTADO[t.estado]) ?? 'bg-pink-100 border-pink-300 text-rf-black';
                           return (
                             <button
                               key={t.id}
                               onClick={() => onSeleccionarTurno(t)}
-                              title={`${t.horaInicio} a ${finDelTurno(t)} · ${getClientaNombre(t.clientaId)}`}
+                              title={`${t.horaInicio} a ${finDelTurno(t)} · ${getClientaNombre(t.clientaId)}${
+                                sena === 'pagada' ? ' · seña pagada' : sena === 'pendiente' ? ' · seña pendiente' : ''
+                              }`}
                               className={`flex-1 min-h-[28px] border-l-2 px-1.5 py-1 text-left cursor-pointer hover:brightness-95 transition-all ${colorClase}`}
                             >
                               {empiezaAca && (

@@ -11,8 +11,9 @@ import { RitualTimeline } from '../../components/ui/RitualTimeline';
 import { CalendarioGrilla } from '../../components/admin/CalendarioGrilla';
 import { PanelServiciosRealizados } from '../../components/admin/PanelServiciosRealizados';
 import { formatCurrency, formatDateReadable, formatDateShort } from '../../lib/formatters';
-import { mensajeRecordatorio, buildWhatsAppUrlPara } from '../../lib/whatsapp';
-import { ventanasDelTurno, esTurnoConSenaPendiente, type VentanaRecordatorio } from '../../lib/recordatorios';
+import { buildWhatsAppUrlPara } from '../../lib/whatsapp';
+import { ventanasDelTurno, estadoSena, estadoRecordatorios, mensajeParaTurno, type VentanaRecordatorio } from '../../lib/recordatorios';
+import { SenaBadge } from '../../components/ui/SenaBadge';
 import { hoyISO, sumarDiasISO, calcularHorariosDisponibles, sumarMinutos } from '../../lib/disponibilidad';
 import { calcularMontoSena } from '../../lib/pricing';
 import { esMarcadaAMano, armarNota } from '../../lib/recurrencia';
@@ -64,6 +65,9 @@ export const AdminAgenda: React.FC = () => {
     profesionalActivoId,
     actualizarEstadoTurno,
     guardarServiciosTurno,
+    marcarSenaManual,
+    sesionConToken,
+    abrirPinModal,
     reprogramarTurno,
     aprobarComprobante,
     crearBloqueo,
@@ -160,6 +164,7 @@ export const AdminAgenda: React.FC = () => {
   const [tmMontoSena, setTmMontoSena] = useState<number | ''>('');
   const [tmGuardando, setTmGuardando] = useState(false);
   const [tmRecurrente, setTmRecurrente] = useState(false);
+  const [tmSenaAbonada, setTmSenaAbonada] = useState(false);
 
   const tmServicio = servicios.find((s) => s.id === tmServicioId);
   const tmServiciosDeLaProfesional = tmProfesionalId
@@ -177,6 +182,7 @@ export const AdminAgenda: React.FC = () => {
     setTmMontoTotal('');
     setTmMontoSena('');
     setTmRecurrente(false);
+    setTmSenaAbonada(false);
     setModalTurnoManualAbierto(true);
   };
 
@@ -191,6 +197,14 @@ export const AdminAgenda: React.FC = () => {
 
   const handleCrearTurnoManual = async () => {
     if (!tmNombre.trim() || !tmProfesionalId || !tmServicioId || !tmFecha || !tmHora || !tmServicio) return;
+    const registrarSena = tmSenaAbonada && tmEstado !== 'completado';
+    // Registrar la seña como pagada exige PIN reciente: se pide ANTES de crear
+    // el turno, así no queda un turno creado sin la seña que se quiso cargar.
+    if (registrarSena && !sesionConToken) {
+      showToast('🔑 Para registrar la seña como pagada, ingresá tu PIN.');
+      abrirPinModal(esProfesional ? 'profesional' : 'admin');
+      return;
+    }
     setTmGuardando(true);
     try {
       const clientaId = await buscarOCrearClienta(tmNombre.trim(), tmTelefono.trim());
@@ -215,6 +229,7 @@ export const AdminAgenda: React.FC = () => {
         notasInternas: 'Turno cargado a mano desde el panel (no vino del sitio público).',
       });
       if (tmEstado === 'completado') await actualizarEstadoTurno(nuevo.id, 'completado');
+      if (registrarSena) await marcarSenaManual(nuevo.id, true);
       if (tmRecurrente) await marcarClienteRecurrente(nuevo);
       setModalTurnoManualAbierto(false);
     } catch {
@@ -307,18 +322,9 @@ export const AdminAgenda: React.FC = () => {
     const ahoraMs = Date.now();
     for (const t of turnos) {
       if (profesionalFiltroEfectivo !== 'todos' && t.profesionalId !== profesionalFiltroEfectivo) continue;
-      if (t.estado.startsWith('cancelado') || t.estado === 'completado') continue;
-      const inicioMs = new Date(`${t.fecha}T${t.horaInicio}:00`).getTime();
-      const horasFaltan = (inicioMs - ahoraMs) / 3_600_000;
-      if (horasFaltan <= 0) continue;
-      const dueUnsent = ventanasDelTurno(t).filter((v) => {
-        if (horasFaltan > v.horas) return false;
-        const cfg = recordatoriosConfig.find((r) => r.turnoId === t.id && r.plantilla === v.value);
-        return !cfg?.activado;
-      });
-      if (dueUnsent.length === 0) continue;
-      const ventana = dueUnsent.reduce((a, b) => (a.horas <= b.horas ? a : b));
-      recordatoriosPendientes.push({ turno: t, ventana, horasFaltan });
+      const rec = estadoRecordatorios(t, recordatoriosConfig, ahoraMs);
+      if (!rec?.pendiente) continue;
+      recordatoriosPendientes.push({ turno: t, ventana: rec.pendiente, horasFaltan: rec.horasFaltan });
     }
     recordatoriosPendientes.sort((a, b) => a.horasFaltan - b.horasFaltan);
   }
@@ -330,14 +336,7 @@ export const AdminAgenda: React.FC = () => {
       showToast('❌ No encontramos el teléfono de la clienta.');
       return;
     }
-    const mensaje = mensajeRecordatorio(plantilla, {
-      nombreClienta: clienta.nombre,
-      servicio: getServicioNombre(turno.servicioId),
-      fecha: formatDateReadable(turno.fecha),
-      hora: turno.horaInicio,
-      senaPendiente: esTurnoConSenaPendiente(turno),
-      montoSena: turno.montoSena,
-    });
+    const mensaje = mensajeParaTurno(turno, plantilla, clienta.nombre, getServicioNombre(turno.servicioId));
     window.open(buildWhatsAppUrlPara(clienta.telefono, mensaje), '_blank');
   };
 
@@ -402,7 +401,7 @@ export const AdminAgenda: React.FC = () => {
         className={`space-y-3 border-l-4 ${
           turno.estado === 'completado'
             ? 'border-l-emerald-500'
-            : turno.estado === 'sena_confirmada' || turno.estado === 'recordatorio_enviado'
+            : estadoSena(turno) === 'pagada'
             ? 'border-l-rf-gold-bright'
             : isCancelled
             ? 'border-l-rf-danger'
@@ -423,8 +422,9 @@ export const AdminAgenda: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <StatusPill estado={turno.estado} />
+          <div className="flex flex-wrap items-center gap-2">
+            <SenaBadge turno={turno} />
+            <StatusPill estado={turno.estado} senaAparte />
           </div>
         </div>
 
@@ -913,9 +913,54 @@ export const AdminAgenda: React.FC = () => {
                 {turnoSeleccionadoModal.horaInicio} hs
               </p>
               <p>
-                <strong>Estado Actual:</strong> <StatusPill estado={turnoSeleccionadoModal.estado} />
+                <strong>Estado Actual:</strong> <StatusPill estado={turnoSeleccionadoModal.estado} senaAparte />
               </p>
+              {estadoSena(turnoSeleccionadoModal) !== 'no_aplica' && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <strong>Seña:</strong>
+                  <SenaBadge turno={turnoSeleccionadoModal} size="md" />
+                </div>
+              )}
             </div>
+
+            {/* Turno cargado a mano: acá se registra que la clienta abonó la seña
+                (o se deshace). Los turnos del sitio y los ya confirmados no lo
+                necesitan — su seña la verifica el sistema. */}
+            {turnoSeleccionadoModal.origenReserva === 'manual' &&
+              estadoSena(turnoSeleccionadoModal) !== 'no_aplica' &&
+              turnoSeleccionadoModal.estado !== 'sena_confirmada' && (
+                <div
+                  className={`rounded-xl border p-3 space-y-2 text-xs ${
+                    estadoSena(turnoSeleccionadoModal) === 'pagada'
+                      ? 'bg-emerald-50 border-emerald-200'
+                      : 'bg-amber-50 border-amber-200'
+                  }`}
+                >
+                  <p className="text-rf-charcoal">
+                    {estadoSena(turnoSeleccionadoModal) === 'pagada'
+                      ? 'Registraste que esta clienta ya abonó la seña. Recibe solo los recordatorios normales (48h, 24h y 4h antes).'
+                      : 'La seña todavía no está registrada: se le pide por WhatsApp 72h y 48h antes y se le confirma la cita 24h antes.'}
+                  </p>
+                  <Button
+                    variant={estadoSena(turnoSeleccionadoModal) === 'pagada' ? 'ghost' : 'primary'}
+                    size="sm"
+                    fullWidth
+                    onClick={async () => {
+                      const abonada = estadoSena(turnoSeleccionadoModal) !== 'pagada';
+                      if (await marcarSenaManual(turnoSeleccionadoModal.id, abonada)) {
+                        setTurnoSeleccionadoModal({ ...turnoSeleccionadoModal, aprobadoPorProfesional: abonada });
+                      }
+                    }}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>
+                      {estadoSena(turnoSeleccionadoModal) === 'pagada'
+                        ? 'Deshacer: la seña todavía no está paga'
+                        : 'Marcar la seña como pagada'}
+                    </span>
+                  </Button>
+                </div>
+              )}
 
             {!esProfesional && (
               <Button
@@ -1097,14 +1142,12 @@ export const AdminAgenda: React.FC = () => {
                     );
                     const activado = config?.activado ?? false;
                     const clienta = clientas.find((c) => c.id === turnoSeleccionadoModal.clientaId);
-                    const mensaje = mensajeRecordatorio(v.value, {
-                      nombreClienta: clienta?.nombre ?? 'clienta',
-                      servicio: getServicioNombre(turnoSeleccionadoModal.servicioId),
-                      fecha: formatDateReadable(turnoSeleccionadoModal.fecha),
-                      hora: turnoSeleccionadoModal.horaInicio,
-                      senaPendiente: esTurnoConSenaPendiente(turnoSeleccionadoModal),
-                      montoSena: turnoSeleccionadoModal.montoSena,
-                    });
+                    const mensaje = mensajeParaTurno(
+                      turnoSeleccionadoModal,
+                      v.value,
+                      clienta?.nombre ?? 'clienta',
+                      getServicioNombre(turnoSeleccionadoModal.servicioId)
+                    );
 
                     const enviarPorWhatsApp = () => {
                       toggleRecordatorio(turnoSeleccionadoModal.id, v.value, true);
@@ -1390,6 +1433,41 @@ export const AdminAgenda: React.FC = () => {
                 </div>
               </div>
 
+              {tmEstado !== 'completado' && (
+                <div className="space-y-1.5">
+                  <label className="font-bold text-rf-black block">¿Ya abonó la seña?</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setTmSenaAbonada(true)}
+                      className={`py-2.5 px-2 rounded-xl border-2 font-bold text-xs cursor-pointer transition-colors ${
+                        tmSenaAbonada
+                          ? 'bg-emerald-50 border-emerald-500 text-emerald-800'
+                          : 'bg-white border-pink-200 text-rf-charcoal hover:border-emerald-300'
+                      }`}
+                    >
+                      ✅ Sí, ya abonó
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTmSenaAbonada(false)}
+                      className={`py-2.5 px-2 rounded-xl border-2 font-bold text-xs cursor-pointer transition-colors ${
+                        !tmSenaAbonada
+                          ? 'bg-amber-50 border-amber-500 text-amber-800'
+                          : 'bg-white border-pink-200 text-rf-charcoal hover:border-amber-300'
+                      }`}
+                    >
+                      ⏳ Todavía no
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-rf-charcoal">
+                    {tmSenaAbonada
+                      ? 'Queda con "Seña pagada" y recibe los recordatorios normales (48h, 24h y 4h antes).'
+                      : 'Queda con "Seña pendiente": se le pide la seña por WhatsApp 72h y 48h antes y se le confirma la cita 24h antes.'}
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="font-bold text-rf-black block mb-1">Estado</label>
                 <select
@@ -1397,7 +1475,7 @@ export const AdminAgenda: React.FC = () => {
                   onChange={(e) => setTmEstado(e.target.value as EstadoTurno)}
                   className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
                 >
-                  <option value="reservado">Reservado (seña cobrada o a cobrar en el estudio)</option>
+                  <option value="reservado">Reservado (todavía no vino)</option>
                   <option value="completado">Completado (ya vino)</option>
                 </select>
               </div>

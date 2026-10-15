@@ -5,12 +5,15 @@ import { Clock, CheckCircle2, BellRing, Check, XCircle } from 'lucide-react';
 
 interface StatusPillProps {
   estado: EstadoTurno;
+  // Cuando la seña ya se muestra aparte (SenaBadge), 'reservado' dice solo
+  // 'Reservado' para no repetir ni contradecir ese cartel.
+  senaAparte?: boolean;
 }
 
-export const StatusPill: React.FC<StatusPillProps> = ({ estado }) => {
+export const StatusPill: React.FC<StatusPillProps> = ({ estado, senaAparte = false }) => {
   const config = {
     reservado: {
-      label: 'Reservado (Seña pendiente)',
+      label: senaAparte ? 'Reservado' : 'Reservado (Seña pendiente)',
       bg: 'bg-amber-50 text-amber-800 border-amber-200',
       icon: Clock,
     },
