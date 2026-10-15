@@ -42,6 +42,11 @@ export const PanelServiciosRealizados: React.FC<Props> = ({
   // mostrar el precio del servicio reservado.
   const precioBase = turno.montoTotal - (turno.serviciosExtra ?? []).reduce((a, e) => a + e.precio, 0);
   const total = precioBase + extras.reduce((a, e) => a + e.precio, 0);
+  // 15/10/2026 (pedido de Tobias): la seña ya se cobró de antemano (por
+  // Mercado Pago o por transferencia, según el circuito) — lo que falta
+  // cobrarle a la clienta EN el estudio es el total (con los extras ya
+  // sumados) menos esa seña, nunca el total completo de nuevo.
+  const saldoACobrar = Math.max(0, total - turno.montoSena);
 
   const serviciosPorCategoria = useMemo(() => {
     const grupos = new Map<string, Servicio[]>();
@@ -124,9 +129,17 @@ export const PanelServiciosRealizados: React.FC<Props> = ({
             </span>
           </div>
         ))}
-        <div className="flex items-center justify-between px-3 py-2 bg-rf-cream rounded-b-xl">
+        <div className="flex items-center justify-between px-3 py-2 bg-rf-cream">
           <span className="font-bold">Total del turno</span>
-          <span className="font-bold text-rf-rose-deep">{formatCurrency(total)}</span>
+          <span className="font-bold text-rf-black">{formatCurrency(total)}</span>
+        </div>
+        <div className="flex items-center justify-between px-3 py-2">
+          <span className="text-gray-500">Seña ya cobrada ({turno.circuitoPago === 'transferencia' ? 'transferencia' : 'Mercado Pago'})</span>
+          <span className="text-gray-500">− {formatCurrency(turno.montoSena)}</span>
+        </div>
+        <div className="flex items-center justify-between px-3 py-2 bg-rf-cream rounded-b-xl">
+          <span className="font-bold">Saldo a cobrar en el estudio</span>
+          <span className="font-bold text-rf-rose-deep">{formatCurrency(saldoACobrar)}</span>
         </div>
       </div>
 
