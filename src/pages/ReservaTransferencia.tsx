@@ -1,7 +1,7 @@
 // src/pages/ReservaTransferencia.tsx
 //
 // Circuito de pago por transferencia (Fase 5): lo usan las profesionales de
-// alquiler fijo (Martina, Sofía, Alexandra, Camila, Valentina). La clienta
+// alquiler fijo (Sofía, Alexandra, Camila, Valentina). La clienta
 // transfiere por su cuenta al alias/CBU de la profesional y sube acá el
 // comprobante — recién cuando la profesional lo aprueba en su propio panel
 // el turno pasa a confirmado. Yosy no ve ni gestiona este pago.

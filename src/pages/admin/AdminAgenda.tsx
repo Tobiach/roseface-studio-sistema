@@ -9,6 +9,7 @@ import { Badge } from '../../components/ui/Badge';
 import { StatusPill } from '../../components/ui/StatusPill';
 import { RitualTimeline } from '../../components/ui/RitualTimeline';
 import { CalendarioGrilla } from '../../components/admin/CalendarioGrilla';
+import { PanelServiciosRealizados } from '../../components/admin/PanelServiciosRealizados';
 import { formatCurrency, formatDateReadable, formatDateShort } from '../../lib/formatters';
 import { mensajeRecordatorio, buildWhatsAppUrlPara } from '../../lib/whatsapp';
 import { hoyISO, sumarDiasISO, calcularHorariosDisponibles, sumarMinutos } from '../../lib/disponibilidad';
@@ -66,6 +67,7 @@ export const AdminAgenda: React.FC = () => {
     rolActivo,
     profesionalActivoId,
     actualizarEstadoTurno,
+    guardarServiciosTurno,
     reprogramarTurno,
     aprobarComprobante,
     crearBloqueo,
@@ -125,6 +127,9 @@ export const AdminAgenda: React.FC = () => {
   const [profesionalFiltro, setProfesionalFiltro] = useState<string>('todos');
   const [busqueda, setBusqueda] = useState<string>('');
   const [turnoSeleccionadoModal, setTurnoSeleccionadoModal] = useState<Turno | null>(null);
+  // Panel de 'qué servicios se hizo' dentro del modal de turno (confirmar que
+  // vino / editar el desglose de un turno ya completado).
+  const [panelServicios, setPanelServicios] = useState<{ turnoId: string; modo: 'confirmar' | 'editar' } | null>(null);
 
   // Reprogramar turno (desde el modal)
   const [reprogramando, setReprogramando] = useState(false);
@@ -850,6 +855,7 @@ export const AdminAgenda: React.FC = () => {
                 onClick={() => {
                   setTurnoSeleccionadoModal(null);
                   setReprogramando(false);
+                  setPanelServicios(null);
                 }}
                 aria-label="Cerrar"
                 className="-m-2 p-2.5 rounded-xl text-gray-400 hover:text-rf-black hover:bg-rf-cream active:bg-rf-cream transition-colors cursor-pointer shrink-0"
@@ -862,6 +868,14 @@ export const AdminAgenda: React.FC = () => {
               <p>
                 <strong>Servicio:</strong> {getServicioNombre(turnoSeleccionadoModal.servicioId)}
               </p>
+              {(turnoSeleccionadoModal.serviciosExtra ?? []).length > 0 && (
+                <p>
+                  <strong>Extras:</strong>{' '}
+                  {(turnoSeleccionadoModal.serviciosExtra ?? [])
+                    .map((e) => `${e.nombre} (${formatCurrency(e.precio)})`)
+                    .join(', ')}
+                </p>
+              )}
               <p>
                 <strong>Profesional:</strong>{' '}
                 {getProfesional(turnoSeleccionadoModal.profesionalId)?.nombre}
@@ -953,6 +967,30 @@ export const AdminAgenda: React.FC = () => {
                   </div>
                 );
               })()
+            ) : panelServicios?.turnoId === turnoSeleccionadoModal.id ? (
+              <PanelServiciosRealizados
+                key={`${panelServicios.turnoId}-${panelServicios.modo}`}
+                turno={turnos.find((t) => t.id === turnoSeleccionadoModal.id) ?? turnoSeleccionadoModal}
+                servicioBase={servicios.find((s) => s.id === turnoSeleccionadoModal.servicioId)}
+                profesional={getProfesional(turnoSeleccionadoModal.profesionalId)}
+                servicios={servicios}
+                modo={panelServicios.modo}
+                onCancelar={() => setPanelServicios(null)}
+                onGuardar={async (extras) => {
+                  const turnoActual = turnos.find((t) => t.id === turnoSeleccionadoModal.id) ?? turnoSeleccionadoModal;
+                  const teniaExtras = (turnoActual.serviciosExtra ?? []).length > 0;
+                  const confirmando = panelServicios.modo === 'confirmar';
+                  // Sin extras (y sin extras previos que borrar) alcanza con el camino
+                  // de siempre: solo cambia el estado, el total queda como estaba.
+                  if (confirmando && extras.length === 0 && !teniaExtras) {
+                    await actualizarEstadoTurno(turnoActual.id, 'completado');
+                  } else if (!(await guardarServiciosTurno(turnoActual.id, extras, confirmando ? 'completado' : undefined))) {
+                    return;
+                  }
+                  setPanelServicios(null);
+                  setTurnoSeleccionadoModal(null);
+                }}
+              />
             ) : (
             <div className="space-y-2 pt-2 border-t border-pink-100">
               <label className="text-xs font-bold text-rf-black block">
@@ -962,13 +1000,20 @@ export const AdminAgenda: React.FC = () => {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => {
-                    actualizarEstadoTurno(turnoSeleccionadoModal.id, 'completado');
-                    setTurnoSeleccionadoModal(null);
-                  }}
+                  className={turnoSeleccionadoModal.estado === 'completado' ? 'col-span-2' : ''}
+                  onClick={() =>
+                    setPanelServicios({
+                      turnoId: turnoSeleccionadoModal.id,
+                      modo: turnoSeleccionadoModal.estado === 'completado' ? 'editar' : 'confirmar',
+                    })
+                  }
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Marcar Completado</span>
+                  <span>
+                    {turnoSeleccionadoModal.estado === 'completado'
+                      ? 'Editar servicios realizados'
+                      : 'Vino — confirmar servicios'}
+                  </span>
                 </Button>
 
                 <Button
@@ -1077,6 +1122,7 @@ export const AdminAgenda: React.FC = () => {
                 onClick={() => {
                   setTurnoSeleccionadoModal(null);
                   setReprogramando(false);
+                  setPanelServicios(null);
                 }}
               >
                 Cerrar

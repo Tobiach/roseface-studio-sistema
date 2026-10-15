@@ -4,12 +4,14 @@
 // abre desde Header/Footer vía useApp().abrirPinModal(rol). No es
 // autenticación real — ver la nota en api/verificar-pin.ts.
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Button } from './Button';
 import { KeyRound } from 'lucide-react';
 
 export const PinModal: React.FC = () => {
   const { pinModalRol, cerrarPinModal, verificarPin } = useApp();
+  const navigate = useNavigate();
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
   const [verificando, setVerificando] = useState(false);
@@ -28,6 +30,9 @@ export const PinModal: React.FC = () => {
       return;
     }
     setPin('');
+    // PIN válido = sesión iniciada: va directo al panel (el rol y la
+    // profesional ya los resolvió verificarPin a partir del PIN, no del botón).
+    navigate('/admin/agenda');
   };
 
   const handleCerrar = () => {

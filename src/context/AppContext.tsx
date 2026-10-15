@@ -9,6 +9,7 @@ import {
   BeneficioVIP,
   ClientaEnRiesgo,
   EstadoTurno,
+  ServicioExtra,
   BloqueoHorario,
   RecordatorioConfig,
 } from '../types';
@@ -51,6 +52,9 @@ interface AppContextType {
   crearTurno: (data: Omit<Turno, 'id' | 'fechaCreacion'>) => Promise<Turno>;
   registrarTurnoLocal: (turno: Turno) => void;
   actualizarEstadoTurno: (id: string, nuevoEstado: EstadoTurno, notasInternas?: string) => Promise<void>;
+  // Confirma que la clienta vino (o corrige el desglose de un turno ya completado)
+  // con los servicios extra hechos presencialmente. Devuelve true si se guardó.
+  guardarServiciosTurno: (id: string, extras: ServicioExtra[], nuevoEstado?: EstadoTurno) => Promise<boolean>;
   reprogramarTurno: (id: string, fecha: string, horaInicio: string, horaFin: string) => Promise<void>;
   subirComprobante: (turnoId: string, file: File) => Promise<void>;
   aprobarComprobante: (turnoId: string) => Promise<void>;
@@ -101,7 +105,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // fetch real) y se reemplaza por datos reales apenas responde Supabase.
   const [turnos, setTurnos] = useState<Turno[]>(mockTurnos);
   const [clientas, setClientas] = useState<Clienta[]>(mockClientas);
-  const [profesionales, setProfesionales] = useState<Profesional[]>(mockProfesionales);
+  // Las profesionales con `activa: false` (ya no trabajan en el estudio)
+  // nunca entran al estado: así no aparecen en ninguna lista, selector,
+  // liquidación ni perfil de la app, sin tener que filtrar pantalla por pantalla.
+  const [profesionales, setProfesionales] = useState<Profesional[]>(
+    mockProfesionales.filter((p) => p.activa !== false)
+  );
   const [servicios, setServicios] = useState<Servicio[]>(ordenarServicios(mockServicios));
   const [bloqueos, setBloqueos] = useState<BloqueoHorario[]>([]);
   const [recordatoriosConfig, setRecordatoriosConfig] = useState<RecordatorioConfig[]>([]);
@@ -315,6 +324,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
     );
     showToast(`Estado de turno actualizado a: ${nuevoEstado.replace('_', ' ')}`);
+  };
+
+  // Servicios extra hechos en el momento (ver ServicioExtra en types). El
+  // total lo calcula el servidor (api/actualizar-estado-turno.ts) y vuelve en
+  // la respuesta — así lo que se ve en pantalla es lo mismo que quedó guardado
+  // y que usan Comisiones y Caja (todo lee Turno.montoTotal).
+  const guardarServiciosTurno = async (
+    id: string,
+    extras: ServicioExtra[],
+    nuevoEstado?: EstadoTurno
+  ): Promise<boolean> => {
+    let montoTotal: number | undefined;
+    let extrasGuardados = extras;
+
+    if (supabaseEnabled && supabase) {
+      try {
+        const resp = await fetch('/api/actualizar-estado-turno', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ turnoId: id, nuevoEstado, serviciosExtra: extras }),
+        });
+        const data = (await resp.json().catch(() => ({}))) as {
+          ok?: boolean;
+          montoTotal?: number;
+          serviciosExtra?: ServicioExtra[];
+        };
+        if (!resp.ok || !data.ok) {
+          showToast('❌ No se pudieron guardar los servicios del turno.');
+          return false;
+        }
+        montoTotal = data.montoTotal;
+        extrasGuardados = data.serviciosExtra ?? extras;
+      } catch {
+        showToast('❌ No se pudieron guardar los servicios del turno.');
+        return false;
+      }
+    }
+
+    setTurnos((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        // Sin servidor (demo local) el total se recalcula acá con la misma regla.
+        const sumaPrevia = (t.serviciosExtra ?? []).reduce((a, e) => a + e.precio, 0);
+        const sumaNueva = extrasGuardados.reduce((a, e) => a + e.precio, 0);
+        return {
+          ...t,
+          estado: nuevoEstado ?? t.estado,
+          serviciosExtra: extrasGuardados,
+          montoTotal: montoTotal ?? t.montoTotal - sumaPrevia + sumaNueva,
+        };
+      })
+    );
+    showToast(nuevoEstado === 'completado' ? '✓ Turno completado y servicios registrados' : '✓ Servicios del turno actualizados');
+    return true;
   };
 
   // Mover un turno a otra fecha/hora sin perder la seña ni el estado.
@@ -580,6 +643,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         crearTurno,
         registrarTurnoLocal,
         actualizarEstadoTurno,
+        guardarServiciosTurno,
         reprogramarTurno,
         subirComprobante,
         aprobarComprobante,

@@ -78,13 +78,13 @@ export const Home: React.FC = () => {
         </div>
         <div className="text-center mt-8 space-y-4">
           <p className="text-xs font-semibold tracking-[0.2em] uppercase text-rf-rose-deep">
-            Rose Face · Caballito
+            Rose Face Studio · Caballito
           </p>
           <h1 className="font-display text-4xl sm:text-5xl font-semibold text-rf-black leading-tight">
             Belleza que se siente
           </h1>
           <p className="text-base text-rf-charcoal font-body max-w-md mx-auto leading-relaxed">
-            Pestañas · Uñas · Cabello · Bienestar
+            Pestañas · Uñas · Bienestar
           </p>
           <div className="pt-2">
             <Link to="/reserva">
@@ -184,7 +184,7 @@ export const Home: React.FC = () => {
         </div>
 
         <div className="flex gap-5 overflow-x-auto pb-2 px-1 scrollbar-none sm:justify-center sm:flex-wrap">
-          {profesionales.filter((p) => p.activa !== false).map((prof) => (
+          {profesionales.map((prof) => (
             <Link
               key={prof.id}
               to={`/profesionales/${slugDeNombre(prof.nombre)}`}
@@ -297,10 +297,10 @@ export const Home: React.FC = () => {
         <FAQ />
       </section>
 
-      {/* 8. UBICACIÓN — video humaniza a Yosy, después la info práctica */}
+      {/* 8. UBICACIÓN — video de presentación del estudio, después la info práctica */}
       <section className="px-4 py-16 max-w-2xl mx-auto space-y-6">
         <div className="text-center space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-rf-rose-deep">Conocé a Yosy</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-rf-rose-deep">Conocé a Rose Face Studio</p>
           <h2 className="font-display text-2xl sm:text-3xl text-rf-black">Estamos en Caballito.</h2>
         </div>
 

@@ -31,7 +31,7 @@ export interface Profesional {
   adicionales?: { nombre: string; precio: number }[];
   // false = ya no trabaja en el estudio (13/10/2026, primer caso: Anye).
   // El id NUNCA se borra (quedan turnos históricos con esa FK) — esto solo
-  // la saca de las páginas públicas (Home, Equipo). Por defecto true;
+  // la saca de toda la app (AppContext no la carga en el estado). Por defecto true;
   // ausente en el resto del plantel a propósito (no hace falta tocar a
   // nadie más).
   activa?: boolean;
@@ -106,12 +106,24 @@ export interface Turno {
   // en cualquier otro turno (seed, simulado, ya confirmado).
   expiraEn?: string | null;
   // Doble circuito de pago (Fase 5): 'mercado_pago' para modelo porcentaje
-  // (Mili/Sharon), 'transferencia' para alquiler_fijo (Martina, Sofía,
+  // (Mili/Sharon), 'transferencia' para alquiler_fijo (Sofía,
   // Alexandra, Camila, Valentina) — 1:1 con el modeloComision de la
   // profesional al momento de reservar.
   circuitoPago?: 'mercado_pago' | 'transferencia';
   comprobanteTransferenciaUrl?: string | null;
   aprobadoPorProfesional?: boolean;
+  // Extras cargados al confirmar que la clienta vino (ver ServicioExtra).
+  // montoTotal = precio del servicio reservado + suma de estos extras.
+  serviciosExtra?: ServicioExtra[];
+}
+
+// Servicio realizado de más en el momento (ej. retiro, deco, un servicio que la
+// clienta suma presencial) y que no estaba en la reserva original. Su precio
+// ya está sumado dentro de Turno.montoTotal — esto es solo el desglose.
+export interface ServicioExtra {
+  nombre: string;
+  precio: number;                  // ARS, editable al cargarlo (hay ítems 'desde $X')
+  servicioId?: string | null;      // si salió del catálogo; null/ausente = cargado a mano
 }
 
 export interface CierreComisionSemanal {

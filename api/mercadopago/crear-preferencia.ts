@@ -23,7 +23,7 @@ function calcularMontoSena(servicio: { precio: number; categoria: string; requie
   return Math.min(MONTO_SENA_FIJO, servicio.precio);
 }
 
-// Titular/CBU/banco reales de las 3 profesionales de alquiler fijo, del
+// Titular/CBU/banco reales de las profesionales de alquiler fijo con cuenta propia, del
 // doc "dia a dia Rose Face" (22/9/2026). No vive en Supabase (solo
 // `alias_cbu` está en esa tabla hoy; agregar estas columnas es una
 // migración que todavía no se corrió) — hardcodeado acá a propósito,
@@ -34,11 +34,6 @@ const DATOS_BANCARIOS: Record<string, { titular: string; cbu: string; banco: str
     titular: 'Ariannys Jisell Pineda Trinitario',
     cbu: '4530000800015867487963',
     banco: 'Naranja X',
-  },
-  'prof-martina': {
-    titular: 'Anyelina Urdaneta',
-    cbu: '0000168300000000359706',
-    banco: 'Lemon',
   },
   'prof-sofia': {
     // OJO: el doc trae el titular como "Crisbel Coromoto" (sin apellido

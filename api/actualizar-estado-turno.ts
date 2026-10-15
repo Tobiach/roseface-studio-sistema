@@ -36,6 +36,37 @@ function getSupabaseAdmin() {
 const ESTADOS_VALIDOS = ['reservado', 'recordatorio_enviado', 'completado', 'cancelado'] as const;
 type EstadoTurno = (typeof ESTADOS_VALIDOS)[number];
 
+// Servicios extra cargados al confirmar que la clienta vino (ver
+// ServicioExtra en src/types). Se limpia todo acá: nada del navegador se
+// guarda tal cual. Devuelve null si algo no cierra.
+interface ServicioExtra {
+  nombre: string;
+  precio: number;
+  servicioId?: string | null;
+}
+
+const MAX_EXTRAS = 20;
+const MAX_PRECIO_EXTRA = 5_000_000;
+
+function validarExtras(valor: unknown): ServicioExtra[] | null {
+  if (!Array.isArray(valor) || valor.length > MAX_EXTRAS) return null;
+  const limpios: ServicioExtra[] = [];
+  for (const item of valor) {
+    const { nombre, precio, servicioId } = (item ?? {}) as Partial<ServicioExtra>;
+    const nombreLimpio = typeof nombre === 'string' ? nombre.trim().slice(0, 80) : '';
+    if (!nombreLimpio) return null;
+    if (typeof precio !== 'number' || !Number.isFinite(precio) || precio < 0 || precio > MAX_PRECIO_EXTRA) return null;
+    limpios.push({
+      nombre: nombreLimpio,
+      precio: Math.round(precio),
+      servicioId: typeof servicioId === 'string' && servicioId ? servicioId.slice(0, 64) : null,
+    });
+  }
+  return limpios;
+}
+
+const sumar = (extras: ServicioExtra[]) => extras.reduce((acc, e) => acc + (Number(e.precio) || 0), 0);
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido' });
@@ -48,19 +79,69 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const { turnoId, nuevoEstado, notasInternas } = (req.body ?? {}) as {
+  const { turnoId, nuevoEstado, notasInternas, serviciosExtra } = (req.body ?? {}) as {
     turnoId?: string;
     nuevoEstado?: string;
     notasInternas?: string;
+    serviciosExtra?: unknown;
   };
 
-  if (!turnoId || !nuevoEstado || !ESTADOS_VALIDOS.includes(nuevoEstado as EstadoTurno)) {
+  const traeExtras = serviciosExtra !== undefined;
+  const estadoValido = !!nuevoEstado && ESTADOS_VALIDOS.includes(nuevoEstado as EstadoTurno);
+
+  // Con extras, el estado es opcional (se puede editar el desglose de un turno
+  // ya completado); sin extras, el estado sigue siendo obligatorio como siempre.
+  if (!turnoId || (nuevoEstado !== undefined && !estadoValido) || (!traeExtras && !estadoValido)) {
     res.status(400).json({ ok: false, error: 'Faltan datos o el estado no es válido' });
     return;
   }
 
-  const patch: Record<string, unknown> = { estado: nuevoEstado };
+  const patch: Record<string, unknown> = {};
+  if (estadoValido) patch.estado = nuevoEstado;
   if (notasInternas !== undefined) patch.notas_internas = notasInternas;
+
+  let montoTotalNuevo: number | undefined;
+  let extrasLimpios: ServicioExtra[] | undefined;
+
+  if (traeExtras) {
+    extrasLimpios = validarExtras(serviciosExtra);
+    if (!extrasLimpios) {
+      res.status(400).json({ ok: false, error: 'Los servicios extra no son válidos' });
+      return;
+    }
+
+    // El total lo calcula el servidor a partir de lo que ya tiene el turno —
+    // el navegador nunca manda un monto, solo el desglose de extras. El
+    // total actual ya incluye los extras previos, así que se descuentan para
+    // recuperar el precio base antes de volver a sumar la lista nueva.
+    const { data: turno, error: errLectura } = await supabaseAdmin
+      .from('turnos')
+      .select('estado, monto_total, servicios_extra')
+      .eq('id', turnoId)
+      .maybeSingle();
+    if (errLectura) {
+      console.error('[actualizar-estado-turno] No se pudo leer el turno', turnoId, errLectura);
+      res.status(500).json({
+        ok: false,
+        error: 'No se pudieron leer los extras del turno (¿falta la columna servicios_extra en Supabase?)',
+      });
+      return;
+    }
+    if (!turno) {
+      res.status(404).json({ ok: false, error: 'El turno no existe' });
+      return;
+    }
+    if (turno.estado === 'cancelado') {
+      res.status(400).json({ ok: false, error: 'No se pueden cargar extras a un turno cancelado' });
+      return;
+    }
+
+    const extrasPrevios = Array.isArray(turno.servicios_extra) ? (turno.servicios_extra as ServicioExtra[]) : [];
+    const base = Number(turno.monto_total) - sumar(extrasPrevios);
+    montoTotalNuevo = Math.max(0, base) + sumar(extrasLimpios);
+    patch.monto_total = montoTotalNuevo;
+    patch.servicios_extra = extrasLimpios;
+  }
 
   const { error } = await supabaseAdmin.from('turnos').update(patch).eq('id', turnoId);
   if (error) {
@@ -69,5 +150,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  res.status(200).json({ ok: true });
+  res.status(200).json({ ok: true, montoTotal: montoTotalNuevo, serviciosExtra: extrasLimpios });
 }

@@ -107,6 +107,7 @@ export const AdminComisiones: React.FC = () => {
           <li>
             • Solo se cuentan los turnos marcados como <strong>Completado</strong> dentro de la semana
             seleccionada — un turno reservado o cancelado no suma facturación.
+            Si la clienta se hizo servicios extra en el momento, se cargan al confirmar que vino y suman al total del turno.
           </li>
           <li>
             • <strong>Modelo Porcentaje</strong> (ej. Mili 55%, Sharon 45%): Rose Face cobra el turno
@@ -114,7 +115,7 @@ export const AdminComisiones: React.FC = () => {
             queda para Rose Face.
           </li>
           <li>
-            • <strong>Modelo Alquiler Fijo</strong> (ej. Anye, Cris, Ari):
+            • <strong>Modelo Alquiler Fijo</strong> (ej. Cris, Ari):
             la profesional paga un monto semanal fijo y se queda con el 100% de lo que
             factura directamente — no se le retiene comisión sobre sus turnos.
           </li>

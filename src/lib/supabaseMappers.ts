@@ -25,6 +25,7 @@ export function turnoFromRow(row: any): Turno {
     circuitoPago: row.circuito_pago ?? 'mercado_pago',
     comprobanteTransferenciaUrl: row.comprobante_transferencia_url ?? null,
     aprobadoPorProfesional: row.aprobado_por_profesional ?? false,
+    serviciosExtra: Array.isArray(row.servicios_extra) ? row.servicios_extra : [],
   };
 }
 
