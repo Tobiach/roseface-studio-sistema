@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase, supabaseEnabled } from '../../lib/supabase';
-import { Turno, EstadoTurno } from '../../types';
+import { Turno, EstadoTurno, PlantillaRecordatorio } from '../../types';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -12,8 +12,10 @@ import { CalendarioGrilla } from '../../components/admin/CalendarioGrilla';
 import { PanelServiciosRealizados } from '../../components/admin/PanelServiciosRealizados';
 import { formatCurrency, formatDateReadable, formatDateShort } from '../../lib/formatters';
 import { mensajeRecordatorio, buildWhatsAppUrlPara } from '../../lib/whatsapp';
+import { ventanasDelTurno, esTurnoConSenaPendiente, type VentanaRecordatorio } from '../../lib/recordatorios';
 import { hoyISO, sumarDiasISO, calcularHorariosDisponibles, sumarMinutos } from '../../lib/disponibilidad';
 import { calcularMontoSena } from '../../lib/pricing';
+import { esMarcadaAMano, armarNota } from '../../lib/recurrencia';
 import {
   CalendarDays,
   Clock,
@@ -39,12 +41,6 @@ import {
 // TODO: Fase de integración OAuth — punto de entrada para conectar la API real de
 // Google Calendar (sync bidireccional de turnos). Hoy es solo un indicador visual.
 // function sincronizarConGoogleCalendar(turno: Turno) { ... }
-
-const VENTANAS_RECORDATORIO = [
-  { value: '48h', label: '48 horas antes' },
-  { value: '24h', label: '24 horas antes' },
-  { value: '4h', label: '4 horas antes' },
-] as const;
 
 // Presets de rango a futuro para el filtro de la agenda. "dias: N" = ventana
 // de N días de calendario arrancando hoy (hoy incluido).
@@ -163,6 +159,7 @@ export const AdminAgenda: React.FC = () => {
   const [tmMontoTotal, setTmMontoTotal] = useState<number | ''>('');
   const [tmMontoSena, setTmMontoSena] = useState<number | ''>('');
   const [tmGuardando, setTmGuardando] = useState(false);
+  const [tmRecurrente, setTmRecurrente] = useState(false);
 
   const tmServicio = servicios.find((s) => s.id === tmServicioId);
   const tmServiciosDeLaProfesional = tmProfesionalId
@@ -179,6 +176,7 @@ export const AdminAgenda: React.FC = () => {
     setTmEstado('reservado');
     setTmMontoTotal('');
     setTmMontoSena('');
+    setTmRecurrente(false);
     setModalTurnoManualAbierto(true);
   };
 
@@ -217,6 +215,7 @@ export const AdminAgenda: React.FC = () => {
         notasInternas: 'Turno cargado a mano desde el panel (no vino del sitio público).',
       });
       if (tmEstado === 'completado') await actualizarEstadoTurno(nuevo.id, 'completado');
+      if (tmRecurrente) await marcarClienteRecurrente(nuevo);
       setModalTurnoManualAbierto(false);
     } catch {
       // crearTurno ya avisó con un toast; el modal queda abierto para reintentar.
@@ -236,6 +235,14 @@ export const AdminAgenda: React.FC = () => {
       showToast('❌ No disponible sin conexión a la base.');
       return;
     }
+    // Si esa clienta+servicio ya tenía una nota propia (ej. desde la lista
+    // automática), se conserva detrás de la marca en vez de pisarla.
+    const { data: previo } = await supabase
+      .from('clientas_recurrentes_estado')
+      .select('nota')
+      .eq('clienta_id', turno.clientaId)
+      .eq('servicio_id', turno.servicioId)
+      .maybeSingle();
     const { error } = await supabase.from('clientas_recurrentes_estado').upsert(
       {
         clienta_id: turno.clientaId,
@@ -243,7 +250,7 @@ export const AdminAgenda: React.FC = () => {
         turno_id_ancla: turno.id,
         contactada: false,
         contactada_en: null,
-        nota: 'Marcada a mano desde la Agenda',
+        nota: esMarcadaAMano(previo?.nota) ? previo?.nota : armarNota(previo?.nota ?? '', true),
         silenciada: false,
       },
       { onConflict: 'clienta_id,servicio_id' }
@@ -289,31 +296,34 @@ export const AdminAgenda: React.FC = () => {
       (profesionalFiltroEfectivo === 'todos' || b.profesionalId === profesionalFiltroEfectivo)
   );
 
-  // Cola de recordatorios: por cada turno futuro del filtro, la ventana
-  // (48h/24h/4h) que ya entró en tiempo y todavía no se activó — solo la más
-  // urgente, para que Yosy tenga una lista corta y accionable.
-  const VENTANAS_HORAS: Record<'48h' | '24h' | '4h', number> = { '48h': 48, '24h': 24, '4h': 4 };
-  const recordatoriosPendientes: { turno: Turno; ventana: (typeof VENTANAS_RECORDATORIO)[number]; horasFaltan: number }[] = [];
+  // Cola de recordatorios: por cada turno futuro (de la profesional filtrada, sin
+  // importar el rango de fechas elegido arriba — si no, con "Hoy" nunca se verían
+  // los de 72h/48h), la ventana que ya entró en tiempo y todavía no se activó — solo la más urgente, para que
+  // Yosy tenga una lista corta y accionable. Qué ventanas tiene cada turno
+  // (web: 48/24/4h · manual con seña pendiente: 72/48/24h) lo define
+  // ventanasDelTurno() en lib/recordatorios.ts.
+  const recordatoriosPendientes: { turno: Turno; ventana: VentanaRecordatorio; horasFaltan: number }[] = [];
   if (!esProfesional) {
     const ahoraMs = Date.now();
-    for (const t of turnosFiltrados) {
+    for (const t of turnos) {
+      if (profesionalFiltroEfectivo !== 'todos' && t.profesionalId !== profesionalFiltroEfectivo) continue;
       if (t.estado.startsWith('cancelado') || t.estado === 'completado') continue;
       const inicioMs = new Date(`${t.fecha}T${t.horaInicio}:00`).getTime();
       const horasFaltan = (inicioMs - ahoraMs) / 3_600_000;
       if (horasFaltan <= 0) continue;
-      const dueUnsent = VENTANAS_RECORDATORIO.filter((v) => {
-        if (horasFaltan > VENTANAS_HORAS[v.value]) return false;
+      const dueUnsent = ventanasDelTurno(t).filter((v) => {
+        if (horasFaltan > v.horas) return false;
         const cfg = recordatoriosConfig.find((r) => r.turnoId === t.id && r.plantilla === v.value);
         return !cfg?.activado;
       });
       if (dueUnsent.length === 0) continue;
-      const ventana = dueUnsent.reduce((a, b) => (VENTANAS_HORAS[a.value] <= VENTANAS_HORAS[b.value] ? a : b));
+      const ventana = dueUnsent.reduce((a, b) => (a.horas <= b.horas ? a : b));
       recordatoriosPendientes.push({ turno: t, ventana, horasFaltan });
     }
     recordatoriosPendientes.sort((a, b) => a.horasFaltan - b.horasFaltan);
   }
 
-  const enviarRecordatorio = (turno: Turno, plantilla: '48h' | '24h' | '4h') => {
+  const enviarRecordatorio = (turno: Turno, plantilla: PlantillaRecordatorio) => {
     toggleRecordatorio(turno.id, plantilla, true);
     const clienta = clientas.find((c) => c.id === turno.clientaId);
     if (!clienta) {
@@ -325,6 +335,8 @@ export const AdminAgenda: React.FC = () => {
       servicio: getServicioNombre(turno.servicioId),
       fecha: formatDateReadable(turno.fecha),
       hora: turno.horaInicio,
+      senaPendiente: esTurnoConSenaPendiente(turno),
+      montoSena: turno.montoSena,
     });
     window.open(buildWhatsAppUrlPara(clienta.telefono, mensaje), '_blank');
   };
@@ -587,33 +599,43 @@ export const AdminAgenda: React.FC = () => {
         {/* Main Agenda Timeline (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
           {esRango ? (
-            <div className="space-y-3">
+            <div className="space-y-6">
               <h2 className="text-sm font-bold uppercase tracking-wider text-rf-charcoal">
-                Resumen por día — {formatDateShort(desde)} al {formatDateShort(hasta)}
+                Calendario — {formatDateShort(desde)} al {formatDateShort(hasta)}
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {Object.keys(turnosPorDia).length === 0 ? (
-                  <p className="text-xs text-rf-charcoal col-span-full">Sin turnos en el período.</p>
-                ) : (
-                  Object.entries(turnosPorDia).map(([dia, lista]) => (
-                    <button
-                      key={dia}
-                      onClick={() => {
-                        setDesde(dia);
-                        setHasta(dia);
-                        setPresetActivo('rango');
-                      }}
-                      className="text-left bg-white border border-pink-100 rounded-xl px-3 py-2 hover:border-rf-rose transition-colors cursor-pointer"
-                    >
-                      <span className="block text-[11px] font-bold text-rf-black capitalize">{formatDateReadable(dia)}</span>
-                      <span className="block text-[11px] text-rf-charcoal">{lista.length} turno{lista.length === 1 ? '' : 's'}</span>
-                    </button>
+              {Object.keys(turnosPorDia).length === 0 ? (
+                <p className="text-xs text-rf-charcoal">Sin turnos en el período.</p>
+              ) : (
+                Object.keys(turnosPorDia)
+                  .sort()
+                  .map((dia) => (
+                    <div key={dia} className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-rf-rose-deep capitalize">
+                          {formatDateReadable(dia)} · {turnosPorDia[dia].length} turno{turnosPorDia[dia].length === 1 ? '' : 's'}
+                        </h3>
+                        <button
+                          onClick={() => {
+                            setDesde(dia);
+                            setHasta(dia);
+                            setPresetActivo('rango');
+                          }}
+                          className="text-[11px] font-semibold text-rf-rose-deep hover:underline cursor-pointer"
+                        >
+                          Ver solo este día
+                        </button>
+                      </div>
+                      <CalendarioGrilla
+                        profesionales={profesionalesParaGrilla}
+                        fecha={dia}
+                        turnos={turnos}
+                        bloqueos={bloqueos}
+                        onSeleccionarTurno={setTurnoSeleccionadoModal}
+                        getClientaNombre={getClientaNombre}
+                      />
+                    </div>
                   ))
-                )}
-              </div>
-              <p className="text-[11px] text-rf-charcoal italic">
-                La grilla de disponibilidad por hora se ve al filtrar un solo día (tocá un día de arriba o usá el preset "Hoy").
-              </p>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
@@ -777,8 +799,8 @@ export const AdminAgenda: React.FC = () => {
 
               {recordatoriosPendientes.length === 0 ? (
                 <p className="text-[11px] text-amber-900/90 leading-relaxed">
-                  No hay recordatorios pendientes en el rango filtrado. Se activan por turno
-                  (48h / 24h / 4h antes) y quedan acá hasta que los mandes por WhatsApp.
+                  No hay recordatorios pendientes. Se activan por turno
+                  (72h / 48h / 24h antes para las manuales con seña pendiente; 48h / 24h / 4h para el resto) y quedan acá hasta que los mandes por WhatsApp.
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -1069,7 +1091,7 @@ export const AdminAgenda: React.FC = () => {
               <div className="space-y-2 pt-2 border-t border-pink-100">
                 <label className="text-xs font-bold text-rf-black block">Recordatorios de este turno:</label>
                 <div className="space-y-2">
-                  {VENTANAS_RECORDATORIO.map((v) => {
+                  {ventanasDelTurno(turnoSeleccionadoModal).map((v) => {
                     const config = recordatoriosConfig.find(
                       (r) => r.turnoId === turnoSeleccionadoModal.id && r.plantilla === v.value
                     );
@@ -1080,6 +1102,8 @@ export const AdminAgenda: React.FC = () => {
                       servicio: getServicioNombre(turnoSeleccionadoModal.servicioId),
                       fecha: formatDateReadable(turnoSeleccionadoModal.fecha),
                       hora: turnoSeleccionadoModal.horaInicio,
+                      senaPendiente: esTurnoConSenaPendiente(turnoSeleccionadoModal),
+                      montoSena: turnoSeleccionadoModal.montoSena,
                     });
 
                     const enviarPorWhatsApp = () => {
@@ -1377,6 +1401,21 @@ export const AdminAgenda: React.FC = () => {
                   <option value="completado">Completado (ya vino)</option>
                 </select>
               </div>
+
+              <label className="flex items-start gap-2 rounded-xl bg-rf-cream border border-pink-100 p-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={tmRecurrente}
+                  onChange={(e) => setTmRecurrente(e.target.checked)}
+                  className="mt-0.5 accent-rf-rose-deep"
+                />
+                <span>
+                  <strong className="text-rf-black block">Clienta recurrente</strong>
+                  <span className="text-[11px] text-rf-charcoal">
+                    La suma automáticamente a "Clientas Recurrentes" para este servicio.
+                  </span>
+                </span>
+              </label>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2">

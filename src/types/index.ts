@@ -177,9 +177,11 @@ export interface ClientaEnRiesgo {
 // Recordatorio por turno (Fase 7): Yosy activa cada plantilla
 // individualmente por turno, no hay un selector global. Sigue sin mandar
 // WhatsApp real — solo queda registrado como activado.
+export type PlantillaRecordatorio = '72h' | '48h' | '24h' | '4h';
+
 export interface RecordatorioConfig {
   turnoId: string;
-  plantilla: '48h' | '24h' | '4h';
+  plantilla: PlantillaRecordatorio;
   activado: boolean;
   activadoEn?: string | null;
 }

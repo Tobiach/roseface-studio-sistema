@@ -17,6 +17,8 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { formatDateReadable } from '../../lib/formatters';
 import { mensajeClientaRecurrente, buildWhatsAppUrlPara } from '../../lib/whatsapp';
+import { esMarcadaAMano, notaVisible, armarNota } from '../../lib/recurrencia';
+import { hoyISO } from '../../lib/disponibilidad';
 import { Repeat, MessageCircle, Phone, EyeOff, Eye, CheckCircle2 } from 'lucide-react';
 
 interface EstadoRecurrencia {
@@ -144,12 +146,12 @@ export const AdminClientasRecurrentes: React.FC = () => {
 
     // Marcadas a mano por Yosy desde la Agenda (13/10/2026) — el servicio no
     // tiene ciclo definido, así que nunca entrarían por el camino de arriba.
-    // Se reconocen por la nota fija que pone `marcarClienteRecurrente` en
-    // AdminAgenda.tsx; no duplica si el mismo par clienta+servicio ya entró
+    // Se reconocen por la marca de lib/recurrencia.ts (que pone el modal de
+    // turno y el formulario de turno manual de AdminAgenda.tsx); no duplica si el mismo par clienta+servicio ya entró
     // por el camino automático.
     const yaListados = new Set(resultados.map((r) => `${r.clienta.id}|${r.servicio.id}`));
     for (const estado of estados) {
-      if (estado.nota !== 'Marcada a mano desde la Agenda') continue;
+      if (!esMarcadaAMano(estado.nota)) continue;
       const key = `${estado.clienta_id}|${estado.servicio_id}`;
       if (yaListados.has(key)) continue;
       const turno = turnos.find((t) => String(t.id) === String(estado.turno_id_ancla));
@@ -200,6 +202,18 @@ export const AdminClientasRecurrentes: React.FC = () => {
       t.notasInternas?.includes('vino del link de Clientas Recurrentes') &&
       new Date(t.fechaCreacion) >= haceUnMes
   ).length;
+
+  // "Vino hace X días" (en vez de "atrasada"): cuenta desde el turno que ancla
+  // a la clienta en la lista. Si ese turno todavía no pasó, se dice la fecha.
+  const textoUltimaVisita = (fechaTurno: string) => {
+    const hoy = hoyISO();
+    if (fechaTurno > hoy) return 'Turno por venir';
+    const dias = Math.round(
+      (new Date(`${hoy}T12:00:00`).getTime() - new Date(`${fechaTurno}T12:00:00`).getTime()) / 86_400_000
+    );
+    if (dias === 0) return 'Vino hoy';
+    return dias === 1 ? 'Vino hace 1 día' : `Vino hace ${dias} días`;
+  };
 
   const enviarPorWhatsApp = async (clienta: Clienta, servicio: Servicio, profesional: Profesional | undefined, turno: Turno) => {
     if (!profesional) {
@@ -311,13 +325,13 @@ export const AdminClientasRecurrentes: React.FC = () => {
       ) : (
         <>
           {renderGrupo({
-            titulo: '🔴 Atrasadas',
+            titulo: '🔴 Ya les toca volver',
             items: listaVisible.filter((i) => i.diasParaElCiclo < 0),
             verTodas: verTodasAtrasadas,
             onVerTodas: () => setVerTodasAtrasadas(true),
           })}
           {renderGrupo({
-            titulo: '🟡 Por vencer pronto',
+            titulo: '🟡 Por volver pronto',
             items: listaVisible.filter((i) => i.diasParaElCiclo >= 0),
             verTodas: verTodasPorVencer,
             onVerTodas: () => setVerTodasPorVencer(true),
@@ -355,25 +369,22 @@ export const AdminClientasRecurrentes: React.FC = () => {
           </span>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {visibles.map(({ clienta, servicio, profesional, turno, diasParaElCiclo, contactada, estado, manual }) => {
+          {visibles.map(({ clienta, servicio, profesional, turno, contactada, estado, manual }) => {
             const key = claveEstado(clienta.id, servicio.id);
             return (
               <Card key={key} className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-display font-bold text-base text-rf-black">{clienta.nombre}</span>
-                  {manual ? (
-                    <Badge variant="rose" size="sm">Agregada a mano</Badge>
-                  ) : (
-                    <Badge variant={diasParaElCiclo < 0 ? 'danger' : 'warning'} size="sm">
-                      {diasParaElCiclo >= 0 ? `Faltan ${diasParaElCiclo} días` : `Atrasada ${Math.abs(diasParaElCiclo)} días`}
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    {manual && <Badge variant="rose" size="sm">Agregada a mano</Badge>}
+                    <Badge variant="neutral" size="sm">{textoUltimaVisita(turno.fecha)}</Badge>
+                  </div>
                 </div>
                 <p className="text-xs text-rf-charcoal">
                   {servicio.nombre} con {profesional?.nombre ?? 'su profesional habitual'}
                 </p>
                 <p className="text-[11px] text-gray-400">
-                  Última vez: {formatDateReadable(turno.fecha)}
+                  {turno.fecha > hoyISO() ? 'Turno agendado' : 'Última vez'}: {formatDateReadable(turno.fecha)}
                 </p>
                 <p className="text-[11px] text-gray-400 flex items-center gap-1.5">
                   <Phone className="w-3 h-3" />
@@ -399,7 +410,9 @@ export const AdminClientasRecurrentes: React.FC = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={async () => {
-                          await guardarEstado(clienta.id, servicio.id, { nota: notaBorrador });
+                          await guardarEstado(clienta.id, servicio.id, {
+                            nota: armarNota(notaBorrador, esMarcadaAMano(estado?.nota)),
+                          });
                           setNotaAbierta(null);
                           showToast('📝 Nota guardada');
                         }}
@@ -418,12 +431,12 @@ export const AdminClientasRecurrentes: React.FC = () => {
                 ) : (
                   <button
                     onClick={() => {
-                      setNotaBorrador(estado?.nota ?? '');
+                      setNotaBorrador(notaVisible(estado?.nota));
                       setNotaAbierta(key);
                     }}
                     className="text-[11px] text-sky-700 font-semibold hover:underline cursor-pointer text-left"
                   >
-                    {estado?.nota ? `📝 "${estado.nota}"` : '+ Agregar nota (ej. ya le escribí por fuera)'}
+                    {notaVisible(estado?.nota) ? `📝 "${notaVisible(estado?.nota)}"` : '+ Agregar nota (ej. ya le escribí por fuera)'}
                   </button>
                 )}
 

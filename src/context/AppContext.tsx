@@ -12,6 +12,7 @@ import {
   ServicioExtra,
   BloqueoHorario,
   RecordatorioConfig,
+  PlantillaRecordatorio,
 } from '../types';
 import { mockTurnos } from '../data/mockTurnos';
 import { mockClientas } from '../data/mockClientas';
@@ -60,7 +61,7 @@ interface AppContextType {
   aprobarComprobante: (turnoId: string) => Promise<void>;
   crearBloqueo: (data: Omit<BloqueoHorario, 'id'>) => Promise<void>;
   eliminarBloqueo: (id: string) => Promise<void>;
-  toggleRecordatorio: (turnoId: string, plantilla: '48h' | '24h' | '4h', activar: boolean) => Promise<void>;
+  toggleRecordatorio: (turnoId: string, plantilla: PlantillaRecordatorio, activar: boolean) => Promise<void>;
   guardarHorario: (
     profesionalId: string,
     horarioDisponible: DisponibilidadSemanal,
@@ -529,7 +530,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // real, solo queda registrado.
   const toggleRecordatorio = async (
     turnoId: string,
-    plantilla: '48h' | '24h' | '4h',
+    plantilla: PlantillaRecordatorio,
     activar: boolean
   ): Promise<void> => {
     const activadoEn = activar ? new Date().toISOString() : null;

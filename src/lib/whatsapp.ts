@@ -1,4 +1,7 @@
 // src/lib/whatsapp.ts
+import type { PlantillaRecordatorio } from '../types';
+import { formatCurrency } from './formatters';
+
 const WA_NUMBER = '5491160549387'; // Rose Face Studio — sin +, sin espacios
 
 export const buildWhatsAppUrl = (mensaje: string): string => {
@@ -25,16 +28,38 @@ export const buildWhatsAppUrlPara = (telefono: string, mensaje: string): string 
 const DIRECCION = 'Av. Acoyte 25, piso 5 depto B, Cdad. Autónoma de Buenos Aires';
 
 export function mensajeRecordatorio(
-  plantilla: '48h' | '24h' | '4h',
-  datos: { nombreClienta: string; servicio: string; fecha: string; hora: string }
+  plantilla: PlantillaRecordatorio,
+  datos: {
+    nombreClienta: string;
+    servicio: string;
+    fecha: string;
+    hora: string;
+    // Clienta recurrente / turno manual con la seña todavía sin registrar:
+    // 72h y 48h antes se le pide la seña, 24h antes se confirma la cita.
+    senaPendiente?: boolean;
+    montoSena?: number;
+  }
 ): string {
-  const { nombreClienta, servicio, fecha, hora } = datos;
+  const { nombreClienta, servicio, fecha, hora, senaPendiente, montoSena } = datos;
+
+  if (senaPendiente) {
+    const sena = montoSena && montoSena > 0 ? ` de ${formatCurrency(montoSena)}` : '';
+    switch (plantilla) {
+      case '72h':
+        return `Hola hola ${nombreClienta}! 💗 Te escribo por tu turno en Rose Face Studio: ${servicio} el ${fecha} a las ${hora} hs. Para dejarlo confirmado necesitamos que abones la seña${sena} dentro de las próximas 72 hs. Cualquier duda, seguimos por acá 💕`;
+      case '48h':
+        return `Hola hola ${nombreClienta}! 💗 Te recuerdo lo de tu turno en Rose Face Studio (${servicio} el ${fecha} a las ${hora} hs). En caso de que todavía no hayas abonado la seña${sena}, te pido que lo hagas dentro de las próximas 48 hs para dejarlo confirmado. Si ya la abonaste, ¡ignorá este mensaje, gracias! 🙏`;
+      default:
+        return `Hola hola ${nombreClienta}! 💕 Mañana es tu turno en Rose Face Studio (${servicio} a las ${hora} hs). ¿Me confirmás que podés venir? Te dejo la dirección para que la tengas a mano: ${DIRECCION}.`;
+    }
+  }
+
   switch (plantilla) {
     case '48h':
       return `Hola hola ${nombreClienta}! 💗 Te escribo para confirmar tu turno en Rose Face Studio: ${servicio} el ${fecha} a las ${hora} hs. ¡Te esperamos!`;
     case '24h':
       return `Hola hola ${nombreClienta}! Mañana es tu turno en Rose Face Studio (${servicio} a las ${hora} hs) 💕 Te dejo la dirección para que la tengas a mano: ${DIRECCION}.`;
-    case '4h':
+    default:
       return `Hola hola ${nombreClienta}! En unas horas te esperamos en Rose Face Studio para tu turno de ${servicio} a las ${hora} hs. ¡Nos vemos pronto!`;
   }
 }
