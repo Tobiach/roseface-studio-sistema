@@ -5,7 +5,7 @@
 //
 // Los turnos con la seña ya cobrada (los que entran por el sitio, o los
 // manuales a los que Yosy les registró la seña) solo necesitan recordatorio de
-// turno (48h / 24h / 4h antes). En cambio, un turno manual / de clienta
+// turno (48h / 24h antes; el de 4h se sacó el 16/10/2026). En cambio, un turno manual / de clienta
 // recurrente con la seña pendiente recibe 72h antes el pedido de seña, 48h
 // antes el recordatorio ("si todavía no abonaste") y 24h antes la
 // confirmación de la cita.
@@ -22,7 +22,6 @@ export interface VentanaRecordatorio {
 const VENTANAS_TURNO_PAGO: VentanaRecordatorio[] = [
   { value: '48h', label: '48 horas antes', horas: 48 },
   { value: '24h', label: '24 horas antes', horas: 24 },
-  { value: '4h', label: '4 horas antes', horas: 4 },
 ];
 
 const VENTANAS_SENA_PENDIENTE: VentanaRecordatorio[] = [

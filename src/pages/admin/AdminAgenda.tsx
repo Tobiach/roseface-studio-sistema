@@ -315,7 +315,7 @@ export const AdminAgenda: React.FC = () => {
   // importar el rango de fechas elegido arriba — si no, con "Hoy" nunca se verían
   // los de 72h/48h), la ventana que ya entró en tiempo y todavía no se activó — solo la más urgente, para que
   // Yosy tenga una lista corta y accionable. Qué ventanas tiene cada turno
-  // (web: 48/24/4h · manual con seña pendiente: 72/48/24h) lo define
+  // (seña ya paga: 48/24h · manual con seña pendiente: 72/48/24h) lo define
   // ventanasDelTurno() en lib/recordatorios.ts.
   const recordatoriosPendientes: { turno: Turno; ventana: VentanaRecordatorio; horasFaltan: number }[] = [];
   if (!esProfesional) {
@@ -800,7 +800,7 @@ export const AdminAgenda: React.FC = () => {
               {recordatoriosPendientes.length === 0 ? (
                 <p className="text-[11px] text-amber-900/90 leading-relaxed">
                   No hay recordatorios pendientes. Se activan por turno
-                  (72h / 48h / 24h antes para las manuales con seña pendiente; 48h / 24h / 4h para el resto) y quedan acá hasta que los mandes por WhatsApp.
+                  (72h / 48h / 24h antes para las manuales con seña pendiente; 48h / 24h para el resto) y quedan acá hasta que los mandes por WhatsApp.
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -938,7 +938,7 @@ export const AdminAgenda: React.FC = () => {
                 >
                   <p className="text-rf-charcoal">
                     {estadoSena(turnoSeleccionadoModal) === 'pagada'
-                      ? 'Registraste que esta clienta ya abonó la seña. Recibe solo los recordatorios normales (48h, 24h y 4h antes).'
+                      ? 'Registraste que esta clienta ya abonó la seña. Recibe solo los recordatorios normales (48h y 24h antes).'
                       : 'La seña todavía no está registrada: se le pide por WhatsApp 72h y 48h antes y se le confirma la cita 24h antes.'}
                   </p>
                   <Button
@@ -1462,7 +1462,7 @@ export const AdminAgenda: React.FC = () => {
                   </div>
                   <p className="text-[11px] text-rf-charcoal">
                     {tmSenaAbonada
-                      ? 'Queda con "Seña pagada" y recibe los recordatorios normales (48h, 24h y 4h antes).'
+                      ? 'Queda con "Seña pagada" y recibe los recordatorios normales (48h y 24h antes).'
                       : 'Queda con "Seña pendiente": se le pide la seña por WhatsApp 72h y 48h antes y se le confirma la cita 24h antes.'}
                   </p>
                 </div>

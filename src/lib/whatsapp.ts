@@ -54,14 +54,11 @@ export function mensajeRecordatorio(
     }
   }
 
-  switch (plantilla) {
-    case '48h':
-      return `Hola hola ${nombreClienta}! 💗 Te escribo para confirmar tu turno en Rose Face Studio: ${servicio} el ${fecha} a las ${hora} hs. ¡Te esperamos!`;
-    case '24h':
-      return `Hola hola ${nombreClienta}! Mañana es tu turno en Rose Face Studio (${servicio} a las ${hora} hs) 💕 Te dejo la dirección para que la tengas a mano: ${DIRECCION}.`;
-    default:
-      return `Hola hola ${nombreClienta}! En unas horas te esperamos en Rose Face Studio para tu turno de ${servicio} a las ${hora} hs. ¡Nos vemos pronto!`;
+  // Turno con la seña ya cobrada: solo 48h y 24h antes (el de 4h se sacó el 16/10/2026).
+  if (plantilla === '24h') {
+    return `Hola hola ${nombreClienta}! Mañana es tu turno en Rose Face Studio (${servicio} a las ${hora} hs) 💕 Te dejo la dirección para que la tengas a mano: ${DIRECCION}.`;
   }
+  return `Hola hola ${nombreClienta}! 💗 Te escribo para confirmar tu turno en Rose Face Studio: ${servicio} el ${fecha} a las ${hora} hs. ¡Te esperamos!`;
 }
 
 // Panel "Clientas Recurrentes" (25/9/2026): mensaje con el link personalizado
