@@ -11,8 +11,7 @@ import { RitualTimeline } from '../../components/ui/RitualTimeline';
 import { CalendarioGrilla } from '../../components/admin/CalendarioGrilla';
 import { PanelServiciosRealizados } from '../../components/admin/PanelServiciosRealizados';
 import { formatCurrency, formatDateReadable, formatDateShort } from '../../lib/formatters';
-import { buildWhatsAppUrlPara } from '../../lib/whatsapp';
-import { ventanasDelTurno, estadoSena, estadoRecordatorios, mensajeParaTurno, type VentanaRecordatorio } from '../../lib/recordatorios';
+import { ventanasDelTurno, estadoSena, estadoRecordatorios, mensajeParaTurno, llevaLinkDePago, type VentanaRecordatorio } from '../../lib/recordatorios';
 import { SenaBadge } from '../../components/ui/SenaBadge';
 import { hoyISO, sumarDiasISO, calcularHorariosDisponibles, sumarMinutos, turnoBloqueaHorario, DIAS_SEMANA } from '../../lib/disponibilidad';
 import { calcularMontoSena, descuentoMercadoPago, DESCUENTO_MP_POR_RESERVA } from '../../lib/pricing';
@@ -75,6 +74,7 @@ export const AdminAgenda: React.FC = () => {
     crearTurno,
     buscarOCrearClienta,
     toggleRecordatorio,
+    enviarRecordatorioWhatsApp,
     showToast,
   } = useApp();
   const esProfesional = rolActivo === 'profesional';
@@ -363,15 +363,15 @@ export const AdminAgenda: React.FC = () => {
     recordatoriosPendientes.sort((a, b) => a.horasFaltan - b.horasFaltan);
   }
 
+  // Marca el recordatorio como enviado y abre WhatsApp con el mensaje armado; en los de
+  // seña (72h / 48h) además genera y agrega el link de pago de Mercado Pago de ese turno.
   const enviarRecordatorio = (turno: Turno, plantilla: PlantillaRecordatorio) => {
-    toggleRecordatorio(turno.id, plantilla, true);
     const clienta = clientas.find((c) => c.id === turno.clientaId);
     if (!clienta) {
       showToast('❌ No encontramos el teléfono de la clienta.');
       return;
     }
-    const mensaje = mensajeParaTurno(turno, plantilla, clienta.nombre, getServicioNombre(turno.servicioId));
-    window.open(buildWhatsAppUrlPara(clienta.telefono, mensaje), '_blank');
+    return enviarRecordatorioWhatsApp(turno, plantilla, clienta, getServicioNombre(turno.servicioId));
   };
 
   const getClientaNombre = (id: string) => {
@@ -1208,21 +1208,17 @@ export const AdminAgenda: React.FC = () => {
                     );
                     const activado = config?.activado ?? false;
                     const clienta = clientas.find((c) => c.id === turnoSeleccionadoModal.clientaId);
+                    const conLink = llevaLinkDePago(turnoSeleccionadoModal, v.value);
+                    // Vista previa: el link real se genera recién al enviar.
                     const mensaje = mensajeParaTurno(
                       turnoSeleccionadoModal,
                       v.value,
                       clienta?.nombre ?? 'clienta',
-                      getServicioNombre(turnoSeleccionadoModal.servicioId)
+                      getServicioNombre(turnoSeleccionadoModal.servicioId),
+                      conLink ? '[link de pago]' : undefined
                     );
 
-                    const enviarPorWhatsApp = () => {
-                      toggleRecordatorio(turnoSeleccionadoModal.id, v.value, true);
-                      if (clienta) {
-                        window.open(buildWhatsAppUrlPara(clienta.telefono, mensaje), '_blank');
-                      } else {
-                        showToast('❌ No encontramos el teléfono de la clienta.');
-                      }
-                    };
+                    const enviarPorWhatsApp = () => enviarRecordatorio(turnoSeleccionadoModal, v.value);
 
                     return (
                       <div
@@ -1242,7 +1238,12 @@ export const AdminAgenda: React.FC = () => {
                             </button>
                           )}
                         </div>
-                        <p className="text-[10px] text-rf-charcoal italic line-clamp-2">{mensaje}</p>
+                        <p className="text-[10px] text-rf-charcoal italic line-clamp-3">{mensaje}</p>
+                        {conLink && (
+                          <p className="text-[10px] text-violet-800 font-semibold">
+                            🔗 Al enviarlo se agrega un link de pago de Mercado Pago para la seña de este turno.
+                          </p>
+                        )}
                         <Button variant={activado ? 'outline' : 'primary'} size="sm" fullWidth onClick={enviarPorWhatsApp}>
                           <MessageSquare className="w-3.5 h-3.5" />
                           <span>{activado ? '✓ Activado — reenviar por WhatsApp' : 'Activar y enviar por WhatsApp'}</span>

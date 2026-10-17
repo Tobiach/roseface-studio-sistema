@@ -38,17 +38,20 @@ export function mensajeRecordatorio(
     // 72h y 48h antes se le pide la seña, 24h antes se confirma la cita.
     senaPendiente?: boolean;
     montoSena?: number;
+    // Link de pago de Mercado Pago atado a ese turno (solo en los mensajes de seña de 72h y 48h).
+    linkPago?: string;
   }
 ): string {
-  const { nombreClienta, servicio, fecha, hora, senaPendiente, montoSena } = datos;
+  const { nombreClienta, servicio, fecha, hora, senaPendiente, montoSena, linkPago } = datos;
 
   if (senaPendiente) {
     const sena = montoSena && montoSena > 0 ? ` de ${formatCurrency(montoSena)}` : '';
+    const pagarAca = linkPago ? ` Podés pagarla directo con Mercado Pago desde acá 👉 ${linkPago}` : '';
     switch (plantilla) {
       case '72h':
-        return `Hola hola ${nombreClienta}! 💗 Te escribo por tu turno en Rose Face Studio: ${servicio} el ${fecha} a las ${hora} hs. Para dejarlo confirmado necesitamos que abones la seña${sena} dentro de las próximas 72 hs. Cualquier duda, seguimos por acá 💕`;
+        return `Hola hola ${nombreClienta}! 💗 Te escribo por tu turno en Rose Face Studio: ${servicio} el ${fecha} a las ${hora} hs. Para dejarlo confirmado necesitamos que abones la seña${sena} dentro de las próximas 72 hs.${pagarAca} Cualquier duda, seguimos por acá 💕`;
       case '48h':
-        return `Hola hola ${nombreClienta}! 💗 Te recuerdo lo de tu turno en Rose Face Studio (${servicio} el ${fecha} a las ${hora} hs). En caso de que todavía no hayas abonado la seña${sena}, te pido que lo hagas dentro de las próximas 48 hs para dejarlo confirmado. Si ya la abonaste, ¡ignorá este mensaje, gracias! 🙏`;
+        return `Hola hola ${nombreClienta}! 💗 Te recuerdo lo de tu turno en Rose Face Studio (${servicio} el ${fecha} a las ${hora} hs). En caso de que todavía no hayas abonado la seña${sena}, te pido que lo hagas dentro de las próximas 48 hs para dejarlo confirmado.${pagarAca} Si ya la abonaste, ¡ignorá este mensaje, gracias! 🙏`;
       default:
         return `Hola hola ${nombreClienta}! 💕 Mañana es tu turno en Rose Face Studio (${servicio} a las ${hora} hs). ¿Me confirmás que podés venir? Te dejo la dirección para que la tengas a mano: ${DIRECCION}.`;
     }

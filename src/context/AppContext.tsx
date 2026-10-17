@@ -21,6 +21,8 @@ import { mockServicios } from '../data/mockServicios';
 import { mockBeneficiosVIP, mockClientasEnRiesgo } from '../data/mockFidelizacion';
 import { supabase, supabaseEnabled } from '../lib/supabase';
 import { ordenarServicios } from '../lib/ordenServicios';
+import { llevaLinkDePago, mensajeParaTurno } from '../lib/recordatorios';
+import { buildWhatsAppUrlPara } from '../lib/whatsapp';
 import {
   turnoFromRow,
   turnoToInsertRow,
@@ -61,6 +63,14 @@ interface AppContextType {
   marcarSenaManual: (id: string, abonada: boolean) => Promise<boolean>;
   // true si hay una sesión con token vigente (o no hay base real, donde no hace falta).
   sesionConToken: boolean;
+  // Marca el recordatorio como enviado y abre el WhatsApp de la clienta con el mensaje armado.
+  // En los de seña (72h / 48h) le suma un link de pago de Mercado Pago atado al turno.
+  enviarRecordatorioWhatsApp: (
+    turno: Turno,
+    plantilla: PlantillaRecordatorio,
+    clienta: { nombre: string; telefono: string },
+    servicioNombre: string
+  ) => Promise<void>;
   reprogramarTurno: (id: string, fecha: string, horaInicio: string, horaFin: string) => Promise<void>;
   subirComprobante: (turnoId: string, file: File) => Promise<void>;
   aprobarComprobante: (turnoId: string) => Promise<void>;
@@ -401,13 +411,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
+  // Las acciones que exigen PIN reciente (registrar una seña, generar un link de pago)
+  // piden volver a ingresarlo cuando la sesión no tiene token vigente.
+  const pedirPinDeNuevo = () => {
+    showToast('🔑 Volvé a ingresar tu PIN para seguir (la sesión venció).');
+    setSesionToken(null);
+    abrirPinModal(rolActivo === 'admin' ? 'admin' : 'profesional');
+  };
+
   const marcarSenaManual = async (id: string, abonada: boolean): Promise<boolean> => {
     if (supabaseEnabled && supabase) {
-      const pedirPinDeNuevo = () => {
-        showToast('🔑 Para registrar la seña volvé a ingresar tu PIN (la sesión venció).');
-        setSesionToken(null);
-        abrirPinModal(rolActivo === 'admin' ? 'admin' : 'profesional');
-      };
       if (!sesionToken) {
         pedirPinDeNuevo();
         return false;
@@ -436,6 +449,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTurnos((prev) => prev.map((t) => (t.id === id ? { ...t, aprobadoPorProfesional: abonada } : t)));
     showToast(abonada ? '✓ Seña registrada como pagada' : 'Seña marcada como pendiente');
     return true;
+  };
+
+  interface ResultadoLinkPago {
+    ok: boolean;
+    initPoint?: string;
+    motivo?: 'sesion' | 'no_aplica' | 'error';
+    mensaje: string;
+  }
+
+  // Link de pago de Mercado Pago para la seña de un turno manual que ya existe
+  // (api/mercadopago/crear-link-pago.ts). El monto sale del turno en la base.
+  const crearLinkPago = async (id: string): Promise<ResultadoLinkPago> => {
+    if (!supabaseEnabled) return { ok: false, motivo: 'no_aplica', mensaje: 'No hay conexión con la base' };
+    if (!sesionToken) {
+      pedirPinDeNuevo();
+      return { ok: false, motivo: 'sesion', mensaje: 'Sesión vencida' };
+    }
+    try {
+      const resp = await fetch('/api/mercadopago/crear-link-pago', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sesionToken}` },
+        body: JSON.stringify({ turnoId: id }),
+      });
+      if (resp.status === 401) {
+        pedirPinDeNuevo();
+        return { ok: false, motivo: 'sesion', mensaje: 'Sesión vencida' };
+      }
+      const data = (await resp.json().catch(() => ({}))) as { ok?: boolean; initPoint?: string; motivo?: string; error?: string };
+      if (resp.ok && data.ok && data.initPoint) return { ok: true, initPoint: data.initPoint, mensaje: '' };
+      return {
+        ok: false,
+        motivo: data.motivo === 'no_aplica' ? 'no_aplica' : 'error',
+        mensaje: data.error ?? 'No se pudo crear el link de pago',
+      };
+    } catch {
+      return { ok: false, motivo: 'error', mensaje: 'No se pudo crear el link de pago' };
+    }
+  };
+
+  const enviarRecordatorioWhatsApp = async (
+    turno: Turno,
+    plantilla: PlantillaRecordatorio,
+    clienta: { nombre: string; telefono: string },
+    servicioNombre: string
+  ): Promise<void> => {
+    // La pestaña se abre YA, dentro del click: si se abriera después de esperar el
+    // link, el navegador la bloquearía como ventana emergente.
+    const ventana = window.open('', '_blank');
+    let linkPago: string | undefined;
+    let aviso: string | undefined;
+
+    if (llevaLinkDePago(turno, plantilla)) {
+      const r = await crearLinkPago(turno.id);
+      if (r.ok) {
+        linkPago = r.initPoint;
+      } else if (r.motivo === 'sesion') {
+        // Ya se pidió el PIN: no se manda nada hasta que pueda generarse el link.
+        ventana?.close();
+        return;
+      } else {
+        aviso = `⚠️ ${r.mensaje} — se manda el mensaje sin link de pago.`;
+      }
+    }
+
+    // Se espera el registro del recordatorio para que el aviso de arriba sea el último
+    // toast (si no, el "recordatorio activado" lo pisaría y nadie lo vería).
+    await toggleRecordatorio(turno.id, plantilla, true);
+    if (aviso) showToast(aviso);
+    const url = buildWhatsAppUrlPara(clienta.telefono, mensajeParaTurno(turno, plantilla, clienta.nombre, servicioNombre, linkPago));
+    if (ventana && !ventana.closed) ventana.location.href = url;
+    else window.open(url, '_blank');
   };
 
   // Mover un turno a otra fecha/hora sin perder la seña ni el estado.
@@ -710,6 +794,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         guardarServiciosTurno,
         marcarSenaManual,
         sesionConToken: !supabaseEnabled || !!sesionToken,
+        enviarRecordatorioWhatsApp,
         reprogramarTurno,
         subirComprobante,
         aprobarComprobante,

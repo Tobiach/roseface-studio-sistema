@@ -165,12 +165,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // alcance de este roadmap).
       const { data: turnoActual } = await supabaseAdmin
         .from('turnos')
-        .select('id, profesional_id, clienta_id, servicio_id, fecha, hora_inicio, estado, monto_sena')
+        .select('id, profesional_id, clienta_id, servicio_id, fecha, hora_inicio, estado, monto_sena, origen_reserva')
         .eq('id', turnoId)
         .single();
 
       if (!turnoActual) {
         console.error('[mercadopago/webhook] Turno no encontrado', turnoId);
+        res.status(200).json({ received: true });
+        return;
+      }
+
+      // Turno cargado a mano que Yosy canceló DESPUÉS de mandarle el link de pago
+      // (api/mercadopago/crear-link-pago.ts): si la clienta igual paga, no se
+      // revive ese turno solo — el cobro ya entró y queda avisado para que Yosy
+      // lo resuelva a mano (reembolso o reagendar). El revivir automático de más
+      // abajo es solo para los holds de reservas del sitio que vencieron.
+      if (turnoActual.estado === 'cancelado' && turnoActual.origen_reserva === 'manual') {
+        console.error('[mercadopago/webhook] Pago aprobado de un turno manual ya cancelado — requiere revisión manual', turnoId);
+        await supabaseAdmin
+          .from('turnos')
+          .update({
+            id_transaccion_mp: String(paymentId),
+            notas_internas: '⚠️ La clienta pagó la seña por Mercado Pago DESPUÉS de que este turno se canceló — reembolsar o reagendar con ella.',
+          })
+          .eq('id', turnoId);
+        await avisarleAYosy(
+          `Pago recibido por un turno cancelado — turno ${turnoId}`,
+          `<p>Una clienta pagó la seña por Mercado Pago de un turno que ya estaba cancelado (turno ${escapeHtml(String(turnoId))}, ${escapeHtml(String(turnoActual.fecha))} a las ${escapeHtml(String(turnoActual.hora_inicio))}). El turno NO se reactivó: hay que reembolsarle o reagendarla.</p>`
+        );
         res.status(200).json({ received: true });
         return;
       }

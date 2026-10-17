@@ -96,7 +96,8 @@ export function mensajeParaTurno(
   t: Turno,
   plantilla: PlantillaRecordatorio,
   nombreClienta: string,
-  servicio: string
+  servicio: string,
+  linkPago?: string
 ): string {
   return mensajeRecordatorio(plantilla, {
     nombreClienta,
@@ -105,5 +106,11 @@ export function mensajeParaTurno(
     hora: t.horaInicio,
     senaPendiente: esTurnoConSenaPendiente(t),
     montoSena: t.montoSena,
+    linkPago,
   });
 }
+
+// Los mensajes de seña de 72h y 48h llevan un link de pago de Mercado Pago atado
+// al turno (el de 24h confirma la cita y no pide plata).
+export const llevaLinkDePago = (t: CampoSena, plantilla: PlantillaRecordatorio): boolean =>
+  esTurnoConSenaPendiente(t) && (plantilla === '72h' || plantilla === '48h');

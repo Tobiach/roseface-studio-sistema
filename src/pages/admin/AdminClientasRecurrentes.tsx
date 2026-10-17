@@ -19,7 +19,7 @@ import { formatDateReadable } from '../../lib/formatters';
 import { mensajeClientaRecurrente, buildWhatsAppUrlPara } from '../../lib/whatsapp';
 import { esMarcadaAMano, notaVisible, armarNota } from '../../lib/recurrencia';
 import { hoyISO } from '../../lib/disponibilidad';
-import { estadoRecordatorios, mensajeParaTurno } from '../../lib/recordatorios';
+import { estadoRecordatorios } from '../../lib/recordatorios';
 import { SenaBadge } from '../../components/ui/SenaBadge';
 import { Repeat, MessageCircle, Phone, EyeOff, Eye, CheckCircle2 } from 'lucide-react';
 
@@ -36,7 +36,7 @@ interface EstadoRecurrencia {
 const DIAS_ANTICIPACION_RECURRENCIA = 4;
 
 export const AdminClientasRecurrentes: React.FC = () => {
-  const { rolActivo, turnos, servicios, clientas, profesionales, recordatoriosConfig, toggleRecordatorio, showToast } = useApp();
+  const { rolActivo, turnos, servicios, clientas, profesionales, recordatoriosConfig, enviarRecordatorioWhatsApp, showToast } = useApp();
 
   const [estados, setEstados] = useState<EstadoRecurrencia[]>([]);
   const [tablaDisponible, setTablaDisponible] = useState(true);
@@ -232,11 +232,10 @@ export const AdminClientasRecurrentes: React.FC = () => {
       )
       .sort((a, b) => (a.fecha + a.horaInicio).localeCompare(b.fecha + b.horaInicio))[0];
 
-  const enviarRecordatorio = (proximo: Turno, plantilla: Parameters<typeof toggleRecordatorio>[1], clienta: Clienta, servicio: Servicio) => {
-    toggleRecordatorio(proximo.id, plantilla, true);
-    const mensaje = mensajeParaTurno(proximo, plantilla, clienta.nombre, servicio.nombre);
-    window.open(buildWhatsAppUrlPara(clienta.telefono, mensaje), '_blank');
-  };
+  // Mismo envío que "Yosy Recordatorios": marca el recordatorio como enviado y, en los de
+  // seña (72h / 48h), suma el link de pago de Mercado Pago atado al turno.
+  const enviarRecordatorio = (proximo: Turno, plantilla: Parameters<typeof enviarRecordatorioWhatsApp>[1], clienta: Clienta, servicio: Servicio) =>
+    enviarRecordatorioWhatsApp(proximo, plantilla, clienta, servicio.nombre);
 
   const textoEnHoras = (horas: number) => (horas < 48 ? `${Math.max(1, Math.round(horas))} h` : `${Math.round(horas / 24)} días`);
 
