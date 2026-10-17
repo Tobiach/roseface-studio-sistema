@@ -132,6 +132,12 @@ export interface CierreComisionSemanal {
   semanaInicio: string;
   semanaFin: string;
   turnosRealizados: number;
+  // Suma de lo que pagaron las clientas por los turnos completados.
+  facturacionBruta: number;
+  // Reservas de la semana que se pagaron por Mercado Pago y lo que MP descontó por ellas.
+  reservasMercadoPago: number;
+  descuentoMercadoPago: number;
+  // facturacionBruta - descuentoMercadoPago: la base sobre la que se calculan los porcentajes.
   facturacionTotal: number;
   montoComisionProfesional: number;
   montoParaEstudio: number;

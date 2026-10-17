@@ -7,6 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { StatusPill } from '../../components/ui/StatusPill';
 import { formatCurrency } from '../../lib/formatters';
+import { descuentoMercadoPago } from '../../lib/pricing';
 import { TrendingUp, TrendingDown, BarChart3, Wallet } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -59,6 +60,10 @@ export const AdminCaja: React.FC = () => {
     .reduce((sum, t) => sum + t.montoTotal, 0);
 
   const turnosDelMes = turnosNoCancelados.filter((t) => t.fecha.startsWith(mesActual));
+  // Reservas del mes pagadas por Mercado Pago: MP descuenta una comisión de cada una
+  // (ya sumada al precio del servicio) — ver DESCUENTO_MP_POR_RESERVA en lib/pricing.ts.
+  const reservasMPMes = turnosDelMes.filter((t) => descuentoMercadoPago(t) > 0);
+  const descuentoMPMes = reservasMPMes.reduce((sum, t) => sum + descuentoMercadoPago(t), 0);
   const facturacionMes = turnosDelMes.reduce((sum, t) => sum + t.montoTotal, 0);
 
   const turnosUltimos30Dias = turnos.filter(
@@ -196,7 +201,12 @@ export const AdminCaja: React.FC = () => {
             Facturación {format(hoyDate, 'MMMM', { locale: es })}
           </span>
           <p className="text-2xl font-bold text-rf-black">{formatCurrency(facturacionMes)}</p>
-          <span className="text-[10px] text-rf-charcoal">{turnosDelMes.length} turnos en el mes</span>
+          <span className="text-[10px] text-rf-charcoal block">{turnosDelMes.length} turnos en el mes</span>
+          {descuentoMPMes > 0 && (
+            <span className="text-[10px] text-violet-800 block">
+              Incluye {reservasMPMes.length} reserva{reservasMPMes.length === 1 ? '' : 's'} por Mercado Pago: MP descuenta {formatCurrency(descuentoMPMes)} (se resta en Comisiones antes de repartir)
+            </span>
+          )}
         </Card>
 
         <Card className="space-y-2 border-l-4 border-l-rf-danger">

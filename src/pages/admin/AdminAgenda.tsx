@@ -14,8 +14,8 @@ import { formatCurrency, formatDateReadable, formatDateShort } from '../../lib/f
 import { buildWhatsAppUrlPara } from '../../lib/whatsapp';
 import { ventanasDelTurno, estadoSena, estadoRecordatorios, mensajeParaTurno, type VentanaRecordatorio } from '../../lib/recordatorios';
 import { SenaBadge } from '../../components/ui/SenaBadge';
-import { hoyISO, sumarDiasISO, calcularHorariosDisponibles, sumarMinutos } from '../../lib/disponibilidad';
-import { calcularMontoSena } from '../../lib/pricing';
+import { hoyISO, sumarDiasISO, calcularHorariosDisponibles, sumarMinutos, turnoBloqueaHorario, DIAS_SEMANA } from '../../lib/disponibilidad';
+import { calcularMontoSena, descuentoMercadoPago, DESCUENTO_MP_POR_RESERVA } from '../../lib/pricing';
 import { esMarcadaAMano, armarNota } from '../../lib/recurrencia';
 import {
   CalendarDays,
@@ -170,6 +170,40 @@ export const AdminAgenda: React.FC = () => {
   const tmServiciosDeLaProfesional = tmProfesionalId
     ? servicios.filter((s) => s.profesionalesQueLoRealizan.includes(tmProfesionalId))
     : servicios;
+
+  // Agenda de esa profesional ese día, para avisar ANTES de guardar si el horario
+  // choca. La base solo rechaza turnos que empiezan a la MISMA hora (índice
+  // turno_unico_por_horario); los que se pisan a medias sí se pueden cargar, pero
+  // se avisa porque una profesional no atiende a dos clientas a la vez.
+  const tmTurnosDelDia =
+    tmProfesionalId && tmFecha
+      ? turnos
+          .filter((t) => t.profesionalId === tmProfesionalId && t.fecha === tmFecha && turnoBloqueaHorario(t))
+          .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
+      : [];
+  const tmHoraFin = tmServicio && tmHora ? sumarMinutos(tmHora, tmServicio.duracionMinutos) : null;
+  const tmMismoInicio = tmHora ? tmTurnosDelDia.find((t) => t.horaInicio === tmHora) : undefined;
+  const tmSolapados =
+    tmHora && tmHoraFin
+      ? tmTurnosDelDia.filter((t) => t.id !== tmMismoInicio?.id && t.horaInicio < tmHoraFin && t.horaFin > tmHora)
+      : [];
+  // Horarios fijos de esa profesional ese día que todavía están libres (atajo para elegir hora).
+  const tmFijosLibres =
+    tmProfesionalId && tmFecha
+      ? (
+          profesionales.find((p) => p.id === tmProfesionalId)?.horariosFijos?.[
+            DIAS_SEMANA[new Date(`${tmFecha}T12:00:00`).getDay()]
+          ] ?? []
+        ).filter((h) => !tmTurnosDelDia.some((t) => t.horaInicio === h))
+      : [];
+
+  // Ir a cualquier día del calendario (sin límite hacia adelante ni hacia atrás).
+  const irADia = (dia: string) => {
+    if (!dia) return;
+    setDesde(dia);
+    setHasta(dia);
+    setPresetActivo('dia');
+  };
 
   const abrirTurnoManual = () => {
     setTmNombre('');
@@ -424,6 +458,9 @@ export const AdminAgenda: React.FC = () => {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <SenaBadge turno={turno} />
+            {descuentoMercadoPago(turno) > 0 && (
+              <Badge variant="neutral" size="sm">Mercado Pago · −{formatCurrency(DESCUENTO_MP_POR_RESERVA)}</Badge>
+            )}
             <StatusPill estado={turno.estado} senaAparte />
           </div>
         </div>
@@ -521,6 +558,30 @@ export const AdminAgenda: React.FC = () => {
       <div className="bg-white border border-pink-100 rounded-2xl p-4 space-y-3 shadow-2xs">
         <div className="flex items-center gap-2 flex-wrap">
           <Filter className="w-4 h-4 text-rf-rose-deep shrink-0" />
+          {/* Ir a cualquier día: flechas para ayer/mañana y un selector de fecha sin límite */}
+          <div className="flex items-center gap-1 bg-white border border-pink-200 rounded-lg px-1 py-0.5">
+            <button
+              onClick={() => irADia(sumarDiasISO(desde, -1))}
+              aria-label="Día anterior"
+              className="px-2 py-1 text-rf-rose-deep font-bold cursor-pointer hover:bg-rf-cream rounded-md"
+            >
+              ‹
+            </button>
+            <input
+              type="date"
+              value={esRango ? '' : desde}
+              onChange={(e) => irADia(e.target.value)}
+              aria-label="Ir a un día"
+              className="text-xs font-semibold bg-transparent focus:outline-none cursor-pointer"
+            />
+            <button
+              onClick={() => irADia(sumarDiasISO(desde, 1))}
+              aria-label="Día siguiente"
+              className="px-2 py-1 text-rf-rose-deep font-bold cursor-pointer hover:bg-rf-cream rounded-md"
+            >
+              ›
+            </button>
+          </div>
           {PRESETS_RANGO.map((p) => (
             <button
               key={p.id}
@@ -564,7 +625,6 @@ export const AdminAgenda: React.FC = () => {
               <input
                 type="date"
                 value={desde}
-                min={hoyISO()}
                 onChange={(e) => {
                   const v = e.target.value;
                   setDesde(v);
@@ -920,6 +980,12 @@ export const AdminAgenda: React.FC = () => {
                   <strong>Seña:</strong>
                   <SenaBadge turno={turnoSeleccionadoModal} size="md" />
                 </div>
+              )}
+              {descuentoMercadoPago(turnoSeleccionadoModal) > 0 && (
+                <p className="text-violet-800">
+                  <strong>Mercado Pago:</strong> la seña se pagó por Mercado Pago, que descuenta{' '}
+                  {formatCurrency(DESCUENTO_MP_POR_RESERVA)} de esta reserva (se resta antes de calcular los porcentajes).
+                </p>
               )}
             </div>
 
@@ -1412,6 +1478,60 @@ export const AdminAgenda: React.FC = () => {
                 </div>
               </div>
 
+              {tmProfesionalId && tmFecha && (
+                <div className="space-y-2">
+                  <div className="rounded-xl bg-rf-cream border border-pink-100 p-2.5 text-[11px] text-rf-charcoal space-y-1">
+                    <p className="font-bold text-rf-black">
+                      Agenda de {profesionales.find((p) => p.id === tmProfesionalId)?.nombre} ese día
+                    </p>
+                    {tmTurnosDelDia.length === 0 ? (
+                      <p>Libre todo el día.</p>
+                    ) : (
+                      tmTurnosDelDia.map((t) => (
+                        <p key={t.id}>
+                          {t.horaInicio}–{t.horaFin} · {getClientaNombre(t.clientaId)}
+                        </p>
+                      ))
+                    )}
+                  </div>
+
+                  {tmFijosLibres.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] text-rf-charcoal">Horarios habituales libres:</span>
+                      {tmFijosLibres.map((h) => (
+                        <button
+                          key={h}
+                          type="button"
+                          onClick={() => setTmHora(h)}
+                          className={`px-2 py-1 rounded-lg border text-[11px] font-bold cursor-pointer ${
+                            tmHora === h
+                              ? 'bg-rf-rose-deep text-white border-rf-rose-deep'
+                              : 'bg-white text-rf-black border-pink-200 hover:border-rf-rose'
+                          }`}
+                        >
+                          {h}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {tmMismoInicio && (
+                    <p className="rounded-xl bg-red-50 border border-red-200 text-red-800 p-2.5 text-[11px] font-semibold">
+                      ⛔ A las {tmMismoInicio.horaInicio} ya hay un turno de {getClientaNombre(tmMismoInicio.clientaId)} con esta
+                      profesional. No se pueden cargar dos turnos que empiecen a la misma hora para la misma profesional:
+                      elegí otra hora.
+                    </p>
+                  )}
+                  {!tmMismoInicio && tmSolapados.length > 0 && (
+                    <p className="rounded-xl bg-amber-50 border border-amber-200 text-amber-900 p-2.5 text-[11px] font-semibold">
+                      ⚠️ Este turno se pisa con:{' '}
+                      {tmSolapados.map((t) => `${getClientaNombre(t.clientaId)} (${t.horaInicio}–${t.horaFin})`).join(', ')}. Se
+                      puede cargar igual, pero revisá que la profesional llegue.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-rf-black block mb-1">Monto total</label>
@@ -1503,7 +1623,7 @@ export const AdminAgenda: React.FC = () => {
               <Button
                 variant="primary"
                 size="sm"
-                disabled={tmGuardando || !tmNombre.trim() || !tmProfesionalId || !tmServicioId || !tmFecha || !tmHora}
+                disabled={tmGuardando || !tmNombre.trim() || !tmProfesionalId || !tmServicioId || !tmFecha || !tmHora || !!tmMismoInicio}
                 onClick={handleCrearTurnoManual}
               >
                 <Plus className="w-3.5 h-3.5" />

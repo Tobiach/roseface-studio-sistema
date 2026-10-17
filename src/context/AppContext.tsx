@@ -275,7 +275,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .single();
 
       if (error || !row) {
-        showToast('❌ No se pudo registrar la reserva. Probá de nuevo.');
+        // Antes siempre decía "no se pudo registrar" sin explicar por qué: el
+        // motivo más común es que esa profesional ya tiene un turno que empieza
+        // a la misma hora (la base lo prohíbe: índice turno_unico_por_horario).
+        const motivo = (error as { code?: string; message?: string } | null) ?? {};
+        showToast(
+          motivo.code === '23505' && motivo.message?.includes('turno_unico_por_horario')
+            ? '❌ Esa profesional ya tiene un turno que empieza a esa hora. Elegí otro horario.'
+            : motivo.code === '23503'
+            ? '❌ No se encontró a la clienta de este turno. Probá de nuevo.'
+            : `❌ No se pudo registrar la reserva${motivo.message ? ` (${motivo.message.slice(0, 90)})` : ''}. Probá de nuevo.`
+        );
         throw error ?? new Error('Insert de turno sin datos');
       }
 
@@ -637,6 +647,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setClientas((prev) => [clienta, ...prev]);
         return clienta.id;
       }
+
+      // Antes acá se devolvía 'cli-01' (una clienta demo que ya no existe en la
+      // base) y el turno fallaba después con un error de clave foránea que nadie
+      // entendía. Con base real, si no se pudo crear la clienta se corta y se avisa.
+      showToast(`❌ No se pudo crear a la clienta${error?.message ? ` (${error.message.slice(0, 90)})` : ''}. Probá de nuevo.`);
+      throw error ?? new Error('Insert de clienta sin datos');
     }
 
     return 'cli-01';

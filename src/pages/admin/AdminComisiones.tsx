@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { formatCurrency } from '../../lib/formatters';
 import { hoyISO, sumarDiasISO } from '../../lib/disponibilidad';
+import { DESCUENTO_MP_POR_RESERVA } from '../../lib/pricing';
 import {
   CircleDollarSign,
   Calendar,
@@ -15,6 +16,7 @@ import {
   KeyRound,
   CheckCircle,
   Info,
+  CreditCard,
 } from 'lucide-react';
 
 export const AdminComisiones: React.FC = () => {
@@ -58,6 +60,9 @@ export const AdminComisiones: React.FC = () => {
 
   // Consolidated totals
   const totalFacturacion = cierres.reduce((sum, c) => sum + c.facturacionTotal, 0);
+  const totalBruta = cierres.reduce((sum, c) => sum + c.facturacionBruta, 0);
+  const totalDescuentoMP = cierres.reduce((sum, c) => sum + c.descuentoMercadoPago, 0);
+  const totalReservasMP = cierres.reduce((sum, c) => sum + c.reservasMercadoPago, 0);
   const totalComisionesPagadas = cierres.reduce((sum, c) => sum + c.montoComisionProfesional, 0);
   const totalNetoEstudio = cierres.reduce((sum, c) => sum + c.montoParaEstudio, 0);
 
@@ -92,6 +97,22 @@ export const AdminComisiones: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Aclaración de Mercado Pago — la ven todas (profesionales y dueña): no
+          nombra porcentajes ni lo que se queda el estudio. */}
+      <Card className="bg-violet-50/60 border-violet-200 space-y-1.5">
+        <div className="flex items-center gap-2 text-violet-900 font-bold text-xs uppercase tracking-wider">
+          <CreditCard className="w-4 h-4" />
+          <span>Reservas pagadas por Mercado Pago</span>
+        </div>
+        <p className="text-xs text-violet-950 leading-relaxed">
+          Mercado Pago descuenta <strong>{formatCurrency(DESCUENTO_MP_POR_RESERVA)}</strong> de cada reserva
+          que se paga por su checkout (el precio de esos servicios ya trae esos {formatCurrency(DESCUENTO_MP_POR_RESERVA)} de más).
+          Ese monto se <strong>resta de la facturación antes de calcular los porcentajes</strong>, así el
+          reparto sale justo {esProfesional ? 'para vos y para el estudio' : 'para cada profesional y para el estudio'}. Las
+          reservas por transferencia o cobradas en el estudio no tienen ese descuento.
+        </p>
+      </Card>
 
       {/* Explicación del cálculo — SOLO la dueña. Nombra los % y el modelo de
           cada una (ej. "Mili 55%, Sharon 45%"), así que una profesional no
@@ -131,8 +152,12 @@ export const AdminComisiones: React.FC = () => {
             <span>Facturación Bruta Generada</span>
             <CircleDollarSign className="w-4 h-4 text-rf-rose-deep" />
           </div>
-          <p className="text-2xl font-bold text-rf-black">{formatCurrency(totalFacturacion)}</p>
-          <p className="text-[11px] text-gray-500">Total recaudado por servicios prestados</p>
+          <p className="text-2xl font-bold text-rf-black">{formatCurrency(totalBruta)}</p>
+          <p className="text-[11px] text-gray-500">
+            {totalDescuentoMP > 0
+              ? `− ${formatCurrency(totalDescuentoMP)} de Mercado Pago (${totalReservasMP} reserva${totalReservasMP === 1 ? '' : 's'}) → base de cálculo ${formatCurrency(totalFacturacion)}`
+              : 'Total recaudado por servicios prestados'}
+          </p>
         </Card>
 
         <Card className="bg-gradient-to-br from-amber-50 to-white space-y-2 border border-amber-200">
@@ -216,9 +241,24 @@ export const AdminComisiones: React.FC = () => {
                         {esProfesional ? 'Total de tus turnos:' : 'Facturación Generada:'}
                       </span>
                       <span className="font-semibold text-rf-black">
-                        {formatCurrency(cierre.facturacionTotal)}
+                        {formatCurrency(cierre.facturacionBruta)}
                       </span>
                     </div>
+
+                    {cierre.descuentoMercadoPago > 0 && (
+                      <>
+                        <div className="flex justify-between py-1 border-b border-pink-50 text-violet-800">
+                          <span>
+                            Mercado Pago ({cierre.reservasMercadoPago} reserva{cierre.reservasMercadoPago === 1 ? '' : 's'} × {formatCurrency(DESCUENTO_MP_POR_RESERVA)}):
+                          </span>
+                          <span className="font-semibold">− {formatCurrency(cierre.descuentoMercadoPago)}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-pink-50">
+                          <span className="text-rf-charcoal">Base para el cálculo:</span>
+                          <span className="font-semibold text-rf-black">{formatCurrency(cierre.facturacionTotal)}</span>
+                        </div>
+                      </>
+                    )}
 
                     {esPorcentaje ? (
                       <>
