@@ -10,10 +10,11 @@ import { StatusPill } from '../../components/ui/StatusPill';
 import { RitualTimeline } from '../../components/ui/RitualTimeline';
 import { CalendarioGrilla } from '../../components/admin/CalendarioGrilla';
 import { PanelServiciosRealizados } from '../../components/admin/PanelServiciosRealizados';
+import { PanelEditarTurno } from '../../components/admin/PanelEditarTurno';
 import { formatCurrency, formatDateReadable, formatDateShort } from '../../lib/formatters';
 import { ventanasDelTurno, estadoSena, estadoRecordatorios, mensajeParaTurno, llevaLinkDePago, type VentanaRecordatorio } from '../../lib/recordatorios';
 import { SenaBadge } from '../../components/ui/SenaBadge';
-import { hoyISO, sumarDiasISO, calcularHorariosDisponibles, sumarMinutos, turnoBloqueaHorario, DIAS_SEMANA } from '../../lib/disponibilidad';
+import { hoyISO, sumarDiasISO, sumarMinutos, turnoBloqueaHorario, DIAS_SEMANA } from '../../lib/disponibilidad';
 import { calcularMontoSena, descuentoMercadoPago, DESCUENTO_MP_POR_RESERVA } from '../../lib/pricing';
 import { esMarcadaAMano, armarNota } from '../../lib/recurrencia';
 import {
@@ -67,7 +68,9 @@ export const AdminAgenda: React.FC = () => {
     marcarSenaManual,
     sesionConToken,
     abrirPinModal,
-    reprogramarTurno,
+    editarTurno,
+    cancelarTurno,
+    reactivarTurno,
     aprobarComprobante,
     crearBloqueo,
     eliminarBloqueo,
@@ -131,10 +134,10 @@ export const AdminAgenda: React.FC = () => {
   // vino / editar el desglose de un turno ya completado).
   const [panelServicios, setPanelServicios] = useState<{ turnoId: string; modo: 'confirmar' | 'editar' } | null>(null);
 
-  // Reprogramar turno (desde el modal)
-  const [reprogramando, setReprogramando] = useState(false);
-  const [nuevaFecha, setNuevaFecha] = useState<string>('');
-  const [nuevaHora, setNuevaHora] = useState<string>('');
+  // Editar la reserva (servicio, día, hora…) y cancelarla con motivo, desde el modal
+  const [panelEdicion, setPanelEdicion] = useState<string | null>(null); // id del turno que se está editando
+  const [cancelando, setCancelando] = useState(false);
+  const [motivoCancelacion, setMotivoCancelacion] = useState('');
 
   // Bloqueo manual de horario (Fase 6)
   const [modalBloqueoAbierto, setModalBloqueoAbierto] = useState(false);
@@ -942,7 +945,8 @@ export const AdminAgenda: React.FC = () => {
               <button
                 onClick={() => {
                   setTurnoSeleccionadoModal(null);
-                  setReprogramando(false);
+                  setPanelEdicion(null);
+                  setCancelando(false);
                   setPanelServicios(null);
                 }}
                 aria-label="Cerrar"
@@ -1040,72 +1044,27 @@ export const AdminAgenda: React.FC = () => {
               </Button>
             )}
 
-            {reprogramando ? (
-              (() => {
-                const profReprog = getProfesional(turnoSeleccionadoModal.profesionalId);
-                const servReprog = servicios.find((s) => s.id === turnoSeleccionadoModal.servicioId);
-                const horariosReprog =
-                  profReprog && servReprog && nuevaFecha
-                    ? calcularHorariosDisponibles(profReprog, nuevaFecha, servReprog.duracionMinutos, turnos, bloqueos)
-                    : [];
-                return (
-                  <div className="space-y-3 pt-2 border-t border-pink-100">
-                    <label className="text-xs font-bold text-rf-black block">Reprogramar a:</label>
-                    <input
-                      type="date"
-                      value={nuevaFecha}
-                      min={hoyISO()}
-                      onChange={(e) => {
-                        setNuevaFecha(e.target.value);
-                        setNuevaHora('');
-                      }}
-                      className="w-full px-3 py-2 rounded-xl border border-pink-200 text-xs font-semibold"
-                    />
-                    {nuevaFecha && (
-                      horariosReprog.length === 0 ? (
-                        <p className="text-[11px] text-rf-charcoal bg-rf-cream border border-pink-100 rounded-xl p-2">
-                          {profReprog?.nombre} no tiene horarios libres ese día. Probá otra fecha.
-                        </p>
-                      ) : (
-                        <div className="grid grid-cols-3 gap-2">
-                          {horariosReprog.map((h) => (
-                            <button
-                              key={h}
-                              onClick={() => setNuevaHora(h)}
-                              className={`py-2 rounded-lg text-xs font-bold border cursor-pointer ${
-                                nuevaHora === h
-                                  ? 'bg-rf-rose-deep text-white border-rf-rose-deep'
-                                  : 'bg-white text-rf-black border-pink-200 hover:border-rf-rose'
-                              }`}
-                            >
-                              {h}
-                            </button>
-                          ))}
-                        </div>
-                      )
-                    )}
-                    <div className="flex items-center justify-end gap-2 pt-1">
-                      <Button variant="ghost" size="sm" onClick={() => setReprogramando(false)}>
-                        Cancelar
-                      </Button>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        disabled={!nuevaFecha || !nuevaHora || !servReprog}
-                        onClick={async () => {
-                          if (!servReprog) return;
-                          const horaFin = sumarMinutos(nuevaHora, servReprog.duracionMinutos);
-                          await reprogramarTurno(turnoSeleccionadoModal.id, nuevaFecha, nuevaHora, horaFin);
-                          setReprogramando(false);
-                          setTurnoSeleccionadoModal(null);
-                        }}
-                      >
-                        Confirmar nueva fecha
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })()
+            {panelEdicion === turnoSeleccionadoModal.id ? (
+              <PanelEditarTurno
+                key={turnoSeleccionadoModal.id}
+                turno={turnos.find((t) => t.id === turnoSeleccionadoModal.id) ?? turnoSeleccionadoModal}
+                servicios={servicios}
+                profesionales={profesionales}
+                turnos={turnos}
+                bloqueos={bloqueos}
+                esAdmin={!esProfesional}
+                getClientaNombre={getClientaNombre}
+                onCancelar={() => setPanelEdicion(null)}
+                onGuardar={async (cambios) => {
+                  const r = await editarTurno(turnoSeleccionadoModal.id, cambios);
+                  if (r.ok) {
+                    (r.advertencias ?? []).forEach((a) => showToast(`⚠️ ${a}`));
+                    setPanelEdicion(null);
+                    setTurnoSeleccionadoModal(null);
+                  }
+                  return r.ok;
+                }}
+              />
             ) : panelServicios?.turnoId === turnoSeleccionadoModal.id ? (
               <PanelServiciosRealizados
                 key={`${panelServicios.turnoId}-${panelServicios.modo}`}
@@ -1135,6 +1094,25 @@ export const AdminAgenda: React.FC = () => {
               <label className="text-xs font-bold text-rf-black block">
                 Cambiar Estado del Turno:
               </label>
+              {turnoSeleccionadoModal.estado === 'cancelado' ? (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-red-900 bg-red-50 border border-red-200 rounded-xl p-2">
+                    Este turno está cancelado. Si fue un error o la clienta confirmó de nuevo, podés reactivarlo (si ese horario
+                    sigue libre).
+                  </p>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    fullWidth
+                    onClick={async () => {
+                      if (await reactivarTurno(turnoSeleccionadoModal.id)) setTurnoSeleccionadoModal(null);
+                    }}
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Reactivar turno</span>
+                  </Button>
+                </div>
+              ) : (
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   variant="secondary"
@@ -1167,32 +1145,62 @@ export const AdminAgenda: React.FC = () => {
                   <span>Recordatorio Enviado</span>
                 </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="col-span-2"
-                  onClick={() => {
-                    setNuevaFecha(turnoSeleccionadoModal.fecha);
-                    setNuevaHora('');
-                    setReprogramando(true);
-                  }}
-                >
-                  <CalendarDays className="w-3.5 h-3.5 text-rf-rose-deep" />
-                  <span>Reprogramar turno</span>
-                </Button>
+                {turnoSeleccionadoModal.estado === 'completado' && esProfesional ? (
+                  <p className="col-span-2 text-[11px] text-rf-charcoal bg-rf-cream border border-pink-100 rounded-xl p-2">
+                    Este turno ya está completado: solo Yosy puede editarlo (cambia las comisiones de esa semana).
+                  </p>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="col-span-2"
+                    onClick={() => setPanelEdicion(turnoSeleccionadoModal.id)}
+                  >
+                    <CalendarDays className="w-3.5 h-3.5 text-rf-rose-deep" />
+                    <span>Editar reserva (servicio, día, hora…)</span>
+                  </Button>
+                )}
 
-                <Button
-                  variant="danger"
-                  size="sm"
-                  className="col-span-2"
-                  onClick={() => {
-                    actualizarEstadoTurno(turnoSeleccionadoModal.id, 'cancelado');
-                    setTurnoSeleccionadoModal(null);
-                  }}
-                >
-                  <span>Cancelar turno (seña no reembolsable)</span>
-                </Button>
+                {turnoSeleccionadoModal.estado !== 'completado' &&
+                  (cancelando ? (
+                    <div className="col-span-2 rounded-xl border border-red-200 bg-red-50 p-2.5 space-y-2">
+                      <p className="text-[11px] text-red-900 font-semibold">
+                        ¿Cancelar este turno? La seña no se reembolsa. Queda anotado quién lo canceló.
+                      </p>
+                      <input
+                        type="text"
+                        value={motivoCancelacion}
+                        onChange={(e) => setMotivoCancelacion(e.target.value)}
+                        maxLength={300}
+                        placeholder="Motivo (opcional): ej. la clienta avisó que no puede venir"
+                        className="w-full px-3 py-2 rounded-xl border border-red-200 text-xs bg-white"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => setCancelando(false)}>
+                          No, volver
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={async () => {
+                            if (await cancelarTurno(turnoSeleccionadoModal.id, motivoCancelacion)) {
+                              setMotivoCancelacion('');
+                              setCancelando(false);
+                              setTurnoSeleccionadoModal(null);
+                            }
+                          }}
+                        >
+                          Sí, cancelar turno
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button variant="danger" size="sm" className="col-span-2" onClick={() => setCancelando(true)}>
+                      <span>Cancelar turno (seña no reembolsable)</span>
+                    </Button>
+                  ))}
               </div>
+              )}
             </div>
             )}
 
@@ -1261,7 +1269,8 @@ export const AdminAgenda: React.FC = () => {
                 size="sm"
                 onClick={() => {
                   setTurnoSeleccionadoModal(null);
-                  setReprogramando(false);
+                  setPanelEdicion(null);
+                  setCancelando(false);
                   setPanelServicios(null);
                 }}
               >

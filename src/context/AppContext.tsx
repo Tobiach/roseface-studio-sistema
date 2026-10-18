@@ -71,7 +71,12 @@ interface AppContextType {
     clienta: { nombre: string; telefono: string },
     servicioNombre: string
   ) => Promise<void>;
-  reprogramarTurno: (id: string, fecha: string, horaInicio: string, horaFin: string) => Promise<void>;
+  // Editar una reserva ya hecha (servicio, día, hora, profesional, precio), cancelarla con
+  // motivo o reactivarla. Todo pasa por api/editar-turno.ts (exige PIN reciente) y el
+  // servidor recalcula el total. Devuelven true si se guardó.
+  editarTurno: (id: string, cambios: CambiosTurno) => Promise<{ ok: boolean; resumen?: string[]; advertencias?: string[] }>;
+  cancelarTurno: (id: string, motivo?: string) => Promise<boolean>;
+  reactivarTurno: (id: string) => Promise<boolean>;
   subirComprobante: (turnoId: string, file: File) => Promise<void>;
   aprobarComprobante: (turnoId: string) => Promise<void>;
   crearBloqueo: (data: Omit<BloqueoHorario, 'id'>) => Promise<void>;
@@ -92,6 +97,18 @@ interface AppContextType {
   cerrarPinModal: () => void;
   verificarPin: (pin: string) => Promise<boolean>;
   cambiarUsuario: () => void;
+}
+
+// Lo que se puede cambiar de una reserva (api/editar-turno.ts). Los montos solo los acepta Yosy.
+export interface CambiosTurno {
+  servicioId?: string;
+  profesionalId?: string;
+  fecha?: string;
+  horaInicio?: string;
+  horaFin?: string;
+  montoTotal?: number;
+  montoSena?: number;
+  nota?: string;
 }
 
 const CLAVE_ACCESO = 'roseface_acceso';
@@ -522,22 +539,72 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     else window.open(url, '_blank');
   };
 
-  // Mover un turno a otra fecha/hora sin perder la seña ni el estado.
-  const reprogramarTurno = async (id: string, fecha: string, horaInicio: string, horaFin: string) => {
-    if (supabaseEnabled && supabase) {
-      const { error } = await supabase
-        .from('turnos')
-        .update({ fecha, hora_inicio: horaInicio, hora_fin: horaFin })
-        .eq('id', id);
-      if (error) {
-        showToast('❌ No se pudo reprogramar el turno.');
-        return;
-      }
+  interface RespuestaEdicion {
+    ok: boolean;
+    turno?: Record<string, unknown>;
+    resumen?: string[];
+    advertencias?: string[];
+    error?: string;
+  }
+
+  // Llamada común a api/editar-turno.ts: exige PIN reciente y devuelve la fila ya guardada,
+  // con la que se actualiza el estado de la app (calendario, agenda, caja y comisiones
+  // leen de ahí, así que se reflejan solos).
+  const llamarEdicion = async (
+    id: string,
+    cuerpo: Record<string, unknown>,
+    cambioDeHorario = false
+  ): Promise<RespuestaEdicion> => {
+    if (!supabaseEnabled || !supabase) {
+      showToast('❌ Editar reservas no está disponible sin conexión a la base.');
+      return { ok: false };
     }
-    setTurnos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, fecha, horaInicio, horaFin } : t))
-    );
-    showToast('✓ Turno reprogramado');
+    if (!sesionToken) {
+      pedirPinDeNuevo();
+      return { ok: false };
+    }
+    try {
+      const resp = await fetch('/api/editar-turno', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sesionToken}` },
+        body: JSON.stringify({ turnoId: id, ...cuerpo }),
+      });
+      if (resp.status === 401) {
+        pedirPinDeNuevo();
+        return { ok: false };
+      }
+      const data = (await resp.json().catch(() => ({}))) as RespuestaEdicion;
+      if (!resp.ok || !data.ok || !data.turno) {
+        showToast(`❌ ${data.error ?? 'No se pudo guardar el cambio.'}`);
+        return { ok: false };
+      }
+      const actualizado = turnoFromRow(data.turno);
+      setTurnos((prev) => prev.map((t) => (t.id === id ? actualizado : t)));
+      // Los recordatorios ya mandados eran para el día/hora anterior (el servidor los reinicia).
+      if (cambioDeHorario) setRecordatoriosConfig((prev) => prev.filter((r) => r.turnoId !== id));
+      return data;
+    } catch {
+      showToast('❌ No se pudo guardar el cambio.');
+      return { ok: false };
+    }
+  };
+
+  const editarTurno = async (id: string, cambios: CambiosTurno) => {
+    const r = await llamarEdicion(id, { accion: 'editar', ...cambios }, cambios.fecha !== undefined || cambios.horaInicio !== undefined);
+    if (r.ok) showToast('✓ Reserva actualizada');
+    return { ok: r.ok, resumen: r.resumen, advertencias: r.advertencias };
+  };
+
+  const cancelarTurno = async (id: string, motivo?: string) => {
+    const r = await llamarEdicion(id, { accion: 'cancelar', motivo });
+    if (r.ok) showToast('Turno cancelado (la seña no se reembolsa)');
+    return r.ok;
+  };
+
+  const reactivarTurno = async (id: string) => {
+    const r = await llamarEdicion(id, { accion: 'reactivar' });
+    if (r.ok) showToast('✓ Turno reactivado');
+    return r.ok;
   };
 
   // Circuito de transferencia (Fase 5): la clienta sube su comprobante
@@ -795,7 +862,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         marcarSenaManual,
         sesionConToken: !supabaseEnabled || !!sesionToken,
         enviarRecordatorioWhatsApp,
-        reprogramarTurno,
+        editarTurno,
+        cancelarTurno,
+        reactivarTurno,
         subirComprobante,
         aprobarComprobante,
         crearBloqueo,

@@ -67,6 +67,22 @@ Auditoría hecha el 26/9/2026, con evidencia real corrida contra producción
 (no supuestos). Este doc es la fuente de verdad de qué falta en seguridad —
 mismo criterio que `PENDIENTE_ONBOARDING.md` para los datos de Yosy.
 
+## Estado del "Paso 3" al 17/10/2026 — endpoints con token de sesión
+
+`api/verificar-pin.ts` ahora devuelve un token firmado (HMAC, 12 hs). Lo exigen:
+`api/marcar-sena-manual.ts`, `api/mercadopago/crear-link-pago.ts` y `api/editar-turno.ts`
+(editar servicio/día/hora/profesional/precio, cancelar con motivo, reactivar; una
+profesional solo toca su agenda, y solo Yosy cambia profesional, precio o turnos completados).
+
+**Todavía SIN token** (riesgo aceptado hasta decidir el resto del Paso 3):
+- `api/actualizar-estado-turno.ts` (completar, "recordatorio enviado", servicios extra).
+- INSERT de `turnos` (solo 'reservado') y `clientas`, y escrituras de `bloqueos_horario` / `recordatorios_config`.
+- UPDATE de `turnos` con la clave pública: se puede cerrar con
+  `docs/sql/2026-10-17_revocar_update_turnos_anon.sql` (ya nada legítimo lo usa).
+- Lectura completa de `clientas`/`profesionales`/`turnos`.
+
+---
+
 ## 🔴 Hallazgo crítico — RLS abierto de par en par
 
 Usando el `anon key` real (el mismo que viaja público en el bundle del
