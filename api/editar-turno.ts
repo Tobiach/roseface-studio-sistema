@@ -2,17 +2,20 @@
 //
 // Editar una reserva ya hecha (17/10/2026): cambiar servicio (y con eso el
 // total que se factura), día, hora, profesional (solo Yosy), precio/seña (solo
-// Yosy), cancelar con motivo y reactivar un turno cancelado. Lo usan Yosy y las
-// profesionales desde la Agenda.
+// Yosy), cancelar con motivo y reactivar un turno cancelado. Además (18/10/2026):
+// deshacer un "Vino" marcado por error (reabrir) y corregir los datos de la clienta
+// del turno (nombre, teléfono, email). Lo usan Yosy y las profesionales desde la Agenda.
 //
 // Como acá se toca plata (monto_total decide las comisiones), TODO pasa por el
 // servidor y exige el token de sesión de api/verificar-pin.ts. El navegador
 // manda qué quiere cambiar, nunca el total: el servidor lo recalcula leyendo el
 // precio del servicio en Supabase. Permisos:
 //   - Yosy (admin): cualquier turno, y es la única que puede cambiar la
-//     profesional, corregir el precio/seña a mano o tocar un turno ya completado.
+//     profesional, corregir el precio/seña a mano, tocar un turno ya completado o
+//     deshacer el "Vino" de un turno de otro día.
 //   - Profesional: solo turnos de su agenda, no completados, y sin cambiar
-//     la profesional ni el precio a mano.
+//     la profesional ni el precio a mano; puede deshacer un "Vino" solo si el turno
+//     es de hoy (el error de tipeo del momento) y corregir los datos de sus clientas.
 // Cada cambio deja una línea en notas_internas (quién, cuándo, qué cambió) y, si
 // lo hizo una profesional, le avisa a Yosy por mail.
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -124,9 +127,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     montoSena?: number;
     nota?: string;
     motivo?: string;
+    cliente?: { nombre?: unknown; telefono?: unknown; email?: unknown };
   };
   const { turnoId, accion } = body;
-  if (!turnoId || (accion !== 'editar' && accion !== 'cancelar' && accion !== 'reactivar')) {
+  if (!turnoId || !['editar', 'cancelar', 'reactivar', 'reabrir', 'clienta'].includes(accion ?? '')) {
     res.status(400).json({ ok: false, error: 'Faltan datos o la acción no es válida' });
     return;
   }
@@ -153,6 +157,127 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const previo = turno.notas_internas ? `${turno.notas_internas}\n` : '';
     return `${previo}[${sello} · ${quien}] ${linea}`.slice(-MAX_NOTAS);
   };
+
+  // ---------- REABRIR (deshacer un "Vino" marcado por error)
+  if (accion === 'reabrir') {
+    if (turno.estado !== 'completado') {
+      res.status(400).json({ ok: false, error: 'Ese turno no está completado' });
+      return;
+    }
+    // Una profesional solo deshace el turno de HOY (el toque equivocado del momento): deshacer
+    // uno viejo cambia las comisiones de una semana que puede estar liquidada, eso es de Yosy.
+    if (!esAdmin && turno.fecha !== ahoraArg.slice(0, 10)) {
+      res.status(403).json({ ok: false, error: 'Solo Yosy puede deshacer un turno de otro día (cambia las comisiones de esa semana)' });
+      return;
+    }
+    // Vuelve a "seña confirmada" si el pago ya estaba verificado (turno del sitio, Mercado Pago o seña
+    // registrada); si no, vuelve a "reservado" y la seña sigue el criterio de siempre.
+    const conPago = turno.origen_reserva === 'web' || turno.aprobado_por_profesional || turno.id_transaccion_mp;
+    const { data: fila, error } = await supabaseAdmin
+      .from('turnos')
+      .update({
+        estado: conPago ? 'sena_confirmada' : 'reservado',
+        notas_internas: agregarAlRegistro('Se deshizo el "Vino": el turno volvió a pendiente'),
+      })
+      .eq('id', turnoId)
+      .select('*')
+      .single();
+    if (error || !fila) {
+      console.error('[editar-turno] Error reabriendo', turnoId, error);
+      res.status(500).json({ ok: false, error: 'No se pudo deshacer' });
+      return;
+    }
+    if (!esAdmin) {
+      await avisarleAYosy(
+        `${quien} deshizo un "Vino" — ${fila.fecha}`,
+        `<p><strong>${escapeHtml(quien)}</strong> deshizo el "Vino" de un turno (${escapeHtml(String(fila.fecha))} a las ${escapeHtml(hhmm(fila.hora_inicio))}): vuelve a pendiente y deja de sumar a las comisiones hasta que se marque de nuevo.</p>`
+      );
+    }
+    res.status(200).json({ ok: true, turno: fila });
+    return;
+  }
+
+  // ---------- CLIENTA (corregir nombre / teléfono / email desde el turno)
+  if (accion === 'clienta') {
+    const datos = body.cliente ?? {};
+    const { data: clienta } = await supabaseAdmin.from('clientas').select('*').eq('id', turno.clienta_id).maybeSingle();
+    if (!clienta) {
+      res.status(404).json({ ok: false, error: 'No se encontró a la clienta de este turno' });
+      return;
+    }
+    const patch: Fila = {};
+    const cambios: string[] = [];
+
+    if (datos.nombre !== undefined) {
+      const nombre = typeof datos.nombre === 'string' ? datos.nombre.trim().replace(/\s+/g, ' ') : '';
+      if (nombre.length < 2 || nombre.length > 80) {
+        res.status(400).json({ ok: false, error: 'El nombre tiene que tener entre 2 y 80 caracteres' });
+        return;
+      }
+      if (nombre !== clienta.nombre) {
+        patch.nombre = nombre;
+        cambios.push(`nombre ${clienta.nombre} → ${nombre}`);
+      }
+    }
+    if (datos.telefono !== undefined) {
+      const tel = typeof datos.telefono === 'string' ? datos.telefono.trim() : '';
+      const digitos = tel.replace(/\D/g, '').length;
+      // Vaciar el teléfono solo lo hace Yosy; si hay uno, tiene que parecer un teléfono.
+      const valido = tel === '' ? esAdmin : /^[0-9+()\-\s.]+$/.test(tel) && digitos >= 8 && digitos <= 15;
+      if (!valido) {
+        res.status(400).json({ ok: false, error: 'El teléfono no es válido (8 a 15 números, con o sin código de área)' });
+        return;
+      }
+      if (tel !== (clienta.telefono ?? '')) {
+        patch.telefono = tel;
+        cambios.push('teléfono actualizado');
+      }
+    }
+    if (datos.email !== undefined) {
+      const mail = typeof datos.email === 'string' ? datos.email.trim() : '';
+      if (mail !== '' && (mail.length > 120 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail))) {
+        res.status(400).json({ ok: false, error: 'El mail no es válido' });
+        return;
+      }
+      if (mail !== (clienta.email ?? '')) {
+        patch.email = mail === '' ? null : mail;
+        cambios.push('mail actualizado');
+      }
+    }
+    if (Object.keys(patch).length === 0) {
+      res.status(400).json({ ok: false, error: 'No hay nada para cambiar' });
+      return;
+    }
+
+    // Aviso (no bloquea): otra clienta ya tiene ese mismo teléfono.
+    const advertencias: string[] = [];
+    if (patch.telefono) {
+      const { data: repetidas } = await supabaseAdmin.from('clientas').select('id, nombre').eq('telefono', patch.telefono).neq('id', clienta.id);
+      if (repetidas && repetidas.length > 0) {
+        advertencias.push(`Ese teléfono ya figura en otra clienta: ${repetidas.map((r) => r.nombre).join(', ')}.`);
+      }
+    }
+
+    const { data: fila, error } = await supabaseAdmin.from('clientas').update(patch).eq('id', clienta.id).select('*').single();
+    if (error || !fila) {
+      console.error('[editar-turno] Error editando clienta', clienta.id, error);
+      res.status(500).json({ ok: false, error: 'No se pudieron guardar los datos de la clienta' });
+      return;
+    }
+    // Queda anotado en este turno (sin los números, que son datos personales).
+    await supabaseAdmin
+      .from('turnos')
+      .update({ notas_internas: agregarAlRegistro(`Corrigió datos de la clienta: ${cambios.join('; ')}`) })
+      .eq('id', turnoId);
+    if (!esAdmin) {
+      await avisarleAYosy(
+        `${quien} corrigió datos de una clienta`,
+        `<p><strong>${escapeHtml(quien)}</strong> corrigió datos de <strong>${escapeHtml(String(fila.nombre))}</strong>: ${escapeHtml(cambios.join('; '))}.</p>`
+      );
+    }
+    res.status(200).json({ ok: true, clienta: fila, resumen: cambios, advertencias });
+    return;
+  }
 
   // ---------- CANCELAR
   if (accion === 'cancelar') {

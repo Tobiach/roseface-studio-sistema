@@ -12,9 +12,39 @@ export const buildWhatsAppUrl = (mensaje: string): string => {
 // distinto del de arriba, que siempre apunta al número del estudio.
 // wa.me necesita solo dígitos con código de país; los teléfonos cargados
 // vienen con formato libre ("+54 9 11 4589-1234"), así que se limpia acá.
+// wa.me solo entiende el formato internacional (código de país, sin ceros ni signos). Los
+// teléfonos del sistema se cargan como los escribe la gente ("11 2769-6736", "011 15 2769
+// 6736", "+54 9 11 …"), así que se pasan a 549 + área + número antes de armar el link: con
+// un número de 10 dígitos sin el 549, WhatsApp lo toma como de otro país y no abre el chat.
+// Los números que no parecen argentinos se dejan como vienen.
+export function normalizarTelefonoWhatsApp(telefono: string): string {
+  let d = telefono.replace(/\D/g, '');
+  if (d.startsWith('00')) d = d.slice(2); // 0054… -> 54…
+
+  if (d.startsWith('54')) {
+    // Celulares argentinos: 54 + 9 + área + número. Si falta el 9, se agrega.
+    if (d.length === 12 && d[2] !== '9') d = `549${d.slice(2)}`;
+    return d;
+  }
+  if (d.length === 11 && d.startsWith('9')) return `54${d}`; // 9 + área + número
+
+  d = d.replace(/^0+/, ''); // prefijo troncal: 011, 0221…
+  // "15" de celular: 11 15 xxxx xxxx (12 dígitos) o 15 xxxx xxxx (10, AMBA sin código de área).
+  if (d.length === 10 && d.startsWith('15')) {
+    d = `11${d.slice(2)}`;
+  } else if (d.length === 12) {
+    for (const area of [2, 3, 4]) {
+      if (d.slice(area, area + 2) === '15') {
+        d = d.slice(0, area) + d.slice(area + 2);
+        break;
+      }
+    }
+  }
+  return d.length === 10 ? `549${d}` : d;
+}
+
 export const buildWhatsAppUrlPara = (telefono: string, mensaje: string): string => {
-  const soloDigitos = telefono.replace(/[^\d]/g, '');
-  return `https://wa.me/${soloDigitos}?text=${encodeURIComponent(mensaje)}`;
+  return `https://wa.me/${normalizarTelefonoWhatsApp(telefono)}?text=${encodeURIComponent(mensaje)}`;
 };
 
 // Mensajes predeterminados para los recordatorios por turno (Fase 7). Cada

@@ -77,6 +77,13 @@ interface AppContextType {
   editarTurno: (id: string, cambios: CambiosTurno) => Promise<{ ok: boolean; resumen?: string[]; advertencias?: string[] }>;
   cancelarTurno: (id: string, motivo?: string) => Promise<boolean>;
   reactivarTurno: (id: string) => Promise<boolean>;
+  // Deshace un "Vino" marcado por error: el turno vuelve a pendiente y deja de sumar a las comisiones.
+  reabrirTurno: (id: string) => Promise<boolean>;
+  // Corrige nombre / teléfono / mail de la clienta de ese turno (la lista de clientas se actualiza sola).
+  editarClienta: (
+    turnoId: string,
+    datos: DatosClienta
+  ) => Promise<{ ok: boolean; advertencias?: string[] }>;
   subirComprobante: (turnoId: string, file: File) => Promise<void>;
   aprobarComprobante: (turnoId: string) => Promise<void>;
   crearBloqueo: (data: Omit<BloqueoHorario, 'id'>) => Promise<void>;
@@ -97,6 +104,13 @@ interface AppContextType {
   cerrarPinModal: () => void;
   verificarPin: (pin: string) => Promise<boolean>;
   cambiarUsuario: () => void;
+}
+
+// Datos de contacto que se pueden corregir desde un turno (api/editar-turno.ts, acción "clienta").
+export interface DatosClienta {
+  nombre?: string;
+  telefono?: string;
+  email?: string;
 }
 
 // Lo que se puede cambiar de una reserva (api/editar-turno.ts). Los montos solo los acepta Yosy.
@@ -511,6 +525,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     clienta: { nombre: string; telefono: string },
     servicioNombre: string
   ): Promise<void> => {
+    // Sin teléfono no hay a quién mandarle el mensaje (wa.me quedaría vacío).
+    if (!clienta.telefono.replace(/\D/g, '')) {
+      showToast('📵 Esta clienta no tiene teléfono cargado: tocá "Editar datos" en el turno para agregarlo.');
+      return;
+    }
     // La pestaña se abre YA, dentro del click: si se abriera después de esperar el
     // link, el navegador la bloquearía como ventana emergente.
     const ventana = window.open('', '_blank');
@@ -542,6 +561,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   interface RespuestaEdicion {
     ok: boolean;
     turno?: Record<string, unknown>;
+    clienta?: Record<string, unknown>;
     resumen?: string[];
     advertencias?: string[];
     error?: string;
@@ -574,12 +594,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { ok: false };
       }
       const data = (await resp.json().catch(() => ({}))) as RespuestaEdicion;
-      if (!resp.ok || !data.ok || !data.turno) {
+      if (!resp.ok || !data.ok || (!data.turno && !data.clienta)) {
         showToast(`❌ ${data.error ?? 'No se pudo guardar el cambio.'}`);
         return { ok: false };
       }
-      const actualizado = turnoFromRow(data.turno);
-      setTurnos((prev) => prev.map((t) => (t.id === id ? actualizado : t)));
+      if (data.turno) {
+        const actualizado = turnoFromRow(data.turno);
+        setTurnos((prev) => prev.map((t) => (t.id === id ? actualizado : t)));
+      }
+      if (data.clienta) {
+        const actualizada = clientaFromRow(data.clienta);
+        setClientas((prev) => prev.map((c) => (c.id === actualizada.id ? actualizada : c)));
+      }
       // Los recordatorios ya mandados eran para el día/hora anterior (el servidor los reinicia).
       if (cambioDeHorario) setRecordatoriosConfig((prev) => prev.filter((r) => r.turnoId !== id));
       return data;
@@ -605,6 +631,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const r = await llamarEdicion(id, { accion: 'reactivar' });
     if (r.ok) showToast('✓ Turno reactivado');
     return r.ok;
+  };
+
+  const reabrirTurno = async (id: string) => {
+    const r = await llamarEdicion(id, { accion: 'reabrir' });
+    if (r.ok) showToast('↩️ Listo: el turno volvió a pendiente y ya no suma a las comisiones');
+    return r.ok;
+  };
+
+  const editarClienta = async (turnoId: string, datos: DatosClienta) => {
+    const r = await llamarEdicion(turnoId, { accion: 'clienta', cliente: datos });
+    if (r.ok) {
+      showToast('✓ Datos de la clienta actualizados');
+      (r.advertencias ?? []).forEach((a) => showToast(`⚠️ ${a}`));
+    }
+    return { ok: r.ok, advertencias: r.advertencias };
   };
 
   // Circuito de transferencia (Fase 5): la clienta sube su comprobante
@@ -865,6 +906,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         editarTurno,
         cancelarTurno,
         reactivarTurno,
+        reabrirTurno,
+        editarClienta,
         subirComprobante,
         aprobarComprobante,
         crearBloqueo,

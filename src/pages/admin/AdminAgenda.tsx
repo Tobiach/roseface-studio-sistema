@@ -11,6 +11,7 @@ import { RitualTimeline } from '../../components/ui/RitualTimeline';
 import { CalendarioGrilla } from '../../components/admin/CalendarioGrilla';
 import { PanelServiciosRealizados } from '../../components/admin/PanelServiciosRealizados';
 import { PanelEditarTurno } from '../../components/admin/PanelEditarTurno';
+import { PanelEditarClienta } from '../../components/admin/PanelEditarClienta';
 import { formatCurrency, formatDateReadable, formatDateShort } from '../../lib/formatters';
 import { ventanasDelTurno, estadoSena, estadoRecordatorios, mensajeParaTurno, llevaLinkDePago, type VentanaRecordatorio } from '../../lib/recordatorios';
 import { SenaBadge } from '../../components/ui/SenaBadge';
@@ -71,6 +72,8 @@ export const AdminAgenda: React.FC = () => {
     editarTurno,
     cancelarTurno,
     reactivarTurno,
+    reabrirTurno,
+    editarClienta,
     aprobarComprobante,
     crearBloqueo,
     eliminarBloqueo,
@@ -138,6 +141,8 @@ export const AdminAgenda: React.FC = () => {
   const [panelEdicion, setPanelEdicion] = useState<string | null>(null); // id del turno que se está editando
   const [cancelando, setCancelando] = useState(false);
   const [motivoCancelacion, setMotivoCancelacion] = useState('');
+  const [deshaciendo, setDeshaciendo] = useState(false); // confirmación de "deshacer Vino"
+  const [editandoClienta, setEditandoClienta] = useState(false);
 
   // Bloqueo manual de horario (Fase 6)
   const [modalBloqueoAbierto, setModalBloqueoAbierto] = useState(false);
@@ -947,6 +952,8 @@ export const AdminAgenda: React.FC = () => {
                   setTurnoSeleccionadoModal(null);
                   setPanelEdicion(null);
                   setCancelando(false);
+                  setDeshaciendo(false);
+                  setEditandoClienta(false);
                   setPanelServicios(null);
                 }}
                 aria-label="Cerrar"
@@ -957,6 +964,40 @@ export const AdminAgenda: React.FC = () => {
             </div>
 
             <div className="space-y-3 text-xs">
+              {(() => {
+                const clientaDelTurno = clientas.find((c) => c.id === turnoSeleccionadoModal.clientaId);
+                if (!clientaDelTurno) return null;
+                return editandoClienta ? (
+                  <PanelEditarClienta
+                    key={clientaDelTurno.id}
+                    clienta={clientaDelTurno}
+                    puedeVaciarTelefono={!esProfesional}
+                    onCancelar={() => setEditandoClienta(false)}
+                    onGuardar={async (datos) => {
+                      const r = await editarClienta(turnoSeleccionadoModal.id, datos);
+                      if (r.ok) setEditandoClienta(false);
+                      return r.ok;
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="min-w-0">
+                      <strong>Clienta:</strong> {clientaDelTurno.nombre} ·{' '}
+                      {clientaDelTurno.telefono ? (
+                        clientaDelTurno.telefono
+                      ) : (
+                        <span className="text-amber-800 font-semibold">sin teléfono</span>
+                      )}
+                    </p>
+                    <button
+                      onClick={() => setEditandoClienta(true)}
+                      className="shrink-0 text-[11px] font-bold text-rf-rose-deep hover:underline cursor-pointer"
+                    >
+                      Editar datos
+                    </button>
+                  </div>
+                );
+              })()}
               <p>
                 <strong>Servicio:</strong> {getServicioNombre(turnoSeleccionadoModal.servicioId)}
               </p>
@@ -1133,21 +1174,24 @@ export const AdminAgenda: React.FC = () => {
                   </span>
                 </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    actualizarEstadoTurno(turnoSeleccionadoModal.id, 'recordatorio_enviado');
-                    setTurnoSeleccionadoModal(null);
-                  }}
-                >
-                  <Bell className="w-3.5 h-3.5 text-rf-gold" />
-                  <span>Recordatorio Enviado</span>
-                </Button>
+                {turnoSeleccionadoModal.estado !== 'completado' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      actualizarEstadoTurno(turnoSeleccionadoModal.id, 'recordatorio_enviado');
+                      setTurnoSeleccionadoModal(null);
+                    }}
+                  >
+                    <Bell className="w-3.5 h-3.5 text-rf-gold" />
+                    <span>Recordatorio Enviado</span>
+                  </Button>
+                )}
 
                 {turnoSeleccionadoModal.estado === 'completado' && esProfesional ? (
                   <p className="col-span-2 text-[11px] text-rf-charcoal bg-rf-cream border border-pink-100 rounded-xl p-2">
                     Este turno ya está completado: solo Yosy puede editarlo (cambia las comisiones de esa semana).
+                    {turnoSeleccionadoModal.fecha === hoyISO() && ' Como es de hoy, si lo marcaste por error lo podés deshacer.'}
                   </p>
                 ) : (
                   <Button
@@ -1160,6 +1204,39 @@ export const AdminAgenda: React.FC = () => {
                     <span>Editar reserva (servicio, día, hora…)</span>
                   </Button>
                 )}
+
+                {turnoSeleccionadoModal.estado === 'completado' &&
+                  (!esProfesional || turnoSeleccionadoModal.fecha === hoyISO()) &&
+                  (deshaciendo ? (
+                    <div className="col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-2.5 space-y-2">
+                      <p className="text-[11px] text-amber-900 font-semibold">
+                        ¿Deshacer el "Vino"? El turno vuelve a pendiente y deja de sumar a las comisiones y a la facturación
+                        hasta que lo marques de nuevo{!esProfesional ? ' (cuidado si esa semana ya está liquidada)' : ''}. Queda anotado.
+                      </p>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => setDeshaciendo(false)}>
+                          No, dejarlo
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={async () => {
+                            if (await reabrirTurno(turnoSeleccionadoModal.id)) {
+                              setDeshaciendo(false);
+                              setTurnoSeleccionadoModal(null);
+                            }
+                          }}
+                        >
+                          Sí, deshacer
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button variant="outline" size="sm" className="col-span-2" onClick={() => setDeshaciendo(true)}>
+                      <RefreshCw className="w-3.5 h-3.5 text-amber-700" />
+                      <span>Deshacer "Vino" (volver a pendiente)</span>
+                    </Button>
+                  ))}
 
                 {turnoSeleccionadoModal.estado !== 'completado' &&
                   (cancelando ? (
@@ -1271,6 +1348,8 @@ export const AdminAgenda: React.FC = () => {
                   setTurnoSeleccionadoModal(null);
                   setPanelEdicion(null);
                   setCancelando(false);
+                  setDeshaciendo(false);
+                  setEditandoClienta(false);
                   setPanelServicios(null);
                 }}
               >
