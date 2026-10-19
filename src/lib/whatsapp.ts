@@ -47,6 +47,57 @@ export const buildWhatsAppUrlPara = (telefono: string, mensaje: string): string 
   return `https://wa.me/${normalizarTelefonoWhatsApp(telefono)}?text=${encodeURIComponent(mensaje)}`;
 };
 
+// Celular o tablet (incluye el iPad con Safari en modo escritorio, que se hace pasar por Mac).
+export function esDispositivoMovil(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent ?? '';
+  if (/iPhone|iPad|iPod|Android/i.test(ua)) return true;
+  return /Macintosh/i.test(ua) && (navigator.maxTouchPoints ?? 0) > 1;
+}
+
+// Abre el chat de WhatsApp de una clienta con el mensaje ya escrito (18/10/2026, pedido de
+// Yosy: que se abra directo en su WhatsApp Business, sin pestañas de más).
+//
+// - En el celular se abre la APP directo con el esquema whatsapp://send, sin abrir ninguna
+//   pestaña ni salir de la Agenda. Antes se abría una pestaña en blanco que redirigía a wa.me
+//   y en Safari quedaba como una segunda pestaña sin sentido. Si el teléfono tiene instalados
+//   WhatsApp y WhatsApp Business, el sistema pregunta con cuál abrir: elegir Business.
+// - Si no pasó nada en 2 segundos (la app no está instalada), recién ahí se cae a wa.me en la
+//   misma pestaña. Si la pantalla cambió, perdió el foco o apareció un aviso del sistema, no se
+//   insiste, para no pisar lo que la persona está haciendo.
+// - En la computadora no hay app a la que ir: se usa WhatsApp Web en UNA pestaña (la que ya se
+//   dejó abierta dentro del click, `ventanaDeEscritorio`, para que el navegador no la bloquee).
+export function abrirChatWhatsApp(telefono: string, mensaje: string, ventanaDeEscritorio?: Window | null): void {
+  const web = buildWhatsAppUrlPara(telefono, mensaje);
+
+  if (!esDispositivoMovil()) {
+    if (ventanaDeEscritorio && !ventanaDeEscritorio.closed) ventanaDeEscritorio.location.href = web;
+    else window.open(web, '_blank');
+    return;
+  }
+
+  const app = `whatsapp://send?phone=${normalizarTelefonoWhatsApp(telefono)}&text=${encodeURIComponent(mensaje)}`;
+  let algoPaso = false;
+  const marcar = () => {
+    algoPaso = true;
+  };
+  const alCambiarVisibilidad = () => {
+    if (document.visibilityState === 'hidden') algoPaso = true;
+  };
+  document.addEventListener('visibilitychange', alCambiarVisibilidad);
+  window.addEventListener('pagehide', marcar);
+  window.addEventListener('blur', marcar);
+
+  window.location.href = app;
+
+  window.setTimeout(() => {
+    document.removeEventListener('visibilitychange', alCambiarVisibilidad);
+    window.removeEventListener('pagehide', marcar);
+    window.removeEventListener('blur', marcar);
+    if (!algoPaso && document.visibilityState === 'visible') window.location.href = web;
+  }, 2000);
+}
+
 // Mensajes predeterminados para los recordatorios por turno (Fase 7). Cada
 // plantilla tiene su propio tono según cuánto falta para el turno — se
 // arma acá para que Yosy solo tenga que revisar y tocar "Enviar" en

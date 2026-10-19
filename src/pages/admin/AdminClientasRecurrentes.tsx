@@ -16,7 +16,7 @@ import { Turno, Clienta, Servicio, Profesional } from '../../types';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { formatDateReadable } from '../../lib/formatters';
-import { mensajeClientaRecurrente, buildWhatsAppUrlPara } from '../../lib/whatsapp';
+import { mensajeClientaRecurrente, abrirChatWhatsApp } from '../../lib/whatsapp';
 import { esMarcadaAMano, notaVisible, armarNota } from '../../lib/recurrencia';
 import { hoyISO } from '../../lib/disponibilidad';
 import { estadoRecordatorios } from '../../lib/recordatorios';
@@ -244,6 +244,10 @@ export const AdminClientasRecurrentes: React.FC = () => {
       showToast('❌ Esta clienta no tiene una profesional habitual asignada.');
       return;
     }
+    if (!clienta.telefono.replace(/D/g, '')) {
+      showToast('📵 Esta clienta no tiene teléfono cargado: agregalo desde su turno en la Agenda ("Editar datos").');
+      return;
+    }
     const params = new URLSearchParams({
       profesionalId: profesional.id,
       // 13/10/2026 (pedido de Tobias/Yosy): antes el link solo traía la
@@ -257,7 +261,7 @@ export const AdminClientasRecurrentes: React.FC = () => {
     });
     const link = `${window.location.origin}/reserva?${params.toString()}`;
     const mensaje = mensajeClientaRecurrente({ nombreClienta: clienta.nombre, servicio: servicio.nombre, link });
-    window.open(buildWhatsAppUrlPara(clienta.telefono, mensaje), '_blank');
+    abrirChatWhatsApp(clienta.telefono, mensaje);
     // Mandar el link también cuenta como "ya la contacté".
     await guardarEstado(clienta.id, servicio.id, {
       contactada: true,

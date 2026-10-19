@@ -22,7 +22,7 @@ import { mockBeneficiosVIP, mockClientasEnRiesgo } from '../data/mockFidelizacio
 import { supabase, supabaseEnabled } from '../lib/supabase';
 import { ordenarServicios } from '../lib/ordenServicios';
 import { llevaLinkDePago, mensajeParaTurno } from '../lib/recordatorios';
-import { buildWhatsAppUrlPara } from '../lib/whatsapp';
+import { abrirChatWhatsApp, esDispositivoMovil } from '../lib/whatsapp';
 import {
   turnoFromRow,
   turnoToInsertRow,
@@ -530,9 +530,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       showToast('📵 Esta clienta no tiene teléfono cargado: tocá "Editar datos" en el turno para agregarlo.');
       return;
     }
-    // La pestaña se abre YA, dentro del click: si se abriera después de esperar el
-    // link, el navegador la bloquearía como ventana emergente.
-    const ventana = window.open('', '_blank');
+    // En la computadora la pestaña de WhatsApp Web se abre YA, dentro del click: si se abriera
+    // después de esperar el link, el navegador la bloquearía como ventana emergente. En el
+    // celular no se abre ninguna pestaña: se abre la app directo (ver abrirChatWhatsApp).
+    const ventana = esDispositivoMovil() ? null : window.open('', '_blank');
     let linkPago: string | undefined;
     let aviso: string | undefined;
 
@@ -553,9 +554,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // toast (si no, el "recordatorio activado" lo pisaría y nadie lo vería).
     await toggleRecordatorio(turno.id, plantilla, true);
     if (aviso) showToast(aviso);
-    const url = buildWhatsAppUrlPara(clienta.telefono, mensajeParaTurno(turno, plantilla, clienta.nombre, servicioNombre, linkPago));
-    if (ventana && !ventana.closed) ventana.location.href = url;
-    else window.open(url, '_blank');
+    abrirChatWhatsApp(clienta.telefono, mensajeParaTurno(turno, plantilla, clienta.nombre, servicioNombre, linkPago), ventana);
   };
 
   interface RespuestaEdicion {
