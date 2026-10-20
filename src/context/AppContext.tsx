@@ -1,5 +1,5 @@
 // src/context/AppContext.tsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
   RolUsuario,
   Turno,
@@ -63,6 +63,11 @@ interface AppContextType {
   marcarSenaManual: (id: string, abonada: boolean) => Promise<boolean>;
   // true si hay una sesión con token vigente (o no hay base real, donde no hace falta).
   sesionConToken: boolean;
+  // Cuándo se trajeron por última vez los datos reales de la base y si la última carga falló
+  // (si falla, lo que se ve puede ser viejo o de ejemplo). `actualizadoEn` es null si nunca cargó.
+  estadoDatos: { error: boolean; actualizadoEn: number | null };
+  // Vuelve a traer turnos, clientas, bloqueos y recordatorios de la base ahora mismo.
+  refrescarDatos: () => Promise<void>;
   // Marca el recordatorio como enviado y abre el WhatsApp de la clienta con el mensaje armado.
   // En los de seña (72h / 48h) le suma un link de pago de Mercado Pago atado al turno.
   enviarRecordatorioWhatsApp: (
@@ -168,6 +173,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [clientasEnRiesgo, setClientasEnRiesgo] = useState<ClientaEnRiesgo[]>(mockClientasEnRiesgo);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [pinModalRol, setPinModalRol] = useState<'admin' | 'profesional' | null>(null);
+  const [estadoDatos, setEstadoDatos] = useState<{ error: boolean; actualizadoEn: number | null }>({ error: false, actualizadoEn: null });
+  const refrescarRef = useRef<(forzar?: boolean) => Promise<void>>(async () => {});
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -251,6 +258,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ]);
       if (cancelado) return;
 
+      // Si la base no respondió bien se avisa en pantalla: antes quedaban los datos de ejemplo
+      // (o los viejos) sin ninguna señal y parecía que las reservas "no se guardaron".
+      setEstadoDatos(
+        turnosRes.error || clientasRes.error
+          ? { error: true, actualizadoEn: null }
+          : { error: false, actualizadoEn: Date.now() }
+      );
+
       if (turnosRes.data) setTurnos(turnosRes.data.map(turnoFromRow));
       if (clientasRes.data) setClientas(clientasRes.data.map(clientaFromRow));
       if (bloqueosRes.data) setBloqueos(bloqueosRes.data.map(bloqueoFromRow));
@@ -285,27 +300,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // clientas, recordatorios, bloqueos) — así cuando una clienta reserva y
     // paga, aparece en los paneles sin que nadie recargue la página. Solo
     // corre con la pestaña visible para no gastar de gusto.
-    const refrescar = async () => {
-      if (document.hidden || !supabase) return;
-      const [t, c, r, b] = await Promise.all([
-        supabase.from('turnos').select('*').order('fecha_creacion', { ascending: false }),
-        supabase.from('clientas').select('*'),
-        supabase.from('recordatorios_config').select('*'),
-        supabase.from('bloqueos_horario').select('*'),
-      ]);
+    const refrescar = async (forzar = false) => {
+      if ((document.hidden && !forzar) || !supabase) return;
+      let t, c, r, b;
+      try {
+        [t, c, r, b] = await Promise.all([
+          supabase.from('turnos').select('*').order('fecha_creacion', { ascending: false }),
+          supabase.from('clientas').select('*'),
+          supabase.from('recordatorios_config').select('*'),
+          supabase.from('bloqueos_horario').select('*'),
+        ]);
+      } catch {
+        if (!cancelado) setEstadoDatos((prev) => ({ ...prev, error: true }));
+        return;
+      }
       if (cancelado) return;
+      setEstadoDatos((prev) => (t.error || c.error ? { ...prev, error: true } : { error: false, actualizadoEn: Date.now() }));
       if (t.data) setTurnos(t.data.map(turnoFromRow));
       if (c.data) setClientas(c.data.map(clientaFromRow));
       if (r.data) setRecordatoriosConfig(r.data.map(recordatorioFromRow));
       if (b.data) setBloqueos(b.data.map(bloqueoFromRow));
     };
-    const intervalo = setInterval(refrescar, 45000);
+    const intervalo = setInterval(() => refrescar(), 45000);
+    refrescarRef.current = refrescar;
+
+    // Al volver a la pantalla (ej. en el celular, después de mandar un WhatsApp o de tener la
+    // pestaña dormida) se trae todo de nuevo en el momento, sin esperar al próximo ciclo.
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') refrescar();
+    };
+    document.addEventListener('visibilitychange', alVolver);
 
     return () => {
       cancelado = true;
       clearInterval(intervalo);
+      document.removeEventListener('visibilitychange', alVolver);
     };
   }, []);
+
+  const refrescarDatos = async () => {
+    await refrescarRef.current(true);
+  };
 
   const crearTurno = async (data: Omit<Turno, 'id' | 'fechaCreacion'>): Promise<Turno> => {
     if (supabaseEnabled && supabase) {
@@ -901,6 +936,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         guardarServiciosTurno,
         marcarSenaManual,
         sesionConToken: !supabaseEnabled || !!sesionToken,
+        estadoDatos,
+        refrescarDatos,
         enviarRecordatorioWhatsApp,
         editarTurno,
         cancelarTurno,

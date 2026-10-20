@@ -1,5 +1,5 @@
 // src/pages/admin/AdminAgenda.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase, supabaseEnabled } from '../../lib/supabase';
 import { Turno, EstadoTurno, PlantillaRecordatorio } from '../../types';
@@ -74,6 +74,8 @@ export const AdminAgenda: React.FC = () => {
     reactivarTurno,
     reabrirTurno,
     editarClienta,
+    estadoDatos,
+    refrescarDatos,
     aprobarComprobante,
     crearBloqueo,
     eliminarBloqueo,
@@ -137,6 +139,14 @@ export const AdminAgenda: React.FC = () => {
   // vino / editar el desglose de un turno ya completado).
   const [panelServicios, setPanelServicios] = useState<{ turnoId: string; modo: 'confirmar' | 'editar' } | null>(null);
 
+  // Reloj de 15 s para el "actualizado hace…" del indicador de datos de la base
+  const [ahoraDatos, setAhoraDatos] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setAhoraDatos(Date.now()), 15000);
+    return () => clearInterval(id);
+  }, []);
+  const [actualizandoDatos, setActualizandoDatos] = useState(false);
+
   // Editar la reserva (servicio, día, hora…) y cancelarla con motivo, desde el modal
   const [panelEdicion, setPanelEdicion] = useState<string | null>(null); // id del turno que se está editando
   const [cancelando, setCancelando] = useState(false);
@@ -175,6 +185,15 @@ export const AdminAgenda: React.FC = () => {
   const [tmSenaAbonada, setTmSenaAbonada] = useState(false);
 
   const tmServicio = servicios.find((s) => s.id === tmServicioId);
+  // buscarOCrearClienta reutiliza a la clienta si ya hay una con ese nombre (sin distinguir
+  // mayúsculas): en ese caso el teléfono que se escriba NO se cargaba en ninguna parte.
+  const tmClientaExistente = tmNombre.trim()
+    ? clientas.find((c) => c.nombre.toLowerCase() === tmNombre.trim().toLowerCase())
+    : undefined;
+  const tmTelefonoTipeado = tmTelefono.trim();
+  const tmDigitosTelefono = tmTelefonoTipeado.replace(/\D/g, '').length;
+  const tmTelefonoInvalido =
+    tmTelefonoTipeado !== '' && !(/^[0-9+()\-\s.]+$/.test(tmTelefonoTipeado) && tmDigitosTelefono >= 8 && tmDigitosTelefono <= 15);
   const tmServiciosDeLaProfesional = tmProfesionalId
     ? servicios.filter((s) => s.profesionalesQueLoRealizan.includes(tmProfesionalId))
     : servicios;
@@ -240,10 +259,13 @@ export const AdminAgenda: React.FC = () => {
   const handleCrearTurnoManual = async () => {
     if (!tmNombre.trim() || !tmProfesionalId || !tmServicioId || !tmFecha || !tmHora || !tmServicio) return;
     const registrarSena = tmSenaAbonada && tmEstado !== 'completado';
-    // Registrar la seña como pagada exige PIN reciente: se pide ANTES de crear
-    // el turno, así no queda un turno creado sin la seña que se quiso cargar.
-    if (registrarSena && !sesionConToken) {
-      showToast('🔑 Para registrar la seña como pagada, ingresá tu PIN.');
+    // Si la clienta ya existía y no tenía teléfono, el que se escribió se guarda en su ficha.
+    // (Si ya tenía uno distinto no se pisa solo: pudo ser otra persona con el mismo nombre.)
+    const completarTelefono = !!tmClientaExistente && tmTelefonoTipeado !== '' && !(tmClientaExistente.telefono ?? '').trim();
+    // Registrar la seña como pagada o guardar el teléfono exige PIN reciente: se pide ANTES de
+    // crear el turno, así no queda un turno creado sin lo que se quiso cargar.
+    if ((registrarSena || completarTelefono) && !sesionConToken) {
+      showToast('🔑 Para guardar la seña o el teléfono, ingresá tu PIN.');
       abrirPinModal(esProfesional ? 'profesional' : 'admin');
       return;
     }
@@ -272,6 +294,7 @@ export const AdminAgenda: React.FC = () => {
       });
       if (tmEstado === 'completado') await actualizarEstadoTurno(nuevo.id, 'completado');
       if (registrarSena) await marcarSenaManual(nuevo.id, true);
+      if (completarTelefono) await editarClienta(nuevo.id, { telefono: tmTelefonoTipeado });
       if (tmRecurrente) await marcarClienteRecurrente(nuevo);
       setModalTurnoManualAbierto(false);
     } catch {
@@ -651,6 +674,37 @@ export const AdminAgenda: React.FC = () => {
                 className="px-3 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep"
               />
             </div>
+          </div>
+        )}
+
+        {(estadoDatos.actualizadoEn || estadoDatos.error) && (
+          <div
+            className={`flex items-center justify-between gap-2 flex-wrap rounded-xl border px-3 py-2 text-[11px] ${
+              estadoDatos.error ? 'bg-red-50 border-red-200 text-red-800' : 'bg-white border-pink-100 text-rf-charcoal'
+            }`}
+          >
+            <span className={estadoDatos.error ? 'font-semibold' : ''}>
+              {estadoDatos.error
+                ? '⚠️ No se pudo actualizar con la base (¿sin internet?): lo que ves puede estar desactualizado.'
+                : `Datos de la base actualizados hace ${
+                    Math.max(0, Math.round((ahoraDatos - (estadoDatos.actualizadoEn as number)) / 1000)) < 60
+                      ? `${Math.max(0, Math.round((ahoraDatos - (estadoDatos.actualizadoEn as number)) / 1000))} s`
+                      : `${Math.round((ahoraDatos - (estadoDatos.actualizadoEn as number)) / 60000)} min`
+                  } · ${turnos.length} turnos cargados`}
+            </span>
+            <button
+              onClick={async () => {
+                setActualizandoDatos(true);
+                await refrescarDatos();
+                setAhoraDatos(Date.now());
+                setActualizandoDatos(false);
+              }}
+              disabled={actualizandoDatos}
+              className="flex items-center gap-1 font-bold text-rf-rose-deep hover:underline cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3 h-3 ${actualizandoDatos ? 'animate-spin' : ''}`} />
+              <span>{actualizandoDatos ? 'Actualizando…' : 'Actualizar ahora'}</span>
+            </button>
           </div>
         )}
 
@@ -1507,6 +1561,23 @@ export const AdminAgenda: React.FC = () => {
                 </div>
               </div>
 
+              {tmClientaExistente && (
+                <p className="rounded-xl bg-sky-50 border border-sky-200 text-sky-900 p-2.5 text-[11px]">
+                  {!(tmClientaExistente.telefono ?? '').trim()
+                    ? tmTelefonoTipeado
+                      ? '✓ Ya está cargada en el sistema, sin teléfono: el que escribas se guarda en su ficha.'
+                      : 'Ya está cargada en el sistema pero sin teléfono: escribilo para guardarlo en su ficha.'
+                    : tmTelefonoTipeado && tmTelefonoTipeado !== tmClientaExistente.telefono
+                    ? `⚠️ Ya está cargada con el teléfono ${tmClientaExistente.telefono}. Se usa ese; si cambió, corregilo con "Editar datos" en el turno.`
+                    : `Ya está cargada en el sistema (teléfono ${tmClientaExistente.telefono}).`}
+                </p>
+              )}
+              {tmTelefonoInvalido && (
+                <p className="rounded-xl bg-red-50 border border-red-200 text-red-800 p-2.5 text-[11px] font-semibold">
+                  El teléfono tiene que tener entre 8 y 15 números (solo números, espacios, guiones o +). Si no lo tenés, dejalo vacío.
+                </p>
+              )}
+
               <div>
                 <label className="font-bold text-rf-black block mb-1">Profesional</label>
                 <select
@@ -1712,7 +1783,7 @@ export const AdminAgenda: React.FC = () => {
               <Button
                 variant="primary"
                 size="sm"
-                disabled={tmGuardando || !tmNombre.trim() || !tmProfesionalId || !tmServicioId || !tmFecha || !tmHora || !!tmMismoInicio}
+                disabled={tmGuardando || !tmNombre.trim() || !tmProfesionalId || !tmServicioId || !tmFecha || !tmHora || !!tmMismoInicio || tmTelefonoInvalido}
                 onClick={handleCrearTurnoManual}
               >
                 <Plus className="w-3.5 h-3.5" />
