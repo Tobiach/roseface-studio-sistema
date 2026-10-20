@@ -8,9 +8,10 @@ import React, { useState } from 'react';
 import { Save } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { formatCurrency } from '../../lib/formatters';
-import { sumarMinutos, turnoBloqueaHorario } from '../../lib/disponibilidad';
+import { finSinPasarMedianoche, turnoBloqueaHorario } from '../../lib/disponibilidad';
 import { calcularMontoSena } from '../../lib/pricing';
 import { estadoSena } from '../../lib/recordatorios';
+import { AvisoHorario } from './AvisoHorario';
 import type { CambiosTurno } from '../../context/AppContext';
 import type { BloqueoHorario, Profesional, Servicio, Turno } from '../../types';
 
@@ -69,9 +70,11 @@ export const PanelEditarTurno: React.FC<Props> = ({
     (servicioNuevo.profesionalesQueLoRealizan.includes(profesionalId) || (!cambiaServicio && !cambiaProfesional));
 
   // Duración y hora de fin: si cambia el servicio, la del servicio nuevo; si solo se mueve, la que ya tenía.
-  const duracionActual = aMinutos(turno.horaFin) - aMinutos(turno.horaInicio);
+  // Si el fin quedó recortado a las 23:59 (turno nocturno), la duración real es la del servicio.
+  const duracionActual =
+    turno.horaFin === '23:59' && servicioNuevo ? servicioNuevo.duracionMinutos : aMinutos(turno.horaFin) - aMinutos(turno.horaInicio);
   const horaFinCalculada = horaInicio
-    ? sumarMinutos(horaInicio, cambiaServicio && servicioNuevo ? servicioNuevo.duracionMinutos : duracionActual > 0 ? duracionActual : 30)
+    ? finSinPasarMedianoche(horaInicio, cambiaServicio && servicioNuevo ? servicioNuevo.duracionMinutos : duracionActual > 0 ? duracionActual : 30)
     : '';
   const horaFin = finManual ?? horaFinCalculada;
 
@@ -197,6 +200,8 @@ export const PanelEditarTurno: React.FC<Props> = ({
           ))
         )}
       </div>
+
+      <AvisoHorario profesional={profesionalSel} fecha={fecha} hora={horaInicio} />
 
       {mismoInicio && (
         <p className="rounded-xl bg-red-50 border border-red-200 text-red-800 p-2.5 text-[11px] font-semibold">

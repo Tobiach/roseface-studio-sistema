@@ -87,7 +87,8 @@ const aMinutos = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number);
   return h * 60 + m;
 };
-const aHora = (min: number) => `${String(Math.floor(min / 60) % 24).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+// Un turno que cruzaría la medianoche termina a las 23:59 (hora_fin es una hora del día, no puede dar la vuelta).
+const aHora = (min: number) => (min >= 24 * 60 ? '23:59' : `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`);
 const hhmm = (valor: unknown) => String(valor).slice(0, 5);
 const plata = (n: number) => `$${Math.round(n).toLocaleString('es-AR')}`;
 const fechaCorta = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
@@ -396,7 +397,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(400).json({ ok: false, error: 'La fecha o la hora no son válidas' });
     return;
   }
-  const duracionActual = aMinutos(hhmm(turno.hora_fin)) - aMinutos(hhmm(turno.hora_inicio));
+  // Si el fin quedó recortado a las 23:59 (turno nocturno), la duración real es la del servicio.
+  const duracionActual =
+    hhmm(turno.hora_fin) === '23:59' ? Number(servicio.duracion_minutos) : aMinutos(hhmm(turno.hora_fin)) - aMinutos(hhmm(turno.hora_inicio));
   const horaFin =
     body.horaFin ?? aHora(aMinutos(horaInicio) + (cambiaServicio ? Number(servicio.duracion_minutos) : duracionActual > 0 ? duracionActual : 30));
   if (!HORA_RE.test(horaFin) || aMinutos(horaFin) <= aMinutos(horaInicio)) {

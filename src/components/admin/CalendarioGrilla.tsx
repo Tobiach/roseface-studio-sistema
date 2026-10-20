@@ -8,7 +8,7 @@
 // profesional que ese día no trabaja (15/10/2026, pedido de Yosy).
 import React, { useMemo } from 'react';
 import { Profesional, Turno, BloqueoHorario } from '../../types';
-import { DIAS_SEMANA, generarFranjas, estadoDeFranja, sumarMinutos, turnoBloqueaHorario } from '../../lib/disponibilidad';
+import { DIAS_SEMANA, generarFranjas, estadoDeFranja, sumarMinutos, turnoBloqueaHorario, encajeEnHorario } from '../../lib/disponibilidad';
 import { estadoSena } from '../../lib/recordatorios';
 
 interface CalendarioGrillaProps {
@@ -121,6 +121,9 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded-sm bg-gray-300 border border-gray-400 inline-block" /> Bloqueado
         </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-sm bg-white outline outline-1 outline-dashed outline-violet-500 -outline-offset-1 inline-block" /> ⏱ Fuera de horario (solo equipo)
+        </span>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-pink-100">
@@ -161,6 +164,8 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
                         {enFranja.map((t) => {
                           const empiezaAca = t.horaInicio >= franja && t.horaInicio < franjaFin;
                           const horaSuelta = !t.horaInicio.endsWith(':00') && !t.horaInicio.endsWith(':30');
+                          // Turno cargado a mano fuera del horario de la profesional (solo lo ve el equipo).
+                          const fueraDeHorario = ['fuera_de_jornada', 'dia_libre'].includes(encajeEnHorario(p, fecha, t.horaInicio).tipo);
                           // Color según la seña: ámbar = pendiente, dorado = pagada.
                           const sena = estadoSena(t);
                           const colorClase =
@@ -173,11 +178,14 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
                               onClick={() => onSeleccionarTurno(t)}
                               title={`${t.horaInicio} a ${finDelTurno(t)} · ${getClientaNombre(t.clientaId)}${
                                 sena === 'pagada' ? ' · seña pagada' : sena === 'pendiente' ? ' · seña pendiente' : ''
+                              }${fueraDeHorario ? ' · fuera del horario habitual' : ''}`}
+                              className={`flex-1 min-h-[28px] border-l-2 px-1.5 py-1 text-left cursor-pointer hover:brightness-95 transition-all ${colorClase} ${
+                                fueraDeHorario ? 'outline outline-1 outline-dashed outline-violet-500 -outline-offset-1' : ''
                               }`}
-                              className={`flex-1 min-h-[28px] border-l-2 px-1.5 py-1 text-left cursor-pointer hover:brightness-95 transition-all ${colorClase}`}
                             >
                               {empiezaAca && (
                                 <span className="text-[9px] font-bold leading-tight block truncate">
+                                  {fueraDeHorario ? '⏱ ' : ''}
                                   {horaSuelta ? `${t.horaInicio} · ` : ''}
                                   {getClientaNombre(t.clientaId)}
                                 </span>

@@ -12,10 +12,11 @@ import { CalendarioGrilla } from '../../components/admin/CalendarioGrilla';
 import { PanelServiciosRealizados } from '../../components/admin/PanelServiciosRealizados';
 import { PanelEditarTurno } from '../../components/admin/PanelEditarTurno';
 import { PanelEditarClienta } from '../../components/admin/PanelEditarClienta';
+import { AvisoHorario } from '../../components/admin/AvisoHorario';
 import { formatCurrency, formatDateReadable, formatDateShort } from '../../lib/formatters';
 import { ventanasDelTurno, estadoSena, estadoRecordatorios, mensajeParaTurno, llevaLinkDePago, type VentanaRecordatorio } from '../../lib/recordatorios';
 import { SenaBadge } from '../../components/ui/SenaBadge';
-import { hoyISO, sumarDiasISO, sumarMinutos, turnoBloqueaHorario, DIAS_SEMANA } from '../../lib/disponibilidad';
+import { hoyISO, sumarDiasISO, sumarMinutos, finSinPasarMedianoche, turnoBloqueaHorario, encajeEnHorario, DIAS_SEMANA } from '../../lib/disponibilidad';
 import { calcularMontoSena, descuentoMercadoPago, DESCUENTO_MP_POR_RESERVA } from '../../lib/pricing';
 import { esMarcadaAMano, armarNota } from '../../lib/recurrencia';
 import {
@@ -208,12 +209,24 @@ export const AdminAgenda: React.FC = () => {
           .filter((t) => t.profesionalId === tmProfesionalId && t.fecha === tmFecha && turnoBloqueaHorario(t))
           .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
       : [];
-  const tmHoraFin = tmServicio && tmHora ? sumarMinutos(tmHora, tmServicio.duracionMinutos) : null;
+  const tmHoraFin = tmServicio && tmHora ? finSinPasarMedianoche(tmHora, tmServicio.duracionMinutos) : null;
   const tmMismoInicio = tmHora ? tmTurnosDelDia.find((t) => t.horaInicio === tmHora) : undefined;
   const tmSolapados =
     tmHora && tmHoraFin
       ? tmTurnosDelDia.filter((t) => t.id !== tmMismoInicio?.id && t.horaInicio < tmHoraFin && t.horaFin > tmHora)
       : [];
+  // Si la profesional bloqueó ese horario a mano ("Bloquear horario"): se avisa, pero el equipo puede
+  // cargar el turno igual (ej. la clienta llegó de todos modos).
+  const tmBloqueada =
+    !!tmProfesionalId &&
+    !!tmFecha &&
+    !!tmHora &&
+    bloqueos.some(
+      (b) =>
+        b.profesionalId === tmProfesionalId &&
+        b.fecha === tmFecha &&
+        (b.diaCompleto || !b.horaInicio || !b.horaFin || (b.horaInicio < (tmHoraFin ?? sumarMinutos(tmHora, 30)) && b.horaFin > tmHora))
+    );
   // Horarios fijos de esa profesional ese día que todavía están libres (atajo para elegir hora).
   const tmFijosLibres =
     tmProfesionalId && tmFecha
@@ -272,7 +285,7 @@ export const AdminAgenda: React.FC = () => {
     setTmGuardando(true);
     try {
       const clientaId = await buscarOCrearClienta(tmNombre.trim(), tmTelefono.trim());
-      const horaFin = sumarMinutos(tmHora, tmServicio.duracionMinutos);
+      const horaFin = finSinPasarMedianoche(tmHora, tmServicio.duracionMinutos);
       // La base solo deja insertar desde el navegador turnos en estado
       // 'reservado' (RLS de turnos, 15/10/2026: si no, cualquiera podría
       // crearse un turno ya pagado). Por eso se crea siempre 'reservado' y,
@@ -489,6 +502,9 @@ export const AdminAgenda: React.FC = () => {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <SenaBadge turno={turno} />
+            {prof && ['fuera_de_jornada', 'dia_libre'].includes(encajeEnHorario(prof, turno.fecha, turno.horaInicio).tipo) && (
+              <Badge variant="neutral" size="sm">⏱ Fuera de horario</Badge>
+            )}
             {descuentoMercadoPago(turno) > 0 && (
               <Badge variant="neutral" size="sm">Mercado Pago · −{formatCurrency(DESCUENTO_MP_POR_RESERVA)}</Badge>
             )}
@@ -1675,6 +1691,12 @@ export const AdminAgenda: React.FC = () => {
                     </div>
                   )}
 
+                  <AvisoHorario profesional={profesionales.find((p) => p.id === tmProfesionalId)} fecha={tmFecha} hora={tmHora} />
+                  {tmBloqueada && (
+                    <p className="rounded-xl bg-amber-50 border border-amber-200 text-amber-900 p-2.5 text-[11px] font-semibold">
+                      ⚠️ Esa profesional tiene ese horario bloqueado. Se puede cargar igual.
+                    </p>
+                  )}
                   {tmMismoInicio && (
                     <p className="rounded-xl bg-red-50 border border-red-200 text-red-800 p-2.5 text-[11px] font-semibold">
                       ⛔ A las {tmMismoInicio.horaInicio} ya hay un turno de {getClientaNombre(tmMismoInicio.clientaId)} con esta
