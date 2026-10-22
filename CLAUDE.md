@@ -1,5 +1,11 @@
 # CLAUDE.md — Rose Face Studio (sistema operativo digital)
 
+> **LEER PRIMERO (22/10/2026): [docs/HANDOFF-SESION.md](docs/HANDOFF-SESION.md)** — estado de producción (último deploy `bb8af09`),
+> mapa del sistema, endpoints y permisos, reglas de negocio vigentes, gotchas, pendientes inmediatos y cómo verificar un deploy.
+> Las pruebas con las que se verificó todo están en [docs/pruebas/](docs/pruebas/README.md).
+> Reglas de trabajo con Tobias: español · no inventar datos · verificar con evidencia real · lint+build en 0 antes de commitear ·
+> nunca `git push --force` · **avisar antes de deployar** (`npx vercel --yes --prod`) · no escribir en la base real para probar.
+
 ## URL Producción
 https://roseface-studio-sistema.vercel.app
 
