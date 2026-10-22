@@ -16,7 +16,9 @@ export const mockServicios: Servicio[] = [
   // solo hace clásicas, híbridas, volumen brasilero y efecto húmedo,
   // Lifting de pestañas" — se sacó a Mili de las 5 técnicas que no dijo
   // (Natural Volumen, Volumen Tecnológico YY, Medio Volumen, Lash Rose
-  // Face, Mega Volumen). Y "Sharon y Yosy hacemos todo, eso más incluido
+  // Face, Mega Volumen). 22/10/2026: Tobias avisó que Mili SÍ hace Volumen
+  // Tecnológico YY y se la volvió a agregar (solo ese; las otras 4 siguen
+  // sin ella hasta que Yosy confirme). Y "Sharon y Yosy hacemos todo, eso más incluido
   // volumen ruso" — se agregó a Yosy en todo lo que ya tenía Sharon
   // (menos Lifting, que siempre fue solo de Mili, sin relación con este
   // dato nuevo).
@@ -101,7 +103,7 @@ export const mockServicios: Servicio[] = [
     cicloRecurrenciaDias: 21,
     requiereSena: true,
     puntosVIP: 12,
-    profesionalesQueLoRealizan: ['prof-sharon', 'prof-yosy'],
+    profesionalesQueLoRealizan: ['prof-mili', 'prof-sharon', 'prof-yosy'],
   },
   {
     id: 'serv-pestanas-medio-volumen',

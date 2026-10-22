@@ -209,6 +209,10 @@ cargar y dónde impacta.
      Volumen, Volumen Tecnológico YY, Medio Volumen, Lash Rose Face, Mega
      Volumen) — sigue en clásicas/híbridas/efecto húmedo/4D/6D/lifting
      (volumen brasilero cubre 4D y 6D, no hay forma de separarlos más).
+     **Corrección 22/10/2026:** Tobias avisó que Mili SÍ hace Volumen
+     Tecnológico YY → se la volvió a agregar a ese servicio (Supabase +
+     `mockServicios.ts`). Natural Volumen, Medio Volumen, Lash Rose Face y
+     Mega Volumen siguen SIN Mili hasta que Yosy confirme.
   2. Yosy y Sharon ahora están en `profesionalesQueLoRealizan` de todos
      los servicios de Pestañas Y Cejas del otro (menos Lifting, que
      siempre fue solo de Mili, sin relación con este dato). Antes una

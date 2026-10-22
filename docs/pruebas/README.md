@@ -62,6 +62,7 @@ BASE_URL=http://localhost:5189 node <tmp>/fuera-de-horario.mjs
 | `pantalla/deshacer-vino-y-datos-clienta.mjs` | Deshacer "Vino", editar nombre/teléfono/mail de la clienta, aviso de clienta sin teléfono |
 | `pantalla/whatsapp-sin-pestanas.mjs` | Con UA de iPhone no se abre ninguna pestaña; en PC una sola |
 | `pantalla/telefono-clienta-existente-y-datos-base.mjs` | El teléfono tipeado se guarda en una clienta existente; indicador "datos actualizados hace…" |
+| `pantalla/mili-volumen-tecnologico.mjs` | Perfiles públicos (`/profesionales/mili`, `/roma`, `/yosy`, URL por nombre): Mili lista Volumen Tecnológico YY y no Natural/Medio/Mega Volumen ni Lash Rose Face (22/10) |
 | `pantalla/fuera-de-horario*.mjs` | Agendar fuera de horario / día libre, avisos, marca ⏱ en calendario, tope de medianoche, web de clientas intacta |
 
 ## Pruebas de producción hechas sin escribir (ejemplo de patrón)

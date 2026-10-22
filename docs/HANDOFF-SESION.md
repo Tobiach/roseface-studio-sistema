@@ -138,12 +138,41 @@ Sin token todavía: `actualizar-estado-turno`, INSERT de `turnos` (solo 'reserva
    pide PIN ("Volvé a ingresar tu PIN"); (b) un turno completado y ella con PIN de profesional; (c) caché (no hay service worker: los
    assets llevan hash; sí puede haber index.html cacheado → forzar recarga); (d) error del endpoint (409 choque de hora, 403 permisos).
    Producción tiene `bb8af09` con `/api/editar-turno` respondiendo 401/403/400 como corresponde.
-4. *"A Mili no le figura que realiza el Volumen Tecnológico (servicio) y ella sí lo hace, verifica y agrégalo/arreglalo."* →
+> **Avance 22/10 (misma sesión que el traspaso):** el punto 4 quedó **RESUELTO** (ver abajo). Los puntos 1, 2 y 3 siguen abiertos: hay
+> hallazgos con datos reales en la sección "Hallazgos del 22/10" al final de este bloque; el punto 1 espera la respuesta de Tobias
+> sobre qué cuenta como "reserva por MP", y el 3 espera la imagen 2 (o el texto del error).
+
+4. ✅ **RESUELTO 22/10** — `prof-mili` agregada a `servicios.profesionales_que_lo_realizan` de `serv-pestanas-volumen-tecnologico`
+   (antes `["prof-sharon","prof-yosy"]`, ahora `["prof-mili","prof-sharon","prof-yosy"]`; PATCH con guarda, sin tocar otros servicios) y
+   alineado `src/data/mockServicios.ts` + `PENDIENTE_ONBOARDING.md`. Verificado con Chromium (`docs/pruebas/pantalla/mili-volumen-tecnologico.mjs`):
+   el perfil público de Mili lista Volumen Tecnológico YY y NO Natural/Medio/Mega Volumen ni Lash Rose Face. No requiere deploy (el
+   catálogo se lee de Supabase). **Pendiente de Yosy:** confirmar si Mili hace también esas otras 4 técnicas. Pedido original:
+   *"A Mili no le figura que realiza el Volumen Tecnológico (servicio) y ella sí lo hace, verifica y agrégalo/arreglalo."* →
    en la tabla `servicios` agregar `prof-mili` a `profesionales_que_lo_realizan` del servicio "Volumen Tecnológico" (verificar
    el id/nombre exacto; en el repo suele figurar como "Volumen Tecnológico YY") y alinear `src/data/mockServicios.ts`. El 22/9 se
    la había sacado de 5 servicios de Pestañas por una respuesta de Yosy ("Mili solo hace clásicas, híbridas, volumen brasilero y
    efecto húmedo…"): **confirmar con Tobias si ahora hace también Natural Volumen, Medio Volumen, Lash Rose Face o Mega Volumen**
    antes de agregar más que el pedido. Registrar el cambio en la memoria de datos reales.
+
+### Hallazgos del 22/10 (consultas de solo lectura a la base real, sin escribir; no se imprimieron ids de pago completos)
+- **Reservas con id de Mercado Pago (44 de 368 turnos):** 33 son de demo (`MP-SEED-########`: Mili 10, Roma 9, Yosy 7, Depilación Láser 7)
+  y 11 son reales (id de 12 dígitos): **Yosy 8** (1 cancelada, 2 completadas —674 y 682—, 5 con seña confirmada a futuro) y **Mili 3**
+  (744, 745, 746: señas confirmadas a futuro). Roma, Depilación Láser, Cris y Ari: 0 reales. Hoy `descuentoMercadoPago` solo cuenta las
+  *completadas* creadas desde el 13/10 → Yosy muestra 2 y Mili 0, aunque ya tiene 3 pagas. Por eso el punto 1 necesita definir qué cuenta.
+- **El link de pago SÍ funcionó en producción (punto 2):** 8 turnos *manuales* (674, 678, 715, 732, 737, 739, 744–746) tienen id de pago real
+  de MP con `sena_verificada_automaticamente=true` y estado `sena_confirmada`: el circuito link → clienta paga → webhook → turno
+  confirmado ya corrió de verdad. El panel refresca solo cada 45 s o al volver a la pantalla. Falta confirmar con Tobias qué es el
+  "panel de la imagen 1" (probablemente Comisiones/Caja: ahí el descuento aparece recién al marcar "Vino").
+- **La edición SÍ funcionó en producción (punto 3):** hay 48 líneas de auditoría de Yosy en `notas_internas` (editar día/hora/servicio,
+  cancelar, corregir teléfono/nombre de la clienta), la última el 22/10 00:23. Ninguna profesional (Mili, etc.) editó todavía. Producción
+  sirve el bundle con "Editar reserva", `/api/editar-turno` responde 401 sin token, no hay service worker y `index.html` va con
+  `must-revalidate` (sin caché pegada). El cartel del PIN (z-60) se dibuja por encima de la ventana del turno (z-50). Causas posibles que
+  quedan, a confirmar con la imagen 2: (a) sesión del celular sin token → pide el PIN y, tras ingresarlo, hay que repetir la acción
+  (el PIN redirige a la agenda); (b) turno cancelado → "reactivalo antes de editarlo"; (c) turno completado con PIN de profesional;
+  (d) choque de hora (409); (e) una profesional que "no realiza" el servicio elegido (400) — p. ej. Mili con Volumen Tecnológico antes de
+  esta corrección.
+- **Detalle a revisar (no tocado):** en la base `profesionales.nombre` de `prof-sharon` figura como "Sharon", pero la app muestra "Roma"
+  (slug `/profesionales/roma`): los mensajes del servidor ("X no realiza…", mails a Yosy) usan el nombre de la base.
 
 ## 8. Otros pendientes conocidos
 Comprar dominio (Namecheap) · video de capacitación para Yosy/profesionales · testeo de punta a punta · datos de Roma (video, bio,
