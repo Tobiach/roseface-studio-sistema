@@ -1,6 +1,6 @@
 # CLAUDE.md — Rose Face Studio (sistema operativo digital)
 
-> **LEER PRIMERO (22/10/2026): [docs/HANDOFF-SESION.md](docs/HANDOFF-SESION.md)** — estado de producción (último deploy `bb8af09`),
+> **LEER PRIMERO (22/10/2026): [docs/HANDOFF-SESION.md](docs/HANDOFF-SESION.md)** — estado de producción (el push a `main` deploya solo),
 > mapa del sistema, endpoints y permisos, reglas de negocio vigentes, gotchas, pendientes inmediatos y cómo verificar un deploy.
 > Las pruebas con las que se verificó todo están en [docs/pruebas/](docs/pruebas/README.md).
 > Reglas de trabajo con Tobias: español · no inventar datos · verificar con evidencia real · lint+build en 0 antes de commitear ·
@@ -79,6 +79,10 @@ npx vercel --yes --prod
 ```
 
 Sigue siendo acción de producción — confirmar con Tobias antes de correr el deploy, no asumir.
+
+⚠️ **Verificado el 22/10/2026: un `git push origin main` ya deploya solo a producción** (Vercel conectado a GitHub; los deploys
+coinciden con los pushes). Por eso el push cuenta como deploy: pedir el OK antes de pushear código y confirmar después con
+`npx vercel ls --prod`. El `npx vercel --yes --prod` manual solo hace falta si el push no generó deploy.
 
 ---
 

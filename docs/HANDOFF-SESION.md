@@ -28,7 +28,11 @@
   con scripts; antes de commitear mirar `git status` y agregar solo los archivos propios (`git add <archivos>`).
 
 ## 2. Estado de producción
-- **Último commit deployado: `bb8af09`** (20/10/2026). Todo lo de abajo está en producción y verificado (bundle + endpoints).
+- ⚠️ **UN `git push` A `main` DEPLOYA SOLO A PRODUCCIÓN** (descubierto el 22/10: los deploys de las 11:56 y 12:39 coinciden al
+  segundo con los commits `c5b90dd` y `826eca0`, y el CLI no se corrió). Tratar cada push como un deploy: avisar/pedir OK antes de
+  pushear código, y después verificar el bundle (`vercel ls`). El `npx vercel --yes --prod` manual sobra si el push ya deployó.
+- **Estado al 22/10 (tarde):** producción = el último commit pusheado a `main` (ver `git log`; el 22/10 se pusheó el contador de
+  reservas por Mercado Pago + Sharon→Roma). Todo lo de octubre (hasta `bb8af09`) está en producción y verificado (bundle + endpoints).
 - Commits de octubre (más nuevo primero): `bb8af09` agendar fuera de horario · `bf5d6b6` teléfono de clienta existente + indicador de
   datos · `fe4f5a7` WhatsApp directo a la app · `b75533f` deshacer "Vino" + editar datos de la clienta + teléfonos 549 ·
   `9c18e63` editar reservas · `3970508` link de pago MP · `89103fc` turno manual con errores claros/choques, "Ir a un día",
@@ -77,6 +81,12 @@ código entre funciones):
   el 13/10 para cubrirlo). En Comisiones se resta de la base ANTES de aplicar los % (`descuentoMercadoPago`: exige
   `idTransaccionMP` + `senaVerificadaAutomaticamente` + `fechaCreacion >= 2026-10-13`; cuenta solo turnos *completados* de la semana).
   Supuestos SIN confirmar con Yosy: corte 13/10 y monto fijo (MP cobra %, puede variar).
+  **Contador de reservas por MP (22/10, decisión de Tobias):** en Comisiones, cada profesional de modelo porcentaje (y cualquiera que
+  tenga alguna) ve "Reservas por Mercado Pago": esta semana (atendidas + por atender) × $1.000, y el total desde el 13/10.
+  `resumenReservasMercadoPago` (en `comisionesEngine.ts`) usa la MISMA regla que el descuento (id MP + verificada + creada desde el
+  13/10) pero cuenta también las que todavía no vinieron; las canceladas no cuentan. El descuento del cierre sigue siendo solo de las
+  completadas ("se descuentan cuando se marque Vino"). Las 33 reservas de demo (`MP-SEED`, creadas el 27/9) quedan afuera por el
+  corte del 13/10 sin tocarlas ni borrarlas (Tobias pidió no modificarlas todavía).
 - **Recordatorios** (WhatsApp, a mano desde "Yosy Recordatorios", el modal del turno o la tarjeta de Clientas Recurrentes):
   seña paga → 48 h y 24 h antes · turno manual con seña pendiente → 72 h (pide seña), 48 h ("en caso de que todavía no hayas
   abonado…") y 24 h (confirma la cita). **El de 4 h está eliminado.** 72/48 h llevan link de pago MP; 24 h no.
@@ -138,9 +148,11 @@ Sin token todavía: `actualizar-estado-turno`, INSERT de `turnos` (solo 'reserva
    pide PIN ("Volvé a ingresar tu PIN"); (b) un turno completado y ella con PIN de profesional; (c) caché (no hay service worker: los
    assets llevan hash; sí puede haber index.html cacheado → forzar recarga); (d) error del endpoint (409 choque de hora, 403 permisos).
    Producción tiene `bb8af09` con `/api/editar-turno` respondiendo 401/403/400 como corresponde.
-> **Avance 22/10 (misma sesión que el traspaso):** el punto 4 quedó **RESUELTO** (ver abajo). Los puntos 1, 2 y 3 siguen abiertos: hay
-> hallazgos con datos reales en la sección "Hallazgos del 22/10" al final de este bloque; el punto 1 espera la respuesta de Tobias
-> sobre qué cuenta como "reserva por MP", y el 3 espera la imagen 2 (o el texto del error).
+> **Avance 22/10 (misma sesión que el traspaso):** el punto 4 quedó **RESUELTO** y el punto 1 **IMPLEMENTADO** (contador de reservas por
+> MP en Comisiones para todas las profesionales; Tobias eligió contar también las pagadas por atender y no tocar las de demo). El punto 2
+> queda cubierto en lo que se puede verificar: al pagar la clienta, el webhook deja `sena_confirmada` + id MP + verificada y el contador
+> sube solo (el panel refresca cada 45 s); falta ver la "imagen 1" para confirmar que ese es el panel. El punto 3 sigue abierto: espera la
+> imagen 2 (o el texto del error). Hallazgos con datos reales en "Hallazgos del 22/10" más abajo.
 
 4. ✅ **RESUELTO 22/10** — `prof-mili` agregada a `servicios.profesionales_que_lo_realizan` de `serv-pestanas-volumen-tecnologico`
    (antes `["prof-sharon","prof-yosy"]`, ahora `["prof-mili","prof-sharon","prof-yosy"]`; PATCH con guarda, sin tocar otros servicios) y
@@ -171,8 +183,12 @@ Sin token todavía: `actualizar-estado-turno`, INSERT de `turnos` (solo 'reserva
   (el PIN redirige a la agenda); (b) turno cancelado → "reactivalo antes de editarlo"; (c) turno completado con PIN de profesional;
   (d) choque de hora (409); (e) una profesional que "no realiza" el servicio elegido (400) — p. ej. Mili con Volumen Tecnológico antes de
   esta corrección.
-- **Detalle a revisar (no tocado):** en la base `profesionales.nombre` de `prof-sharon` figura como "Sharon", pero la app muestra "Roma"
-  (slug `/profesionales/roma`): los mensajes del servidor ("X no realiza…", mails a Yosy) usan el nombre de la base.
+- ✅ **Sharon → Roma alineado (22/10):** `profesionales.nombre` de `prof-sharon` pasó de "Sharon" a "Roma" en la base (PATCH con guarda;
+  el id NO cambia). La app ya mostraba "Roma" porque el nombre visible sale del catálogo local (`mockProfesionales.ts`) y de la base
+  solo salen datos operativos; el cambio sirve para los mensajes del servidor y mails a Yosy ("X no realiza…"). También se cambiaron
+  los textos "Sharon" vivos: explicación de Comisiones, comentarios de tipos/motor y `scripts/seed-supabase.ts`. Los comentarios
+  históricos y las notas viejas de turnos no se tocaron. En la base `prof-sharon` ya no queda ningún "Sharon" (solo el id).
+- **Mismo desfase pendiente, SIN tocar (no se pidió):** `prof-camila` figura en la base como "Depilación Láser" y la app muestra "Vero".
 
 ## 8. Otros pendientes conocidos
 Comprar dominio (Namecheap) · video de capacitación para Yosy/profesionales · testeo de punta a punta · datos de Roma (video, bio,
@@ -183,7 +199,8 @@ seguridad (token en `actualizar-estado-turno`, revocar UPDATE público, etc.) ·
 perdida o devuelta), lista de espera.
 
 ## 9. Cómo verificar un deploy (patrón usado siempre)
-1. `npm run lint` y `npm run build` en 0 → commit → `git push origin main` → (avisar) `npx vercel --yes --prod`.
+1. `npm run lint` y `npm run build` en 0 → commit → (avisar/pedir OK) `git push origin main` — **el push ya deploya solo**; confirmar con
+   `npx vercel ls --prod` (aparece un deploy nuevo a los ~20 s) y usar `npx vercel --yes --prod` solo si no apareció.
 2. Bundle: bajar `https://roseface-studio-sistema.vercel.app/` → buscar `assets/index-*.js` → `grep` de textos nuevos y que no estén los viejos.
 3. Endpoints sin escribir: sin token 401, token falso 401, profesional ajena 403, sin cambios 400, inexistente 404; la web pública
    (`crear-preferencia` a las 23:30) sigue dando 409; `webhook` sin firma 401.

@@ -41,7 +41,7 @@ const profesionalesOperativos: {
   },
   {
     id: 'prof-sharon',
-    nombre: 'Sharon',
+    nombre: 'Roma',
     modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 45 },
     horarioDisponible: {
       lunes: null,

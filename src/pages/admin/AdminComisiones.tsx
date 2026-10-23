@@ -1,12 +1,12 @@
 // src/pages/admin/AdminComisiones.tsx
 import React, { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { calcularCierreSemanal } from '../../lib/comisionesEngine';
+import { calcularCierreSemanal, resumenReservasMercadoPago } from '../../lib/comisionesEngine';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { formatCurrency } from '../../lib/formatters';
 import { hoyISO, sumarDiasISO } from '../../lib/disponibilidad';
-import { DESCUENTO_MP_POR_RESERVA } from '../../lib/pricing';
+import { DESCUENTO_MP_DESDE, DESCUENTO_MP_POR_RESERVA } from '../../lib/pricing';
 import {
   CircleDollarSign,
   Calendar,
@@ -108,14 +108,15 @@ export const AdminComisiones: React.FC = () => {
         <p className="text-xs text-violet-950 leading-relaxed">
           Mercado Pago descuenta <strong>{formatCurrency(DESCUENTO_MP_POR_RESERVA)}</strong> de cada reserva
           que se paga por su checkout (el precio de esos servicios ya trae esos {formatCurrency(DESCUENTO_MP_POR_RESERVA)} de más).
-          Ese monto se <strong>resta de la facturación antes de calcular los porcentajes</strong>, así el
-          reparto sale justo {esProfesional ? 'para vos y para el estudio' : 'para cada profesional y para el estudio'}. Las
-          reservas por transferencia o cobradas en el estudio no tienen ese descuento.
+          Ese monto se <strong>resta de la facturación antes de calcular los porcentajes</strong> (cuando la reserva se
+          marca como “Vino”), así el reparto sale justo {esProfesional ? 'para vos y para el estudio' : 'para cada profesional y para el estudio'}. Las
+          reservas por transferencia o cobradas en el estudio no tienen ese descuento. Abajo ves cuántas reservas
+          pagadas por Mercado Pago tiene {esProfesional ? 'a tu nombre' : 'cada profesional'}, apenas la clienta paga.
         </p>
       </Card>
 
       {/* Explicación del cálculo — SOLO la dueña. Nombra los % y el modelo de
-          cada una (ej. "Mili 55%, Sharon 45%"), así que una profesional no
+          cada una (ej. "Mili 55%, Roma 45%"), así que una profesional no
           debe verla nunca — no tiene que saber la modalidad ni el % de las
           demás, ni cuánto se queda el estudio. */}
       {!esProfesional && (
@@ -131,7 +132,7 @@ export const AdminComisiones: React.FC = () => {
             Si la clienta se hizo servicios extra en el momento, se cargan al confirmar que vino y suman al total del turno.
           </li>
           <li>
-            • <strong>Modelo Porcentaje</strong> (ej. Mili 55%, Sharon 45%): Rose Face cobra el turno
+            • <strong>Modelo Porcentaje</strong> (ej. Mili 55%, Roma 45%): Rose Face cobra el turno
             completo y le paga a la profesional ese % sobre la facturación total generada; el resto
             queda para Rose Face.
           </li>
@@ -198,6 +199,9 @@ export const AdminComisiones: React.FC = () => {
             if (!prof) return null;
 
             const esPorcentaje = prof.modeloComision.tipo === 'porcentaje';
+            const mp = resumenReservasMercadoPago(prof.id, turnos, semanaInicio, semanaFin);
+            const mpSemana = mp.atendidasSemana + mp.porAtenderSemana;
+            const reservas = (n: number) => `${n} reserva${n === 1 ? '' : 's'}`;
 
             return (
               <Card key={cierre.id} className="space-y-4 flex flex-col justify-between">
@@ -233,6 +237,32 @@ export const AdminComisiones: React.FC = () => {
                         : 'Alquiler Fijo'}
                     </Badge>
                   </div>
+
+                  {/* Reservas pagadas por Mercado Pago a nombre de esta profesional (las que ya
+                      vinieron y las que todavía no): cada una trae el descuento de MP. */}
+                  {(esPorcentaje || mp.totalReservas > 0) && (
+                    <div className="rounded-xl bg-violet-50/70 border border-violet-200 p-2.5 text-[11px] text-violet-950 space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-violet-900 uppercase tracking-wider text-[10px]">
+                        <CreditCard className="w-3.5 h-3.5" />
+                        <span>Reservas por Mercado Pago</span>
+                      </div>
+                      <p>
+                        Esta semana: <strong>{reservas(mpSemana)}</strong> × {formatCurrency(DESCUENTO_MP_POR_RESERVA)} ={' '}
+                        <strong>{formatCurrency(mpSemana * DESCUENTO_MP_POR_RESERVA)}</strong> de Mercado Pago
+                      </p>
+                      {mpSemana > 0 && (
+                        <p className="text-violet-800">
+                          {mp.atendidasSemana} ya atendida{mp.atendidasSemana === 1 ? '' : 's'} (se descuenta
+                          {mp.atendidasSemana === 1 ? '' : 'n'}) · {mp.porAtenderSemana} por atender (se descuenta
+                          {mp.porAtenderSemana === 1 ? '' : 'n'} cuando se marque “Vino”)
+                        </p>
+                      )}
+                      <p>
+                        Total desde el {DESCUENTO_MP_DESDE.slice(8, 10)}/{DESCUENTO_MP_DESDE.slice(5, 7)}:{' '}
+                        <strong>{reservas(mp.totalReservas)}</strong> {esProfesional ? 'a tu nombre' : `a nombre de ${prof.nombre}`}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Calculations Details */}
                   <div className="space-y-2 text-xs">

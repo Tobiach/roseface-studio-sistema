@@ -38,7 +38,7 @@ export interface Profesional {
 }
 
 export type ModeloComision =
-  | { tipo: 'porcentaje'; porcentajeProfesional: number }  // ej Mili: 55, Sharon: 45
+  | { tipo: 'porcentaje'; porcentajeProfesional: number }  // ej Mili: 55, Roma: 45
   | { tipo: 'alquiler_fijo'; montoSemanal: number };
 
 export interface DisponibilidadSemanal {
@@ -106,7 +106,7 @@ export interface Turno {
   // en cualquier otro turno (seed, simulado, ya confirmado).
   expiraEn?: string | null;
   // Doble circuito de pago (Fase 5): 'mercado_pago' para modelo porcentaje
-  // (Mili/Sharon), 'transferencia' para alquiler_fijo (Sofía,
+  // (Mili/Roma), 'transferencia' para alquiler_fijo (Sofía,
   // Alexandra, Camila, Valentina) — 1:1 con el modeloComision de la
   // profesional al momento de reservar.
   circuitoPago?: 'mercado_pago' | 'transferencia';

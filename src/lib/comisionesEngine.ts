@@ -5,9 +5,42 @@ import { descuentoMercadoPago } from './pricing';
 /**
  * Motor de Cálculo de Comisiones — Rose Face Studio
  * Modelo híbrido:
- * - Porcentaje: Mili (55% profesional / 45% estudio), Sharon (45% profesional / 55% estudio)
+ * - Porcentaje: Mili (55% profesional / 45% estudio), Roma (45% profesional / 55% estudio)
  * - Alquiler Fijo: Cris, Ari ($52.500 a $60.000 semanales fijos para el estudio)
  */
+
+export interface ResumenReservasMercadoPago {
+  // Reservas de la semana pagadas por Mercado Pago (no canceladas): ya atendidas + por atender.
+  atendidasSemana: number;
+  porAtenderSemana: number;
+  // Todas las reservas pagadas por Mercado Pago a nombre de la profesional, de cualquier semana.
+  totalReservas: number;
+}
+
+/**
+ * Cuántas reservas pagadas por Mercado Pago tiene una profesional. A diferencia del cierre
+ * (que descuenta solo las ya atendidas), esto cuenta también las que todavía no vinieron:
+ * así la profesional ve cuántas reservas se hicieron a su nombre apenas la clienta paga.
+ * Las canceladas no cuentan. Usa la misma regla que el descuento (`descuentoMercadoPago`).
+ */
+export function resumenReservasMercadoPago(
+  profesionalId: string,
+  todosLosTurnos: Turno[],
+  semanaInicio: string,
+  semanaFin: string
+): ResumenReservasMercadoPago {
+  const pagadas = todosLosTurnos.filter(
+    (t) => t.profesionalId === profesionalId && t.estado !== 'cancelado' && descuentoMercadoPago(t) > 0
+  );
+  const deLaSemana = pagadas.filter((t) => t.fecha >= semanaInicio && t.fecha <= semanaFin);
+  const atendidasSemana = deLaSemana.filter((t) => t.estado === 'completado').length;
+  return {
+    atendidasSemana,
+    porAtenderSemana: deLaSemana.length - atendidasSemana,
+    totalReservas: pagadas.length,
+  };
+}
+
 export function calcularCierreSemanal(
   profesional: Profesional,
   todosLosTurnos: Turno[],

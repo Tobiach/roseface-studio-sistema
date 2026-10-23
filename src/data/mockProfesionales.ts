@@ -273,7 +273,7 @@ export const mockProfesionales: Profesional[] = [
     // ⚠️ Sigue en 0% — era el valor placeholder de cuando esto era un slot
     // genérico sin persona. Ahora que Vero tiene nombre propio, confirmar
     // con Yosy su comisión real (¿alquiler fijo como Anye/Cris/Ari, o
-    // porcentaje como Sharon/Mili?) — no inventado, dato pendiente real.
+    // porcentaje como Roma/Mili?) — no inventado, dato pendiente real.
     modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 0 },
     // Solo viernes. Turnos de 1 hora cada uno, de 8am a 8pm (confirmado
     // por Tobias 24/9/2026 — antes usaba la grilla automática cada 30 min,
