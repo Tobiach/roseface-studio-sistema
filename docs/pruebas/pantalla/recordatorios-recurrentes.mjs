@@ -1,5 +1,5 @@
 import { chromium } from 'playwright-core';
-const exe = process.env.USERPROFILE + '/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
+const exe = process.env.CHROMIUM_EXE || process.env.USERPROFILE + '/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe'; // CHROMIUM_EXE lo fija npm run pruebas:pantalla
 const b = await chromium.launch({ executablePath: exe, headless: true });
 const p = await (await b.newContext({ viewport: { width: 1400, height: 1100 } })).newPage();
 const errores = []; p.on('pageerror', (e) => errores.push(e.message));

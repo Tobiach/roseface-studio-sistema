@@ -1,0 +1,21 @@
+{
+  "_comentario": "Textos que DEBEN estar (o no) en el bundle de producción. Se actualiza al final de cada deploy con lo nuevo que se quiera comprobar. Sin secretos.",
+  "url": "https://roseface-studio-sistema.vercel.app",
+  "bundleDebeTener": [
+    "Editar reserva",
+    "Reactivar turno",
+    "Volvé a ingresar tu PIN",
+    "Reservas por Mercado Pago",
+    "Mili 55%, Roma 45%"
+  ],
+  "bundleNoDebeTener": [
+    "Sharon 45%"
+  ],
+  "endpointsQueDebenRechazar": [
+    { "metodo": "POST", "ruta": "/api/editar-turno", "sinPermiso": 401, "nota": "sin token" },
+    { "metodo": "POST", "ruta": "/api/marcar-sena-manual", "sinPermiso": 401, "nota": "sin token" },
+    { "metodo": "POST", "ruta": "/api/mercadopago/crear-link-pago", "sinPermiso": 401, "nota": "sin token" },
+    { "metodo": "POST", "ruta": "/api/mercadopago/webhook", "sinPermiso": 401, "nota": "sin firma de Mercado Pago" },
+    { "metodo": "GET", "ruta": "/api/editar-turno", "sinPermiso": 405, "nota": "solo POST" }
+  ]
+}

@@ -1,5 +1,5 @@
 import { chromium } from 'playwright-core';
-const exe = process.env.USERPROFILE + '/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
+const exe = process.env.CHROMIUM_EXE || process.env.USERPROFILE + '/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe'; // CHROMIUM_EXE lo fija npm run pruebas:pantalla
 const BASE = process.env.BASE_URL || 'http://localhost:5189';
 const ok = (c, m) => console.log(`${c ? 'OK   ' : 'FALLA'} ${m}`);
 const b = await chromium.launch({ executablePath: exe, headless: true });

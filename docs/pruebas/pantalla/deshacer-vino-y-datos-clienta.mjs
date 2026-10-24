@@ -1,6 +1,6 @@
 import { chromium } from 'playwright-core';
-const exe = process.env.USERPROFILE + '/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
-const BASE = 'http://localhost:5192';
+const exe = process.env.CHROMIUM_EXE || process.env.USERPROFILE + '/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe'; // CHROMIUM_EXE lo fija npm run pruebas:pantalla
+const BASE = process.env.BASE_URL || 'http://localhost:5192';
 const U = process.env.VITE_SUPABASE_URL, K = process.env.SUPABASE_SERVICE_ROLE_KEY, HH = { apikey: K, Authorization: 'Bearer ' + K };
 const ok = (c, m) => console.log(`${c ? 'OK   ' : 'FALLA'} ${m}`);
 const b = await chromium.launch({ executablePath: exe, headless: true });

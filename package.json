@@ -8,7 +8,12 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test:logica": "node scripts/pruebas/logica.mjs",
+    "setup:pruebas": "node scripts/pruebas/setup.mjs",
+    "pruebas:pantalla": "node scripts/pruebas/pantalla.mjs",
+    "verificar:deploy": "node scripts/pruebas/verificar-deploy.mjs",
+    "leer:base": "node scripts/pruebas/leer-base.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",

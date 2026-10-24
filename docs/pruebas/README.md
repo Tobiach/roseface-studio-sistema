@@ -4,6 +4,19 @@ Son los scripts con los que se verificó cada cambio de octubre antes de deploya
 (no se empaquetan ni se corren solos): se corren a mano, desde una carpeta TEMPORAL fuera del repo.
 Ninguno guarda datos reales ni contiene secretos: leen las variables de `.env.local` en el momento de correr.
 
+## Atajos (desde el 24/10/2026): todo con `npm run`
+| Comando | Qué hace |
+|---|---|
+| `npm run test:logica` | Corre TODAS las pruebas de `servidor/` y `logica/` (base falsa en memoria, sin red). Sale con código 1 si alguna línea dice `FALLA` o una prueba explota. Es lo que corre el CI (`.github/workflows/ci.yml`) |
+| `npm run setup:pruebas` | Una vez por máquina: instala `playwright-core` en `~/.roseface-pruebas` (fuera del repo) y busca el Chromium de Playwright (`-- --instalar-chromium` lo baja si no hay) |
+| `npm run pruebas:pantalla -- --lista` / `-- <nombre>` | Levanta la app en un puerto libre con datos reales de lectura (usa `.env.local` del repo o del repo principal), corre esa prueba de `pantalla/` con Chromium y apaga todo. La primera vez en una carpeta nueva precalienta Vite (puede tardar unos minutos) |
+| `npm run verificar:deploy [-- --vercel]` | Solo lectura sobre producción: bundle con los textos de `scripts/pruebas/deploy-esperado.json`, caché de `index.html`, endpoints que deben rechazar (401/405). `--vercel` suma `vercel ls` (se corre desde la carpeta principal, que es la vinculada al proyecto) |
+| `npm run leer:base -- <tabla> "<consulta>" [--contar]` | Lector de la base SOLO con GET y con datos sensibles enmascarados |
+
+Los scripts de `pantalla/` aceptan `BASE_URL` y `CHROMIUM_EXE` (los pone el corredor); a mano siguen funcionando con sus valores por defecto.
+Cada caso tiene que imprimir una línea que empiece con `OK   ` o `FALLA`: así deciden el corredor y el CI (varias pruebas terminan en
+`process.exit(0)` aunque fallen). Skills del proyecto relacionadas: `probar-sin-escribir`, `verificar-deploy` (en `.claude/skills/`).
+
 ## Reglas que se usaron siempre
 1. **Nunca escribir en la base real para probar.** Las escrituras del navegador se interceptan con
    `page.route('**/rest/v1/**', ...)` (se devuelve una fila falsa). La lectura sí es real (datos de producción).

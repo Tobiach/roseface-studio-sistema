@@ -1,8 +1,8 @@
-﻿// Comisiones: bloque "Reservas por Mercado Pago" en cada profesional (22/10/2026).
+// Comisiones: bloque "Reservas por Mercado Pago" en cada profesional (22/10/2026).
 // Lee los turnos REALES con la service key (adentro del script, sin imprimirla) para calcular lo esperado,
 // y compara con lo que dibuja el panel. Ninguna escritura sale: todo lo que no es GET se aborta.
 import { chromium } from 'playwright-core';
-const exe = process.env.USERPROFILE + '/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
+const exe = process.env.CHROMIUM_EXE || process.env.USERPROFILE + '/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe'; // CHROMIUM_EXE lo fija npm run pruebas:pantalla
 const BASE = process.env.BASE_URL || 'http://localhost:5189';
 const U = process.env.VITE_SUPABASE_URL, K = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ok = (c, m) => { console.log(`${c ? 'OK   ' : 'FALLA'} ${m}`); if (!c) process.exitCode = 1; };
@@ -45,7 +45,7 @@ const tarjetas = (p) => p.evaluate((nombres) => {
     const n = h.textContent.trim();
     if (!nombres.includes(n)) continue;
     let el = h;
-    for (let i = 0; i < 8 && el && !/FacturaciÃ³n Generada|Total de tus turnos/.test(el.innerText); i++) el = el.parentElement;
+    for (let i = 0; i < 8 && el && !/Facturación Generada|Total de tus turnos/.test(el.innerText); i++) el = el.parentElement;
     res[n] = el ? el.innerText.replace(/\s+/g, ' ') : '';
   }
   return res;
@@ -61,19 +61,19 @@ for (const [id, nombre] of Object.entries(nombres)) {
   const txt = t[nombre] || '';
   const esPorc = !['Ari', 'Cris'].includes(nombre);
   const debeMostrar = esPorc || e.total > 0;
-  if (!txt) { ok(false, `${nombre}: no se dibujÃ³ su tarjeta`); continue; }
+  if (!txt) { ok(false, `${nombre}: no se dibujó su tarjeta`); continue; }
   const muestra = /Reservas por Mercado Pago/i.test(txt);
   ok(muestra === debeMostrar, `${nombre}: ${debeMostrar ? 'muestra' : 'no muestra'} el bloque de Mercado Pago`);
   if (debeMostrar) {
     const sem = e.atendidas + e.porAtender;
-    ok(new RegExp(`Esta semana: ${reservas(sem)} Ã— \\$\\s?1\\.000 = \\$\\s?${(sem * 1000).toLocaleString('es-AR')}`).test(txt), `${nombre}: esta semana ${reservas(sem)} (= $${(sem * 1000).toLocaleString('es-AR')})`);
+    ok(new RegExp(`Esta semana: ${reservas(sem)} × \\$\\s?1\\.000 = \\$\\s?${(sem * 1000).toLocaleString('es-AR')}`).test(txt), `${nombre}: esta semana ${reservas(sem)} (= $${(sem * 1000).toLocaleString('es-AR')})`);
     ok(new RegExp(`Total desde el 13/10: ${reservas(e.total)} a nombre de ${nombre}`).test(txt), `${nombre}: total desde el 13/10 = ${reservas(e.total)}`);
     if (sem > 0) ok(new RegExp(`${e.atendidas} ya atendidas? .* ${e.porAtender} por atender`).test(txt), `${nombre}: ${e.atendidas} ya atendida(s) y ${e.porAtender} por atender`);
   }
 }
 ok(!/Sharon/.test(await p.locator('body').innerText()), 'En el panel ya no aparece "Sharon" (figura Roma)');
-ok(/Mili 55%, Roma 45%/.test(await p.locator('body').innerText()), 'La explicaciÃ³n del cÃ¡lculo dice "Mili 55%, Roma 45%"');
-ok(p.escrituras.every((w) => w === 'PATCH turnos'), `Solo se intentÃ³ la limpieza automÃ¡tica de holds vencidos que hace la app al abrir (y se abortÃ³): ${[...new Set(p.escrituras)].join(', ') || 'ninguna escritura'}`);
+ok(/Mili 55%, Roma 45%/.test(await p.locator('body').innerText()), 'La explicación del cálculo dice "Mili 55%, Roma 45%"');
+ok(p.escrituras.every((w) => w === 'PATCH turnos'), `Solo se intentó la limpieza automática de holds vencidos que hace la app al abrir (y se abortó): ${[...new Set(p.escrituras)].join(', ') || 'ninguna escritura'}`);
 await ctx.close();
 
 // 2) Como Mili (profesional): solo ve lo suyo, sin el corte del estudio ni datos de otras
@@ -87,9 +87,8 @@ ok(!/Rose Face \(\d+%\)/.test(tm['Mili'] || ''), 'Mili no ve el corte del estudi
 ok(!/Yosy|Roma/.test(await p.locator('main, body').first().innerText().then((x) => x.replace(/Control\.Evo Engine/g, '')).catch(() => '')) || true, '(control de nombres ajenos revisado abajo)');
 const cuerpo = await p.locator('body').innerText();
 ok(!/a nombre de (Yosy|Roma)|Detalle por Profesional/.test(cuerpo), 'Mili no ve tarjetas ni totales de otras profesionales');
-ok(p.escrituras.every((w) => w === 'PATCH turnos'), `Solo se intentÃ³ la limpieza automÃ¡tica de holds vencidos que hace la app al abrir (y se abortÃ³): ${[...new Set(p.escrituras)].join(', ') || 'ninguna escritura'}`);
+ok(p.escrituras.every((w) => w === 'PATCH turnos'), `Solo se intentó la limpieza automática de holds vencidos que hace la app al abrir (y se abortó): ${[...new Set(p.escrituras)].join(', ') || 'ninguna escritura'}`);
 await ctx.close();
 
 console.log('errores JS:', errores.length ? errores.join(' | ') : 'ninguno');
 await b.close();
-

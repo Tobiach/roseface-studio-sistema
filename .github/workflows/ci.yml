@@ -1,0 +1,46 @@
+# CI de Rose Face Studio: comprueba cada push antes de que nadie lo mire.
+#
+# Corre lint (tsc), build y las pruebas de lógica/servidor de docs/pruebas (base FALSA en memoria).
+# NO usa ningún secreto, NO toca la base real y NO deploya nada (el deploy lo hace Vercel por su lado).
+# Las pruebas de pantalla (Chromium con datos reales) no corren acá a propósito: necesitan claves de producción.
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+# Si llega otro push a la misma rama, se cancela la corrida anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # tsc se queda sin memoria con el tamaño de este proyecto (ver docs/HANDOFF-SESION.md, sección gotchas).
+      NODE_OPTIONS: --max-old-space-size=3072
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24 # el mismo que usa Vercel para este proyecto
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint (tsc --noEmit)
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Pruebas de lógica y de servidor
+        run: npm run test:logica
