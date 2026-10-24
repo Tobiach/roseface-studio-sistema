@@ -66,7 +66,7 @@ export const AdminAgenda: React.FC = () => {
     rolActivo,
     profesionalActivoId,
     actualizarEstadoTurno,
-    guardarServiciosTurno,
+    completarTurno,
     marcarSenaManual,
     sesionConToken,
     abrirPinModal,
@@ -1184,16 +1184,12 @@ export const AdminAgenda: React.FC = () => {
                 profesional={getProfesional(turnoSeleccionadoModal.profesionalId)}
                 servicios={servicios}
                 modo={panelServicios.modo}
+                puedeCambiarServicio={panelServicios.modo === 'confirmar' || !esProfesional}
                 onCancelar={() => setPanelServicios(null)}
-                onGuardar={async (extras) => {
+                onGuardar={async ({ servicioId, extras }) => {
                   const turnoActual = turnos.find((t) => t.id === turnoSeleccionadoModal.id) ?? turnoSeleccionadoModal;
                   const teniaExtras = (turnoActual.serviciosExtra ?? []).length > 0;
-                  const confirmando = panelServicios.modo === 'confirmar';
-                  // Sin extras (y sin extras previos que borrar) alcanza con el camino
-                  // de siempre: solo cambia el estado, el total queda como estaba.
-                  if (confirmando && extras.length === 0 && !teniaExtras) {
-                    await actualizarEstadoTurno(turnoActual.id, 'completado');
-                  } else if (!(await guardarServiciosTurno(turnoActual.id, extras, confirmando ? 'completado' : undefined))) {
+                  if (!(await completarTurno(turnoActual.id, { servicioId, serviciosExtra: extras.length || teniaExtras ? extras : undefined }))) {
                     return;
                   }
                   setPanelServicios(null);
@@ -1291,9 +1287,14 @@ export const AdminAgenda: React.FC = () => {
                           variant="primary"
                           size="sm"
                           onClick={async () => {
+                            // 24/10/2026 (pedido de Tobias): antes esto cerraba el modal
+                            // entero — había que reabrir el turno a mano para volver a
+                            // confirmarlo. Ahora deja el modal abierto, directo en "¿Qué
+                            // servicios se hizo?" (reabrir nunca toca servicio/extras/seña,
+                            // así que no hace falta esperar a que se refresque `turnos`).
                             if (await reabrirTurno(turnoSeleccionadoModal.id)) {
                               setDeshaciendo(false);
-                              setTurnoSeleccionadoModal(null);
+                              setPanelServicios({ turnoId: turnoSeleccionadoModal.id, modo: 'confirmar' });
                             }
                           }}
                         >

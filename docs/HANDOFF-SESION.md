@@ -1,4 +1,4 @@
-# HANDOFF — Rose Face Studio (estado al 22/10/2026)
+# HANDOFF — Rose Face Studio (estado al 22/10/2026, actualizado 24/10 — ver sección 10)
 
 > Documento de traspaso entre sesiones de Claude Code. Leerlo ENTERO antes de tocar nada.
 > Complementa a `CLAUDE.md` (reglas del repo), `docs/SEGURIDAD_PENDIENTE.md` (RLS/seguridad),
@@ -59,12 +59,12 @@ código entre funciones):
 | Endpoint | Auth | Qué hace |
 |---|---|---|
 | `verificar-pin` | rate-limit por IP | PIN → rol + **token HMAC 12 h** (secreto = `SUPABASE_SERVICE_ROLE_KEY`) |
-| `editar-turno` | **token** | acciones `editar` (servicio/día/hora/profesional/precio/seña), `cancelar` (motivo), `reactivar`, `reabrir` (deshacer "Vino"), `clienta` (nombre/teléfono/mail). El total lo calcula el servidor. Anota cada cambio en `notas_internas` y avisa a Yosy por mail si lo hace una profesional |
+| `editar-turno` | **token** | acciones `editar` (servicio/día/hora/profesional/precio/seña), `cancelar` (motivo), `reactivar`, `reabrir` (deshacer "Vino"), `clienta` (nombre/teléfono/mail), `completar` (24/10: confirmar "Vino" — puede cambiar el servicio PRINCIPAL realizado, no solo extras; solo Yosy si el turno ya estaba completado). El total lo calcula el servidor. Anota cada cambio en `notas_internas` y avisa a Yosy por mail si lo hace una profesional |
 | `marcar-sena-manual` | **token** | marca `aprobado_por_profesional` en turnos `manual` |
 | `mercadopago/crear-link-pago` | **token** | preferencia de MP atada a un turno manual (`external_reference = turno.id`), vence al empezar el turno |
 | `mercadopago/crear-preferencia` | pública | reserva online de la clienta: valida horario FIJO de la profesional y choques (409) |
 | `mercadopago/webhook` | firma MP | confirma el pago (`sena_confirmada`, `id_transaccion_mp`, `sena_verificada_automaticamente=true`); no revive un turno manual cancelado |
-| `actualizar-estado-turno` | **SIN token** (pendiente) | completar, "recordatorio enviado", servicios extra. `sena_confirmada` está bloqueado a propósito |
+| `actualizar-estado-turno` | **SIN token** (pendiente) | solo "recordatorio enviado" ya (24/10: "completar"/servicios extra se migró a `editar-turno` con token, ver abajo). `sena_confirmada` está bloqueado a propósito |
 | `aprobar-comprobante`, `guardar-comprobante` | — | circuito de transferencia (Ari, Cris) |
 
 **Base (Supabase, proyecto `xwsavcnsinshelfhagon`)** — hechos verificados:
@@ -197,6 +197,60 @@ alias correcto de Cris (`Crisbel.gonzalez` vs `.gonzlz`) · confirmar el horario
 seguridad (token en `actualizar-estado-turno`, revocar UPDATE público, etc.) · ideas ofrecidas no construidas: "cerrar semana"
 (bloquear ediciones de semanas liquidadas), cambio avisado a la clienta por WhatsApp, política/registro de cancelación (seña
 perdida o devuelta), lista de espera.
+
+## 10. Sesión del 24/10/2026 — confirmar "Vino" ya deja cambiar el servicio principal
+
+**Pedido de Tobias**: en el modal "Gestión de Turno" no se podía registrar cómodamente qué se
+hizo realmente al final (solo sumar extras, nunca cambiar el servicio PRINCIPAL reservado), y
+"Deshacer Vino" cerraba el modal entero en vez de dejarlo listo para confirmar de nuevo.
+
+**Confirmado por lectura de código antes de tocar nada** (no se pudo correr Chromium, ver
+abajo): el botón "Sí, deshacer" hacía `setTurnoSeleccionadoModal(null)` sin condición
+(`AdminAgenda.tsx`); `PanelServiciosRealizados.tsx` mostraba el servicio reservado como texto
+fijo, sin selector — el único `<select>` era para agregar extras.
+
+**3 preguntas respondidas por Tobias (las 3 "Recomendado")**:
+1. ¿Cambiar el servicio principal al confirmar "Vino"? → Sí.
+2. ¿Tras "Deshacer Vino" el modal queda abierto en "¿Qué servicios se hizo?"? → Sí.
+3. ¿Puede una profesional corregir servicios de un turno completado de días anteriores? → No,
+   solo Yosy (mismo criterio que ya regía para "Editar reserva").
+
+**Qué se construyó**:
+- Nueva acción `completar` en `api/editar-turno.ts` (**con token**, reemplaza lo que antes hacía
+  `actualizar-estado-turno.ts` SIN token para `estado='completado'`): confirma el turno, puede
+  cambiar `servicioId` (valida que la profesional lo realice, recalcula `monto_total` server-side
+  sumando los extras, deja `monto_sena` intacto porque la seña ya se cobró), puede actualizar
+  `servicios_extra`, mueve la marca de clienta recurrente al servicio nuevo si corresponde, 403 si
+  el turno ya estaba completado y no es Yosy. `actualizar-estado-turno.ts` queda solo para
+  "recordatorio enviado" (que no mueve plata).
+- `AppContext.tsx`: `completarTurno(id, { servicioId?, serviciosExtra? })` reemplaza a
+  `guardarServiciosTurno` (se borró, quedó sin uso) usando el mismo `llamarEdicion` con token que
+  ya usan `editarTurno`/`cancelarTurno`/etc.
+- `PanelServiciosRealizados.tsx`: la línea del servicio reservado ahora tiene un link "cambiar"
+  (oculto si no corresponde, vía la prop `puedeCambiarServicio`) que abre un selector con los
+  servicios que hace esa profesional; el total y el "Saldo a cobrar" (que ya restaba la seña,
+  del 15/10) se recalculan en pantalla con el servicio elegido.
+- `AdminAgenda.tsx`: "Sí, deshacer" ya no cierra el modal — abre directo
+  `panelServicios={ modo: 'confirmar' }` para el mismo turno (reabrir no toca servicio/extras/
+  seña, así que no hace falta esperar a que se refresque el array de turnos).
+
+**Verificación — con evidencia real, pero una sola pata no se pudo correr**:
+- ✅ **Lógica de servidor** (`docs/pruebas/servidor/editar-turno-completar.mjs`, 14 casos, contra
+  la base falsa): confirmar sin cambios, cambiar el servicio principal (total recalculado, seña
+  intacta), sumar un extra, 403 de una profesional sobre un turno ya completado, Yosy SÍ puede
+  (extra previo se conserva), 400 si la profesional no hace ese servicio, 400 turno cancelado,
+  401 sin token, 400 extras inválidos — **todos pasan**. Se corrieron también los 2 scripts
+  viejos de `editar-turno` (39 + 25 casos) para confirmar que nada se rompió: pasan igual.
+- ❌ **Pruebas de PANTALLA (Chromium) NO se pudieron correr en esta sesión**: el navegador no
+  tuvo salida de red ni a `localhost` ni a internet (`net::ERR_NAME_NOT_RESOLVED` incluso a un
+  sitio externo), con `curl` funcionando normal desde la terminal — restricción del entorno, no
+  del código (detalle en `docs/pruebas/README.md`, sección "Gotcha"). **No se verificó
+  visualmente** que el selector de servicio se vea bien ni que el modal efectivamente quede
+  abierto tras deshacer — solo que el código y la lógica del servidor son correctos. Recomendado
+  correr `docs/pruebas/pantalla/` de esto en una sesión donde Chromium sí tenga red, antes de
+  confiar 100% en la UI.
+- Lint y build: 0 errores.
+- **Sin deployar todavía** (queda para cuando Tobias confirme el push).
 
 ## 9. Cómo verificar un deploy (patrón usado siempre)
 1. `npm run lint` y `npm run build` en 0 → commit → (avisar/pedir OK) `git push origin main` — **el push ya deploya solo**; confirmar con

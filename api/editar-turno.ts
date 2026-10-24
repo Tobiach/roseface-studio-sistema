@@ -54,6 +54,37 @@ function leerSesion(token: string | undefined, secreto: string): Sesion | null {
   }
 }
 
+// Servicios extra cargados al confirmar que la clienta vino (ver
+// ServicioExtra en src/types) — duplicado de actualizar-estado-turno.ts a
+// propósito (24/10/2026): esa acción se mueve acá, al endpoint CON token,
+// porque tocaba `estado='completado'` sin ninguna sesión que distinga quién
+// lo pide (deuda marcada en docs/HANDOFF-SESION.md). `actualizar-estado-turno`
+// sigue viva solo para 'recordatorio_enviado', que no mueve plata.
+interface ServicioExtra {
+  nombre: string;
+  precio: number;
+  servicioId?: string | null;
+}
+const MAX_EXTRAS = 20;
+const MAX_PRECIO_EXTRA = 5_000_000;
+function validarExtras(valor: unknown): ServicioExtra[] | null {
+  if (!Array.isArray(valor) || valor.length > MAX_EXTRAS) return null;
+  const limpios: ServicioExtra[] = [];
+  for (const item of valor) {
+    const { nombre, precio, servicioId } = (item ?? {}) as Partial<ServicioExtra>;
+    const nombreLimpio = typeof nombre === 'string' ? nombre.trim().slice(0, 80) : '';
+    if (!nombreLimpio) return null;
+    if (typeof precio !== 'number' || !Number.isFinite(precio) || precio < 0 || precio > MAX_PRECIO_EXTRA) return null;
+    limpios.push({
+      nombre: nombreLimpio,
+      precio: Math.round(precio),
+      servicioId: typeof servicioId === 'string' && servicioId ? servicioId.slice(0, 64) : null,
+    });
+  }
+  return limpios;
+}
+const sumarExtras = (extras: ServicioExtra[]) => extras.reduce((acc, e) => acc + (Number(e.precio) || 0), 0);
+
 const MONTO_SENA_FIJO = 30000;
 function calcularMontoSena(servicio: { precio: number; categoria: string; requiere_sena?: boolean }): number {
   if (servicio.requiere_sena === false) return 0;
@@ -129,9 +160,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     nota?: string;
     motivo?: string;
     cliente?: { nombre?: unknown; telefono?: unknown; email?: unknown };
+    serviciosExtra?: unknown;
   };
   const { turnoId, accion } = body;
-  if (!turnoId || !['editar', 'cancelar', 'reactivar', 'reabrir', 'clienta'].includes(accion ?? '')) {
+  if (!turnoId || !['editar', 'cancelar', 'reactivar', 'reabrir', 'clienta', 'completar'].includes(accion ?? '')) {
     res.status(400).json({ ok: false, error: 'Faltan datos o la acción no es válida' });
     return;
   }
@@ -195,6 +227,119 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     }
     res.status(200).json({ ok: true, turno: fila });
+    return;
+  }
+
+  // ---------- COMPLETAR (confirmar "Vino", o corregir el desglose de un turno
+  // ya completado — reemplaza lo que antes hacía actualizar-estado-turno.ts
+  // SIN token para estado='completado'). Permite cambiar el servicio PRINCIPAL
+  // realizado (no solo los extras): la clienta reservó Clásicas y se hizo
+  // Híbridas, por ejemplo. La seña ya cobrada (MP o transferencia) no se toca
+  // acá — solo se recalcula el total; "cuánto falta cobrar en el estudio" lo
+  // sigue mostrando PanelServiciosRealizados.tsx restando turno.montoSena.
+  if (accion === 'completar') {
+    const yaCompletado = turno.estado === 'completado';
+    if (yaCompletado && !esAdmin) {
+      res.status(403).json({ ok: false, error: 'Solo Yosy puede editar los servicios de un turno ya completado (cambia las comisiones de esa semana)' });
+      return;
+    }
+    if (turno.estado === 'cancelado') {
+      res.status(400).json({ ok: false, error: 'Ese turno está cancelado: reactivalo antes de confirmarlo' });
+      return;
+    }
+
+    const cambiaServicio = !!body.servicioId && body.servicioId !== turno.servicio_id;
+    const servicioIdNuevo = cambiaServicio ? (body.servicioId as string) : turno.servicio_id;
+    let servicioNuevo: Fila | null = null;
+    let servicioViejoNombre: string | undefined;
+    if (cambiaServicio) {
+      const [{ data: serv }, { data: servViejo }] = await Promise.all([
+        supabaseAdmin.from('servicios').select('*').eq('id', servicioIdNuevo).maybeSingle(),
+        supabaseAdmin.from('servicios').select('nombre').eq('id', turno.servicio_id).maybeSingle(),
+      ]);
+      if (!serv) {
+        res.status(404).json({ ok: false, error: 'No se encontró ese servicio' });
+        return;
+      }
+      if (!(serv.profesionales_que_lo_realizan ?? []).includes(turno.profesional_id)) {
+        const { data: profActual } = await supabaseAdmin.from('profesionales').select('nombre').eq('id', turno.profesional_id).maybeSingle();
+        res.status(400).json({ ok: false, error: `${profActual?.nombre ?? 'Esta profesional'} no realiza ${serv.nombre}` });
+        return;
+      }
+      servicioNuevo = serv;
+      servicioViejoNombre = servViejo?.nombre;
+    }
+
+    let extrasValidados: ServicioExtra[] | undefined;
+    if (body.serviciosExtra !== undefined) {
+      const limpios = validarExtras(body.serviciosExtra);
+      if (!limpios) {
+        res.status(400).json({ ok: false, error: 'Los servicios extra no son válidos' });
+        return;
+      }
+      extrasValidados = limpios;
+    }
+
+    const extrasPrevios = Array.isArray(turno.servicios_extra) ? (turno.servicios_extra as ServicioExtra[]) : [];
+    const extrasFinal = extrasValidados ?? extrasPrevios;
+    const sumaExtrasFinal = sumarExtras(extrasFinal);
+    const montoTotal = cambiaServicio && servicioNuevo
+      ? Number(servicioNuevo.precio) + sumaExtrasFinal
+      : Math.max(0, Number(turno.monto_total) - sumarExtras(extrasPrevios)) + sumaExtrasFinal;
+
+    const cambios: string[] = [];
+    if (!yaCompletado) cambios.push('Confirmó que la clienta vino');
+    if (cambiaServicio) cambios.push(`servicio realizado: ${servicioViejoNombre ?? turno.servicio_id} → ${servicioNuevo!.nombre}`);
+    if (extrasValidados !== undefined) cambios.push(`extras: ${extrasFinal.length ? extrasFinal.map((e) => e.nombre).join(', ') : 'ninguno'}`);
+    if (montoTotal !== Number(turno.monto_total)) cambios.push(`total ${plata(Number(turno.monto_total))} → ${plata(montoTotal)}`);
+
+    const patch: Fila = {
+      estado: 'completado',
+      servicio_id: servicioIdNuevo,
+      monto_total: montoTotal,
+      servicios_extra: extrasFinal,
+      notas_internas: agregarAlRegistro(cambios.join('; ') || 'Confirmó los servicios realizados'),
+    };
+    const { data: fila, error } = await supabaseAdmin.from('turnos').update(patch).eq('id', turnoId).select('*').single();
+    if (error || !fila) {
+      console.error('[editar-turno] Error completando', turnoId, error);
+      res.status(500).json({ ok: false, error: 'No se pudo guardar el turno' });
+      return;
+    }
+
+    // Si cambió el servicio, la marca de recurrencia sigue al servicio nuevo (mismo criterio que en EDITAR).
+    if (cambiaServicio) {
+      const { data: marca } = await supabaseAdmin
+        .from('clientas_recurrentes_estado')
+        .select('*')
+        .eq('clienta_id', turno.clienta_id)
+        .eq('servicio_id', turno.servicio_id)
+        .eq('turno_id_ancla', turno.id)
+        .maybeSingle();
+      if (marca) {
+        const { data: yaExiste } = await supabaseAdmin
+          .from('clientas_recurrentes_estado')
+          .select('clienta_id')
+          .eq('clienta_id', turno.clienta_id)
+          .eq('servicio_id', servicioIdNuevo)
+          .maybeSingle();
+        if (!yaExiste) {
+          await supabaseAdmin
+            .from('clientas_recurrentes_estado')
+            .update({ servicio_id: servicioIdNuevo })
+            .eq('clienta_id', turno.clienta_id)
+            .eq('servicio_id', turno.servicio_id);
+        }
+      }
+    }
+
+    if (!esAdmin) {
+      await avisarleAYosy(
+        `${quien} confirmó un turno — ${fila.fecha}`,
+        `<p><strong>${escapeHtml(quien)}</strong>: ${escapeHtml(cambios.join('; '))}.</p>`
+      );
+    }
+    res.status(200).json({ ok: true, turno: fila, resumen: cambios });
     return;
   }
 

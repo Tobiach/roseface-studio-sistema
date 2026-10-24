@@ -63,9 +63,20 @@ BASE_URL=http://localhost:5189 node <tmp>/fuera-de-horario.mjs
 | `pantalla/whatsapp-sin-pestanas.mjs` | Con UA de iPhone no se abre ninguna pestaña; en PC una sola |
 | `pantalla/telefono-clienta-existente-y-datos-base.mjs` | El teléfono tipeado se guarda en una clienta existente; indicador "datos actualizados hace…" |
 | `logica/reservas-mercado-pago.mjs` | `resumenReservasMercadoPago` (canceladas, demo, anteriores al 13/10, otra profesional, límites de la semana) y que el descuento del cierre no cambió (compilar `src/lib/comisionesEngine.ts` como `./eng.mjs`) |
+| `servidor/editar-turno-completar.mjs` | Acción `completar` (24/10): confirmar "Vino" cambiando el servicio PRINCIPAL (no solo extras), total recalculado, seña ya cobrada intacta, 403 si una profesional toca un turno ya completado (solo Yosy), 400 si el servicio no lo hace esa profesional o el turno está cancelado — 14 casos |
 | `pantalla/comisiones-reservas-mercado-pago.mjs` | Comisiones con datos reales: el bloque "Reservas por Mercado Pago" de cada profesional coincide con lo calculado desde la base (esperado leído con la service key adentro del script), vista de Mili sin datos ajenos, sin "Sharon" |
 | `pantalla/mili-volumen-tecnologico.mjs` | Perfiles públicos (`/profesionales/mili`, `/roma`, `/yosy`, URL por nombre): Mili lista Volumen Tecnológico YY y no Natural/Medio/Mega Volumen ni Lash Rose Face (22/10) |
 | `pantalla/fuera-de-horario*.mjs` | Agendar fuera de horario / día libre, avisos, marca ⏱ en calendario, tope de medianoche, web de clientas intacta |
+
+## Gotcha: Chromium puede no tener salida de red en algunos entornos
+
+24/10/2026: en una sesión puntual, el Chromium lanzado por Playwright no pudo conectarse ni
+a `localhost` (vite) ni a un sitio externo (`net::ERR_NAME_NOT_RESOLVED` en `https://example.com/`)
+aunque `curl` desde la terminal sí respondía — una restricción de red a nivel del proceso del
+navegador, no arreglable con `--no-sandbox` ni otros flags. En ese caso no se pudieron correr las
+pruebas de PANTALLA; se usaron igual las de LÓGICA/SERVIDOR (no abren navegador, no vieron el
+problema) y se avisó explícitamente qué no se pudo verificar. Si esto vuelve a pasar, no insistir
+con flags de Chromium — probar primero si Node/curl sí tienen salida de red y documentarlo.
 
 ## Pruebas de producción hechas sin escribir (ejemplo de patrón)
 Leer un PIN real desde `codigos_acceso` con la service key **dentro del script, sin imprimirlo**, hacer login en

@@ -17,7 +17,11 @@ interface Props {
   servicios: Servicio[];
   // 'confirmar' = el turno todavía no se completó; 'editar' = ya estaba completado.
   modo: 'confirmar' | 'editar';
-  onGuardar: (extras: ServicioExtra[]) => Promise<void>;
+  // En modo 'editar' (turno ya completado), cambiar el servicio es solo de Yosy
+  // (mismo criterio que "Editar reserva" — cambia comisiones ya liquidadas). El
+  // servidor lo exige igual; esto solo evita mostrar una opción que va a rebotar.
+  puedeCambiarServicio: boolean;
+  onGuardar: (cambios: { servicioId?: string; extras: ServicioExtra[] }) => Promise<void>;
   onCancelar: () => void;
 }
 
@@ -29,6 +33,7 @@ export const PanelServiciosRealizados: React.FC<Props> = ({
   profesional,
   servicios,
   modo,
+  puedeCambiarServicio,
   onGuardar,
   onCancelar,
 }) => {
@@ -37,10 +42,23 @@ export const PanelServiciosRealizados: React.FC<Props> = ({
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
   const [guardando, setGuardando] = useState(false);
+  // 24/10/2026 (pedido de Tobias): se puede corregir qué servicio PRINCIPAL se
+  // hizo de verdad (reservó Clásicas, se hizo Híbridas) — no solo sumar extras.
+  const [cambiandoServicio, setCambiandoServicio] = useState(false);
+  const [servicioElegidoId, setServicioElegidoId] = useState(turno.servicioId);
+
+  const serviciosQueHaceLaProfesional = useMemo(
+    () => (profesional ? servicios.filter((s) => s.profesionalesQueLoRealizan.includes(profesional.id)) : servicios),
+    [servicios, profesional]
+  );
+  const servicioElegido = servicios.find((s) => s.id === servicioElegidoId) ?? servicioBase;
+  const cambioServicio = servicioElegidoId !== turno.servicioId;
 
   // montoTotal ya incluye los extras guardados antes: se descuentan para
-  // mostrar el precio del servicio reservado.
-  const precioBase = turno.montoTotal - (turno.serviciosExtra ?? []).reduce((a, e) => a + e.precio, 0);
+  // mostrar el precio del servicio reservado (o el nuevo, si se cambió).
+  const precioBase = cambioServicio
+    ? servicioElegido?.precio ?? 0
+    : turno.montoTotal - (turno.serviciosExtra ?? []).reduce((a, e) => a + e.precio, 0);
   const total = precioBase + extras.reduce((a, e) => a + e.precio, 0);
   // 15/10/2026 (pedido de Tobias): la seña ya se cobró de antemano (por
   // Mercado Pago o por transferencia, según el circuito) — lo que falta
@@ -94,7 +112,7 @@ export const PanelServiciosRealizados: React.FC<Props> = ({
 
   const guardar = async () => {
     setGuardando(true);
-    await onGuardar(extras);
+    await onGuardar({ servicioId: cambioServicio ? servicioElegidoId : undefined, extras });
     setGuardando(false);
   };
 
@@ -105,12 +123,48 @@ export const PanelServiciosRealizados: React.FC<Props> = ({
       </label>
 
       <div className="rounded-xl border border-pink-200 divide-y divide-pink-100 text-xs">
-        <div className="flex items-center justify-between px-3 py-2">
-          <span>
-            {servicioBase?.nombre ?? 'Servicio reservado'} <span className="text-gray-400">(reservado)</span>
-          </span>
-          <span className="font-semibold">{formatCurrency(precioBase)}</span>
-        </div>
+        {cambiandoServicio ? (
+          <div className="px-3 py-2 space-y-1.5">
+            <select
+              value={servicioElegidoId}
+              onChange={(e) => setServicioElegidoId(e.target.value)}
+              className="w-full px-2 py-1.5 rounded-lg border border-pink-200 text-xs bg-white"
+            >
+              {serviciosQueHaceLaProfesional.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nombre} — {formatCurrency(s.precio)}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => {
+                setServicioElegidoId(turno.servicioId);
+                setCambiandoServicio(false);
+              }}
+              className="text-[10px] text-gray-400 hover:text-rf-danger cursor-pointer"
+            >
+              Cancelar cambio
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className="min-w-0">
+              {servicioElegido?.nombre ?? 'Servicio reservado'}{' '}
+              <span className="text-gray-400">{cambioServicio ? '(lo que realmente se hizo)' : '(reservado)'}</span>
+              {puedeCambiarServicio && (
+                <button
+                  type="button"
+                  onClick={() => setCambiandoServicio(true)}
+                  className="ml-1.5 text-[10px] text-rf-rose-deep hover:underline cursor-pointer"
+                >
+                  cambiar
+                </button>
+              )}
+            </span>
+            <span className="font-semibold shrink-0">{formatCurrency(precioBase)}</span>
+          </div>
+        )}
         {extras.map((extra, i) => (
           <div key={`${extra.nombre}-${i}`} className="flex items-center justify-between gap-2 px-3 py-2">
             <span className="min-w-0 truncate">

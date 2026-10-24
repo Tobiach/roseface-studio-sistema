@@ -55,9 +55,11 @@ interface AppContextType {
   crearTurno: (data: Omit<Turno, 'id' | 'fechaCreacion'>) => Promise<Turno>;
   registrarTurnoLocal: (turno: Turno) => void;
   actualizarEstadoTurno: (id: string, nuevoEstado: EstadoTurno, notasInternas?: string) => Promise<void>;
-  // Confirma que la clienta vino (o corrige el desglose de un turno ya completado)
-  // con los servicios extra hechos presencialmente. Devuelve true si se guardó.
-  guardarServiciosTurno: (id: string, extras: ServicioExtra[], nuevoEstado?: EstadoTurno) => Promise<boolean>;
+  // Confirma que la clienta vino (o corrige el desglose de un turno ya completado):
+  // servicio PRINCIPAL realmente hecho (si cambió) + extras. Pasa por
+  // api/editar-turno.ts con token (24/10/2026 — antes iba sin token por
+  // actualizar-estado-turno.ts). Devuelve true si se guardó.
+  completarTurno: (id: string, opciones?: { servicioId?: string; serviciosExtra?: ServicioExtra[] }) => Promise<boolean>;
   // Registra (o deshace) que se abonó la seña de un turno cargado a mano. Exige
   // PIN reciente (token de sesión); devuelve true si se guardó.
   marcarSenaManual: (id: string, abonada: boolean) => Promise<boolean>;
@@ -423,60 +425,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Estado de turno actualizado a: ${nuevoEstado.replace('_', ' ')}`);
   };
 
-  // Servicios extra hechos en el momento (ver ServicioExtra en types). El
-  // total lo calcula el servidor (api/actualizar-estado-turno.ts) y vuelve en
-  // la respuesta — así lo que se ve en pantalla es lo mismo que quedó guardado
-  // y que usan Comisiones y Caja (todo lee Turno.montoTotal).
-  const guardarServiciosTurno = async (
-    id: string,
-    extras: ServicioExtra[],
-    nuevoEstado?: EstadoTurno
-  ): Promise<boolean> => {
-    let montoTotal: number | undefined;
-    let extrasGuardados = extras;
-
-    if (supabaseEnabled && supabase) {
-      try {
-        const resp = await fetch('/api/actualizar-estado-turno', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ turnoId: id, nuevoEstado, serviciosExtra: extras }),
-        });
-        const data = (await resp.json().catch(() => ({}))) as {
-          ok?: boolean;
-          montoTotal?: number;
-          serviciosExtra?: ServicioExtra[];
-        };
-        if (!resp.ok || !data.ok) {
-          showToast('❌ No se pudieron guardar los servicios del turno.');
-          return false;
-        }
-        montoTotal = data.montoTotal;
-        extrasGuardados = data.serviciosExtra ?? extras;
-      } catch {
-        showToast('❌ No se pudieron guardar los servicios del turno.');
-        return false;
-      }
-    }
-
-    setTurnos((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
-        // Sin servidor (demo local) el total se recalcula acá con la misma regla.
-        const sumaPrevia = (t.serviciosExtra ?? []).reduce((a, e) => a + e.precio, 0);
-        const sumaNueva = extrasGuardados.reduce((a, e) => a + e.precio, 0);
-        return {
-          ...t,
-          estado: nuevoEstado ?? t.estado,
-          serviciosExtra: extrasGuardados,
-          montoTotal: montoTotal ?? t.montoTotal - sumaPrevia + sumaNueva,
-        };
-      })
-    );
-    showToast(nuevoEstado === 'completado' ? '✓ Turno completado y servicios registrados' : '✓ Servicios del turno actualizados');
-    return true;
-  };
-
   // Las acciones que exigen PIN reciente (registrar una seña, generar un link de pago)
   // piden volver a ingresarlo cuando la sesión no tiene token vigente.
   const pedirPinDeNuevo = () => {
@@ -670,6 +618,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const reabrirTurno = async (id: string) => {
     const r = await llamarEdicion(id, { accion: 'reabrir' });
     if (r.ok) showToast('↩️ Listo: el turno volvió a pendiente y ya no suma a las comisiones');
+    return r.ok;
+  };
+
+  const completarTurno = async (id: string, opciones: { servicioId?: string; serviciosExtra?: ServicioExtra[] } = {}) => {
+    const r = await llamarEdicion(id, { accion: 'completar', ...opciones });
+    if (r.ok) showToast('✓ Turno completado y servicios registrados');
     return r.ok;
   };
 
@@ -933,7 +887,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         crearTurno,
         registrarTurnoLocal,
         actualizarEstadoTurno,
-        guardarServiciosTurno,
+        completarTurno,
         marcarSenaManual,
         sesionConToken: !supabaseEnabled || !!sesionToken,
         estadoDatos,
