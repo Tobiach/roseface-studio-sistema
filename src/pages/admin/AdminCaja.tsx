@@ -60,8 +60,8 @@ export const AdminCaja: React.FC = () => {
     .reduce((sum, t) => sum + t.montoTotal, 0);
 
   const turnosDelMes = turnosNoCancelados.filter((t) => t.fecha.startsWith(mesActual));
-  // Reservas del mes pagadas por Mercado Pago: MP descuenta una comisión de cada una
-  // (ya sumada al precio del servicio) — ver DESCUENTO_MP_POR_RESERVA en lib/pricing.ts.
+  // Reservas del mes con el cargo de gestión de $1.000 ya sumado al precio del servicio
+  // (Mercado Pago o transferencia, ver descuentoMercadoPago en lib/pricing.ts).
   const reservasMPMes = turnosDelMes.filter((t) => descuentoMercadoPago(t) > 0);
   const descuentoMPMes = reservasMPMes.reduce((sum, t) => sum + descuentoMercadoPago(t), 0);
   const facturacionMes = turnosDelMes.reduce((sum, t) => sum + t.montoTotal, 0);
@@ -204,7 +204,7 @@ export const AdminCaja: React.FC = () => {
           <span className="text-[10px] text-rf-charcoal block">{turnosDelMes.length} turnos en el mes</span>
           {descuentoMPMes > 0 && (
             <span className="text-[10px] text-violet-800 block">
-              Incluye {reservasMPMes.length} reserva{reservasMPMes.length === 1 ? '' : 's'} por Mercado Pago: MP descuenta {formatCurrency(descuentoMPMes)} (se resta en Comisiones antes de repartir)
+              Incluye {reservasMPMes.length} reserva{reservasMPMes.length === 1 ? '' : 's'} con cargo de gestión (Mercado Pago o transferencia): {formatCurrency(descuentoMPMes)} que se restan en Comisiones antes de repartir
             </span>
           )}
         </Card>

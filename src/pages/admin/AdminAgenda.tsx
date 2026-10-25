@@ -14,7 +14,7 @@ import { PanelEditarTurno } from '../../components/admin/PanelEditarTurno';
 import { PanelEditarClienta } from '../../components/admin/PanelEditarClienta';
 import { AvisoHorario } from '../../components/admin/AvisoHorario';
 import { formatCurrency, formatDateReadable, formatDateShort } from '../../lib/formatters';
-import { ventanasDelTurno, estadoSena, estadoRecordatorios, mensajeParaTurno, llevaLinkDePago, type VentanaRecordatorio } from '../../lib/recordatorios';
+import { ventanasDelTurno, estadoSena, estadoRecordatorios, mensajeParaTurno, llevaLinkDePago, puedeProfesionalEditarCompletado, type VentanaRecordatorio } from '../../lib/recordatorios';
 import { SenaBadge } from '../../components/ui/SenaBadge';
 import { hoyISO, sumarDiasISO, sumarMinutos, finSinPasarMedianoche, turnoBloqueaHorario, encajeEnHorario, DIAS_SEMANA } from '../../lib/disponibilidad';
 import { calcularMontoSena, descuentoMercadoPago, DESCUENTO_MP_POR_RESERVA } from '../../lib/pricing';
@@ -506,7 +506,7 @@ export const AdminAgenda: React.FC = () => {
               <Badge variant="neutral" size="sm">⏱ Fuera de horario</Badge>
             )}
             {descuentoMercadoPago(turno) > 0 && (
-              <Badge variant="neutral" size="sm">Mercado Pago · −{formatCurrency(DESCUENTO_MP_POR_RESERVA)}</Badge>
+              <Badge variant="neutral" size="sm">Cargo de gestión · −{formatCurrency(DESCUENTO_MP_POR_RESERVA)}</Badge>
             )}
             <StatusPill estado={turno.estado} senaAparte />
           </div>
@@ -1042,6 +1042,7 @@ export const AdminAgenda: React.FC = () => {
                     key={clientaDelTurno.id}
                     clienta={clientaDelTurno}
                     puedeVaciarTelefono={!esProfesional}
+                    puedeVerTelefono={!esProfesional}
                     onCancelar={() => setEditandoClienta(false)}
                     onGuardar={async (datos) => {
                       const r = await editarClienta(turnoSeleccionadoModal.id, datos);
@@ -1052,11 +1053,16 @@ export const AdminAgenda: React.FC = () => {
                 ) : (
                   <div className="flex items-center justify-between gap-2">
                     <p className="min-w-0">
-                      <strong>Clienta:</strong> {clientaDelTurno.nombre} ·{' '}
-                      {clientaDelTurno.telefono ? (
-                        clientaDelTurno.telefono
-                      ) : (
-                        <span className="text-amber-800 font-semibold">sin teléfono</span>
+                      <strong>Clienta:</strong> {clientaDelTurno.nombre}
+                      {!esProfesional && (
+                        <>
+                          {' · '}
+                          {clientaDelTurno.telefono ? (
+                            clientaDelTurno.telefono
+                          ) : (
+                            <span className="text-amber-800 font-semibold">sin teléfono</span>
+                          )}
+                        </>
                       )}
                     </p>
                     <button
@@ -1098,8 +1104,8 @@ export const AdminAgenda: React.FC = () => {
               )}
               {descuentoMercadoPago(turnoSeleccionadoModal) > 0 && (
                 <p className="text-violet-800">
-                  <strong>Mercado Pago:</strong> la seña se pagó por Mercado Pago, que descuenta{' '}
-                  {formatCurrency(DESCUENTO_MP_POR_RESERVA)} de esta reserva (se resta antes de calcular los porcentajes).
+                  <strong>Cargo de gestión:</strong> esta reserva ya trae {formatCurrency(DESCUENTO_MP_POR_RESERVA)} de más
+                  en el precio (se resta antes de calcular los porcentajes), haya pagado la seña por Mercado Pago o por transferencia.
                 </p>
               )}
             </div>
@@ -1184,7 +1190,11 @@ export const AdminAgenda: React.FC = () => {
                 profesional={getProfesional(turnoSeleccionadoModal.profesionalId)}
                 servicios={servicios}
                 modo={panelServicios.modo}
-                puedeCambiarServicio={panelServicios.modo === 'confirmar' || !esProfesional}
+                puedeCambiarServicio={
+                  panelServicios.modo === 'confirmar' ||
+                  !esProfesional ||
+                  puedeProfesionalEditarCompletado(turnoSeleccionadoModal, hoyISO())
+                }
                 onCancelar={() => setPanelServicios(null)}
                 onGuardar={async ({ servicioId, extras }) => {
                   const turnoActual = turnos.find((t) => t.id === turnoSeleccionadoModal.id) ?? turnoSeleccionadoModal;
@@ -1221,24 +1231,33 @@ export const AdminAgenda: React.FC = () => {
                 </div>
               ) : (
               <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className={turnoSeleccionadoModal.estado === 'completado' ? 'col-span-2' : ''}
-                  onClick={() =>
-                    setPanelServicios({
-                      turnoId: turnoSeleccionadoModal.id,
-                      modo: turnoSeleccionadoModal.estado === 'completado' ? 'editar' : 'confirmar',
-                    })
-                  }
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>
-                    {turnoSeleccionadoModal.estado === 'completado'
-                      ? 'Editar servicios realizados'
-                      : 'Vino — confirmar servicios'}
-                  </span>
-                </Button>
+                {turnoSeleccionadoModal.estado === 'completado' &&
+                esProfesional &&
+                !puedeProfesionalEditarCompletado(turnoSeleccionadoModal, hoyISO()) ? (
+                  <p className="col-span-2 text-[11px] text-rf-charcoal bg-rf-cream border border-pink-100 rounded-xl p-2">
+                    Ya pasaron más de 4hs desde que confirmaste este turno (o es de otro día): solo Yosy puede corregir
+                    el servicio o los extras ahora (cambia las comisiones de esa semana).
+                  </p>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className={turnoSeleccionadoModal.estado === 'completado' ? 'col-span-2' : ''}
+                    onClick={() =>
+                      setPanelServicios({
+                        turnoId: turnoSeleccionadoModal.id,
+                        modo: turnoSeleccionadoModal.estado === 'completado' ? 'editar' : 'confirmar',
+                      })
+                    }
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>
+                      {turnoSeleccionadoModal.estado === 'completado'
+                        ? 'Editar servicios realizados'
+                        : 'Vino — confirmar servicios'}
+                    </span>
+                  </Button>
+                )}
 
                 {turnoSeleccionadoModal.estado !== 'completado' && (
                   <Button
@@ -1584,6 +1603,8 @@ export const AdminAgenda: React.FC = () => {
                     ? tmTelefonoTipeado
                       ? '✓ Ya está cargada en el sistema, sin teléfono: el que escribas se guarda en su ficha.'
                       : 'Ya está cargada en el sistema pero sin teléfono: escribilo para guardarlo en su ficha.'
+                    : esProfesional
+                    ? 'Ya está cargada en el sistema con un teléfono (solo Yosy lo ve). Se usa el que ya tiene guardado.'
                     : tmTelefonoTipeado && tmTelefonoTipeado !== tmClientaExistente.telefono
                     ? `⚠️ Ya está cargada con el teléfono ${tmClientaExistente.telefono}. Se usa ese; si cambió, corregilo con "Editar datos" en el turno.`
                     : `Ya está cargada en el sistema (teléfono ${tmClientaExistente.telefono}).`}

@@ -60,18 +60,27 @@ reset();
 r = await llamar({}, { turnoId: 1, accion: 'clienta', cliente: { nombre: 'X' } }); ok(r.status === 401, `sin token -> 401 (${r.status})`);
 r = await llamar({ authorization: MILI }, { turnoId: 5, accion: 'clienta', cliente: { telefono: '1155551234' } }); ok(r.status === 403, `profesional sobre clienta de turno ajeno -> 403 (${r.status})`);
 r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'clienta', cliente: {} }); ok(r.status === 400 && /nada para cambiar/.test(r.body.error), `sin cambios -> 400 (${r.body.error})`);
-r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'clienta', cliente: { telefono: '12345' } }); ok(r.status === 400, `teléfono muy corto -> 400 (${r.status})`);
-r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'clienta', cliente: { telefono: 'llamar a la tarde' } }); ok(r.status === 400, `teléfono con letras -> 400 (${r.status})`);
-r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'clienta', cliente: { telefono: '1'.repeat(20) } }); ok(r.status === 400, `teléfono larguísimo -> 400 (${r.status})`);
-r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'clienta', cliente: { telefono: '' } }); ok(r.status === 400, `profesional vaciando el teléfono -> 400 (${r.status})`);
+// Formato de teléfono se prueba sobre c2 (turno 2), que todavía NO tiene uno cargado: completar uno vacío
+// sigue siendo territorio de la profesional (25/10), así que estos casos llegan a la validación de formato.
+r = await llamar({ authorization: MILI }, { turnoId: 2, accion: 'clienta', cliente: { telefono: '12345' } }); ok(r.status === 400, `teléfono muy corto -> 400 (${r.status})`);
+r = await llamar({ authorization: MILI }, { turnoId: 2, accion: 'clienta', cliente: { telefono: 'llamar a la tarde' } }); ok(r.status === 400, `teléfono con letras -> 400 (${r.status})`);
+r = await llamar({ authorization: MILI }, { turnoId: 2, accion: 'clienta', cliente: { telefono: '1'.repeat(20) } }); ok(r.status === 400, `teléfono larguísimo -> 400 (${r.status})`);
+// c1 (turno 1) YA tiene teléfono cargado: desde el 25/10 una profesional no puede verlo ni tocarlo,
+// ni para cambiarlo ni para vaciarlo — ahora rebota 403 antes de llegar a validar el formato.
+r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'clienta', cliente: { telefono: '' } }); ok(r.status === 403 && /Solo Yosy/.test(r.body.error), `profesional vaciando un teléfono YA cargado -> 403 (${r.status}, ${r.body.error})`);
+r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'clienta', cliente: { telefono: '011 15 2769-6736' } }); ok(r.status === 403 && /Solo Yosy/.test(r.body.error), `profesional cambiando un teléfono YA cargado -> 403 (${r.status}, ${r.body.error})`);
 r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'clienta', cliente: { nombre: 'A' } }); ok(r.status === 400, `nombre de 1 letra -> 400 (${r.status})`);
 r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'clienta', cliente: { email: 'esto-no-es-un-mail' } }); ok(r.status === 400, `mail inválido -> 400 (${r.status})`);
 ok(clienta('c1').telefono === '1127696736', 'ninguno de los rechazos modificó a la clienta');
-r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'clienta', cliente: { nombre: '  Ana   María  Pérez ', telefono: '011 15 2769-6736', email: 'ana@mail.com' } });
-ok(r.status === 200 && clienta('c1').nombre === 'Ana María Pérez' && clienta('c1').telefono === '011 15 2769-6736' && clienta('c1').email === 'ana@mail.com', `profesional corrige nombre, teléfono y mail (${clienta('c1').nombre} / ${clienta('c1').telefono} / ${clienta('c1').email})`);
+r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'clienta', cliente: { nombre: '  Ana   María  Pérez ', email: 'ana@mail.com' } });
+ok(r.status === 200 && clienta('c1').nombre === 'Ana María Pérez' && clienta('c1').telefono === '1127696736' && clienta('c1').email === 'ana@mail.com', `profesional corrige nombre y mail, SIN tocar el teléfono (${clienta('c1').nombre} / ${clienta('c1').telefono} / ${clienta('c1').email})`);
 ok(r.body.clienta?.id === 'c1', 'devuelve la clienta ya guardada (para refrescar la pantalla)');
-ok(/Mili\] Corrigió datos de la clienta: nombre Ana Pérez → Ana María Pérez; teléfono actualizado; mail actualizado/.test(turno(1).notas_internas) && !/2769/.test(turno(1).notas_internas), 'queda anotado en el turno SIN copiar el teléfono');
+ok(/Mili\] Corrigió datos de la clienta: nombre Ana Pérez → Ana María Pérez; mail actualizado/.test(turno(1).notas_internas), 'queda anotado en el turno, sin mención al teléfono');
 r = await llamar({ authorization: MILI }, { turnoId: 2, accion: 'clienta', cliente: { telefono: '1153690865' } });
-ok(r.status === 200 && (r.body.advertencias ?? []).some((a) => /Cami Ruiz/.test(a)), `teléfono repetido: guarda pero avisa que ya lo tiene otra clienta (${(r.body.advertencias ?? []).join(' ')})`);
+ok(r.status === 200 && (r.body.advertencias ?? []).some((a) => /Cami Ruiz/.test(a)), `profesional completa el teléfono VACÍO de c2: guarda y avisa que ya lo tiene otra clienta (${(r.body.advertencias ?? []).join(' ')})`);
+r = await llamar({ authorization: MILI }, { turnoId: 2, accion: 'clienta', cliente: { telefono: '1159998888' } });
+ok(r.status === 403, `... pero una vez cargado, la misma profesional ya no puede volver a cambiarlo (${r.status})`);
+r = await llamar({ authorization: ADMIN }, { turnoId: 1, accion: 'clienta', cliente: { telefono: '011 15 2769-6736' } });
+ok(r.status === 200 && clienta('c1').telefono === '011 15 2769-6736', `Yosy sí puede cambiar un teléfono ya cargado (${clienta('c1').telefono})`);
 r = await llamar({ authorization: ADMIN }, { turnoId: 1, accion: 'clienta', cliente: { telefono: '', email: '' } });
 ok(r.status === 200 && clienta('c1').telefono === '' && clienta('c1').email === null, 'Yosy sí puede vaciar teléfono y mail');

@@ -26,6 +26,7 @@ export function turnoFromRow(row: any): Turno {
     comprobanteTransferenciaUrl: row.comprobante_transferencia_url ?? null,
     aprobadoPorProfesional: row.aprobado_por_profesional ?? false,
     serviciosExtra: Array.isArray(row.servicios_extra) ? row.servicios_extra : [],
+    completadoEn: row.completado_en ?? null,
   };
 }
 

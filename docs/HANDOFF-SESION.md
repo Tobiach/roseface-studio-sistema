@@ -1,4 +1,4 @@
-# HANDOFF — Rose Face Studio (estado al 22/10/2026, actualizado 24/10 — ver sección 10)
+# HANDOFF — Rose Face Studio (estado al 22/10/2026, actualizado 25/10 — ver sección 11)
 
 > Documento de traspaso entre sesiones de Claude Code. Leerlo ENTERO antes de tocar nada.
 > Complementa a `CLAUDE.md` (reglas del repo), `docs/SEGURIDAD_PENDIENTE.md` (RLS/seguridad),
@@ -39,8 +39,9 @@
   descuento MP · `f516054` sin recordatorio 4h · `e2075d5` seña pagada/pendiente visible · `1b9b878` recordatorios de seña
   72/48/24h + calendario completo · `46e7634` fix turno manual (RLS) · `3769db6` textos Home, PIN directo, Anye fuera, extras.
 - **SQL**: `servicios_extra` (jsonb en `turnos`) ✅ aplicado · CHECK de `recordatorios_config` con '72h' ✅ aplicado (confirmado 17/10) ·
-  `docs/sql/2026-10-17_revocar_update_turnos_anon.sql` ⏳ OPCIONAL, NO aplicado · el SQL de RLS del 11/10
-  (`SEGURIDAD_PENDIENTE.md`) → estado NO verificado en esta sesión.
+  `docs/sql/2026-10-17_revocar_update_turnos_anon.sql` ⏳ OPCIONAL, NO aplicado ·
+  `docs/sql/2026-10-25_turnos_completado_en.sql` ⏳ **FALTA aplicar** (necesaria para la ventana de 4hs, sección 11) · el SQL de
+  RLS del 11/10 (`SEGURIDAD_PENDIENTE.md`) → estado NO verificado en esta sesión.
 - **Pruebas end-to-end reales pendientes** (porque escribirían en producción): guardado exitoso de editar/cancelar/reactivar/
   deshacer/editar clienta, un pago REAL por el link de MP (el link se generó y la página de MP abre, falta pagar), WhatsApp en un
   iPhone real, y un turno manual real fuera de horario.
@@ -59,7 +60,7 @@ código entre funciones):
 | Endpoint | Auth | Qué hace |
 |---|---|---|
 | `verificar-pin` | rate-limit por IP | PIN → rol + **token HMAC 12 h** (secreto = `SUPABASE_SERVICE_ROLE_KEY`) |
-| `editar-turno` | **token** | acciones `editar` (servicio/día/hora/profesional/precio/seña), `cancelar` (motivo), `reactivar`, `reabrir` (deshacer "Vino"), `clienta` (nombre/teléfono/mail), `completar` (24/10: confirmar "Vino" — puede cambiar el servicio PRINCIPAL realizado, no solo extras; solo Yosy si el turno ya estaba completado). El total lo calcula el servidor. Anota cada cambio en `notas_internas` y avisa a Yosy por mail si lo hace una profesional |
+| `editar-turno` | **token** | acciones `editar` (servicio/día/hora/profesional/precio/seña), `cancelar` (motivo), `reactivar`, `reabrir` (deshacer "Vino"), `clienta` (nombre/teléfono/mail — teléfono solo Yosy, salvo completar uno vacío), `completar` (confirmar "Vino" — puede cambiar el servicio PRINCIPAL realizado, no solo extras; si el turno ya estaba completado, una profesional solo puede si es de HOY y no pasaron 4hs desde `completado_en`, 25/10 — fuera de esa ventana, solo Yosy). El total lo calcula el servidor. Anota cada cambio en `notas_internas` y avisa a Yosy por mail si lo hace una profesional |
 | `marcar-sena-manual` | **token** | marca `aprobado_por_profesional` en turnos `manual` |
 | `mercadopago/crear-link-pago` | **token** | preferencia de MP atada a un turno manual (`external_reference = turno.id`), vence al empezar el turno |
 | `mercadopago/crear-preferencia` | pública | reserva online de la clienta: valida horario FIJO de la profesional y choques (409) |
@@ -77,10 +78,14 @@ código entre funciones):
 
 ## 4. Reglas de negocio vigentes (no volver a preguntar)
 - **Seña** fija $30.000 (capada al precio; Depilación Láser 100%). Transferencia (Ari/Cris, alquiler fijo) NO pasa por MP.
-- **Mercado Pago**: descuenta **$1.000 por reserva pagada por su checkout** (los precios de Pestañas/Cejas/Láser subieron $1.000
-  el 13/10 para cubrirlo). En Comisiones se resta de la base ANTES de aplicar los % (`descuentoMercadoPago`: exige
-  `idTransaccionMP` + `senaVerificadaAutomaticamente` + `fechaCreacion >= 2026-10-13`; cuenta solo turnos *completados* de la semana).
-  Supuestos SIN confirmar con Yosy: corte 13/10 y monto fijo (MP cobra %, puede variar).
+- **Cargo de gestión de $1.000 por reserva** (hasta el 24/10 se llamaba "descuento de Mercado Pago"; 25/10: ya NO es solo MP,
+  ver sección 11). Los precios de Pestañas/Cejas/Láser de Mili y Roma ya traen ese $1.000 de más desde el 13/10. En Comisiones
+  se resta de la base ANTES de aplicar los % (`descuentoMercadoPago` en `src/lib/pricing.ts`; cuenta solo turnos *completados*
+  de la semana). Desde el 25/10 cuenta en DOS casos (no solo uno): (a) pagado por el checkout de MP (`idTransaccionMP` +
+  `senaVerificadaAutomaticamente`), o (b) pagado por transferencia PERO solo en el circuito "mercado_pago" (Mili/Roma —
+  `circuitoPago==='mercado_pago'`) con el comprobante ya aprobado (`aprobadoPorProfesional`). Las de alquiler fijo
+  (Cris/Ari, `circuitoPago==='transferencia'`) nunca tienen este cargo — no reparten por %, no cambia nada para ellas.
+  Supuesto SIN confirmar con Yosy: corte 13/10 y monto fijo (MP cobra %, puede variar).
   **Contador de reservas por MP (22/10, decisión de Tobias):** en Comisiones, cada profesional de modelo porcentaje (y cualquiera que
   tenga alguna) ve "Reservas por Mercado Pago": esta semana (atendidas + por atender) × $1.000, y el total desde el 13/10.
   `resumenReservasMercadoPago` (en `comisionesEngine.ts`) usa la MISMA regla que el descuento (id MP + verificada + creada desde el
@@ -93,8 +98,14 @@ código entre funciones):
 - **Seña de un turno manual** = pagada si `estado='sena_confirmada'` o `aprobado_por_profesional=true`; se registra con
   "Marcar la seña como pagada" (exige token). Lo web: `reservado` = pendiente.
 - **Permisos de edición**: profesional → solo su agenda, turnos no completados, sin cambiar profesional ni montos; puede deshacer un
-  "Vino" solo si el turno es de HOY y corregir datos de clientas de sus turnos. Yosy → todo (profesional, corregir total/seña, turnos
-  completados, deshacer cualquier "Vino").
+  "Vino" solo si el turno es de HOY y corregir datos de clientas de sus turnos. Desde el 25/10 TAMBIÉN puede corregir el servicio/extras
+  de un turno YA completado, pero solo si es de HOY y no pasaron 4hs desde que lo completó (`completadoEn` + `VENTANA_EDICION_PROFESIONAL_MIN`,
+  ver sección 11) — pasada esa ventana, o de otro día, vuelve a ser solo de Yosy. Yosy → todo (profesional, corregir total/seña, turnos
+  completados sin ventana de tiempo, deshacer cualquier "Vino").
+- **Teléfono de la clienta (25/10)**: solo lo ve y lo edita Yosy. Una profesional no lo ve en "Gestión de Turno" ni en "Editar datos"
+  (el campo ni se renderiza), y el servidor (`editar-turno.ts`, acción `clienta`) la bloquea con 403 si de todos modos lo manda —
+  EXCEPTO completar un teléfono que la clienta todavía no tiene cargado (ej. Turno Manual con una clienta existente sin teléfono: la
+  profesional ya lo tiene porque se lo acaba de dar la clienta al reservar). Una vez cargado, ya no lo puede volver a tocar.
 - **Agendar a mano a cualquier hora/día** (Yosy y profesionales; la web de clientas solo ve los bloques fijos): aviso informativo,
   nunca bloquea. Yosy puede elegir cualquier profesional; **una profesional agenda solo en su propia agenda** (decisión: si cargara en la
   de otra no la vería ni podría editarla).
@@ -250,7 +261,58 @@ fijo, sin selector — el único `<select>` era para agregar extras.
   correr `docs/pruebas/pantalla/` de esto en una sesión donde Chromium sí tenga red, antes de
   confiar 100% en la UI.
 - Lint y build: 0 errores.
-- **Sin deployar todavía** (queda para cuando Tobias confirme el push).
+- **Deployado y verificado** (commit `80aa166`, ver `project_roseface_handoff.md` en la memoria para el detalle del rollback anotado).
+
+## 11. Sesión del 25/10/2026 — teléfono solo para Yosy, cargo de gestión también por transferencia, ventana de 4hs para corregir un turno completado, facturación del día
+
+**Pedido de Tobias** (sobre una captura de "Mi Cierre Semanal" de Roma), 5 puntos — antes de tocar código se leyó el código real
+de cada pantalla involucrada y se confirmaron 3 ambigüedades con Tobias (las 3 "Recomendado"):
+1. "El número" que no debe verle una profesional = el **teléfono de la clienta**, del todo (ni verlo ni editarlo).
+2. El cargo de gestión de $1.000 por transferencia aplica **solo a Mili y Roma** (circuito "mercado_pago" — las únicas con precios
+   que ya lo incluyen); Cris/Ari/etc. (alquiler fijo) no cambian.
+3. La ventana de 4hs para que una profesional corrija un turno ya completado se mide desde **`completado_en`** (columna nueva), no
+   desde la hora reservada.
+
+**Qué se confirmó leyendo el código ANTES de asumir nada** (evitó trabajo en vano): "Mi Cierre Semanal" YA mostraba solo la
+facturación propia de cada profesional, nunca el total del negocio (el banner consolidado ya estaba `{!esProfesional && ...}`) —
+no había ningún bug ahí. El teléfono, en cambio, SÍ se mostraba sin restricción en "Gestión de Turno" y en "Editar datos", y
+además se filtraba en texto plano en el aviso de Turno Manual cuando el nombre tipeado coincidía con una clienta existente.
+
+**Qué se construyó**:
+- **Teléfono solo para Yosy**: oculto en el modal del turno y en `PanelEditarClienta` (prop nueva `puedeVerTelefono`) para
+  `esProfesional`; el aviso de Turno Manual ya no imprime el número si coincide con una clienta existente. Servidor
+  (`editar-turno.ts`, acción `clienta`): 403 si una profesional manda `telefono` y la clienta YA tiene uno cargado (o si intenta
+  vaciarlo) — EXCEPCIÓN: completar uno que está vacío sigue permitido (Turno Manual con una clienta sin teléfono: la profesional
+  ya lo tiene porque se lo acaba de dar la clienta al reservar).
+- **Cargo de gestión por transferencia**: `descuentoMercadoPago` (`src/lib/pricing.ts`) ahora también cuenta un turno pagado por
+  transferencia si `circuitoPago==='mercado_pago'` (Mili/Roma) y `aprobadoPorProfesional===true` (comprobante ya aprobado) —
+  antes exigía siempre el pago automático de MP. Como esta función la usan `comisionesEngine.ts`, `AdminCaja.tsx` y los badges de
+  `AdminAgenda.tsx`, el conteo de "reservas con cargo de gestión" y el descuento en Comisiones se actualizan solos en todos lados.
+  Se renombraron los carteles de "Mercado Pago" a "Cargo de gestión" donde correspondía (ya no es 100% exacto decir que "se pagó
+  por Mercado Pago" si fue por transferencia).
+- **Ventana de 4hs para corregir un turno completado**: columna nueva `turnos.completado_en` (timestamptz, migración
+  `docs/sql/2026-10-25_turnos_completado_en.sql`, **falta que Tobias la corra**), se pone SOLO en la primera confirmación (una
+  corrección posterior dentro de la ventana no la resetea). `api/editar-turno.ts` (acción `completar`): si el turno ya estaba
+  completado y no es Yosy, ahora chequea `fecha===hoy && (ahora − completado_en) <= 4hs` en vez de bloquear siempre. Frontend
+  (`AdminAgenda.tsx`, helper `puedeProfesionalEditarCompletado` en `recordatorios.ts`): el botón "Editar servicios realizados" se
+  oculta (con mensaje explicativo) para una profesional fuera de la ventana, y el selector de servicio principal
+  (`puedeCambiarServicio`) se habilita dentro de la ventana.
+- **Facturación del día**: tarjeta nueva en cada profesional de "Mi Cierre Semanal" (`AdminComisiones.tsx`) con el total
+  facturado hoy (turnos completados de hoy) y cuántos de esos tienen cargo de gestión — antes solo había cierre semanal y total
+  histórico.
+
+**Verificado con evidencia real**:
+- ✅ **Lógica de servidor**: se extendió `docs/pruebas/servidor/editar-turno-completar.mjs` (20 casos — 9 previos + 11 nuevos de la
+  ventana de 4hs: dentro de la ventana, fuera por horas, fuera por fecha, Yosy sin ventana, `completado_en` se pone una sola vez)
+  y `docs/pruebas/servidor/editar-turno-reabrir-y-clienta.mjs` (29 casos, reescritos los de teléfono para la regla nueva) —
+  **todos pasan**; se re-corrieron `editar-turno-edicion-cancelar-reactivar.mjs` (39) y `editar-turno-fuera-de-horario-medianoche.mjs`
+  (3) para confirmar que nada se rompió. Se extendió `docs/pruebas/logica/reservas-mercado-pago.mjs` con el caso de transferencia
+  en circuito MP vs. circuito transferencia — pasa.
+- ❌ **Pantalla (Chromium) NO se corrió** (no se intentó este turno; mismo tipo de limitación posible que el 24/10, no confirmada
+  de nuevo). Sin verificar visualmente: que el teléfono realmente no aparezca en pantalla para una profesional, que el botón
+  "Editar servicios realizados" se oculte/muestre bien según la ventana, que la tarjeta de "Facturación de hoy" se vea bien.
+- Lint y build: 0 errores.
+- **Sin deployar todavía** — falta: (a) que Tobias corra la migración SQL nueva, (b) su OK para pushear.
 
 ## 9. Cómo verificar un deploy (patrón usado siempre)
 1. `npm run lint` y `npm run build` en 0 → commit → (avisar/pedir OK) `git push origin main` — **el push ya deploya solo**; confirmar con

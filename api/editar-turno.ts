@@ -85,6 +85,12 @@ function validarExtras(valor: unknown): ServicioExtra[] | null {
 }
 const sumarExtras = (extras: ServicioExtra[]) => extras.reduce((acc, e) => acc + (Number(e.precio) || 0), 0);
 
+// Ventana en la que una profesional puede corregir el servicio de un turno YA
+// completado (25/10/2026): solo si es de hoy y pasaron menos de 4hs desde que
+// lo completó. Duplicado en src/lib/recordatorios.ts — si se cambia, cambiar
+// en los dos lados.
+const VENTANA_EDICION_PROFESIONAL_MIN = 4 * 60;
+
 const MONTO_SENA_FIJO = 30000;
 function calcularMontoSena(servicio: { precio: number; categoria: string; requiere_sena?: boolean }): number {
   if (servicio.requiere_sena === false) return 0;
@@ -240,8 +246,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (accion === 'completar') {
     const yaCompletado = turno.estado === 'completado';
     if (yaCompletado && !esAdmin) {
-      res.status(403).json({ ok: false, error: 'Solo Yosy puede editar los servicios de un turno ya completado (cambia las comisiones de esa semana)' });
-      return;
+      // Una profesional puede corregir el servicio de un turno que ella misma
+      // completó, pero solo si es de hoy y todavía no pasaron 4hs (pedido de
+      // Tobias, 25/10/2026) — pasada esa ventana, o si es de otro día, cambia
+      // las comisiones de una semana que puede estar liquidada: eso es de Yosy.
+      const esDeHoy = turno.fecha === ahoraArg.slice(0, 10);
+      const minutosDesdeCompletado = turno.completado_en
+        ? (Date.now() - new Date(turno.completado_en as string).getTime()) / 60000
+        : Infinity;
+      const dentroDeLaVentana = esDeHoy && minutosDesdeCompletado >= 0 && minutosDesdeCompletado <= VENTANA_EDICION_PROFESIONAL_MIN;
+      if (!dentroDeLaVentana) {
+        res.status(403).json({ ok: false, error: 'Solo Yosy puede editar los servicios de un turno completado hace más de 4hs o de otro día (cambia las comisiones de esa semana)' });
+        return;
+      }
     }
     if (turno.estado === 'cancelado') {
       res.status(400).json({ ok: false, error: 'Ese turno está cancelado: reactivalo antes de confirmarlo' });
@@ -300,6 +317,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       servicios_extra: extrasFinal,
       notas_internas: agregarAlRegistro(cambios.join('; ') || 'Confirmó los servicios realizados'),
     };
+    // Solo se marca en la confirmación original: una corrección posterior dentro
+    // de la ventana no debe "reiniciar" las 4hs que tiene la profesional.
+    if (!yaCompletado) patch.completado_en = new Date().toISOString();
     const { data: fila, error } = await supabaseAdmin.from('turnos').update(patch).eq('id', turnoId).select('*').single();
     if (error || !fila) {
       console.error('[editar-turno] Error completando', turnoId, error);
@@ -367,9 +387,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (datos.telefono !== undefined) {
       const tel = typeof datos.telefono === 'string' ? datos.telefono.trim() : '';
+      const teniaTelefono = !!(clienta.telefono ?? '').trim();
+      // El teléfono de la clienta solo lo ve y lo toca Yosy (25/10/2026, pedido de
+      // Tobias: una profesional no debe quedarse con el contacto para captarla por
+      // su cuenta) — excepto completar uno que todavía no tiene cargado (ej. Turno
+      // Manual con una clienta existente sin teléfono: la profesional ya lo tiene,
+      // se lo acaba de dar la propia clienta al reservar).
+      if (!esAdmin && (teniaTelefono || tel === '')) {
+        res.status(403).json({ ok: false, error: 'Solo Yosy puede ver o cambiar el teléfono de la clienta' });
+        return;
+      }
       const digitos = tel.replace(/\D/g, '').length;
-      // Vaciar el teléfono solo lo hace Yosy; si hay uno, tiene que parecer un teléfono.
-      const valido = tel === '' ? esAdmin : /^[0-9+()\-\s.]+$/.test(tel) && digitos >= 8 && digitos <= 15;
+      const valido = tel === '' ? true : /^[0-9+()\-\s.]+$/.test(tel) && digitos >= 8 && digitos <= 15;
       if (!valido) {
         res.status(400).json({ ok: false, error: 'El teléfono no es válido (8 a 15 números, con o sin código de área)' });
         return;

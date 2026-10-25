@@ -115,6 +115,10 @@ export interface Turno {
   // Extras cargados al confirmar que la clienta vino (ver ServicioExtra).
   // montoTotal = precio del servicio reservado + suma de estos extras.
   serviciosExtra?: ServicioExtra[];
+  // Hora real en que se confirmó "Vino" por primera vez (25/10/2026). La
+  // pone el servidor, nunca se resetea al corregir el servicio dentro de la
+  // ventana de edición — mide "hace cuánto se completó", no la última edición.
+  completadoEn?: string | null;
 }
 
 // Servicio realizado de más en el momento (ej. retiro, deco, un servicio que la

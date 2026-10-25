@@ -29,15 +29,28 @@ export const DESCUENTO_MP_POR_RESERVA = 1000;
 // $1.000 de más), así que no se les descuenta nada.
 export const DESCUENTO_MP_DESDE = '2026-10-13';
 
-// ¿Esta reserva se pagó por Mercado Pago? Solo el webhook de MP deja a la vez
-// el id del pago y la marca de "verificada automáticamente": una reserva
-// manual, por transferencia o cobrada en el estudio nunca cumple las dos.
+// ¿Esta reserva tiene el cargo de gestión de $1.000 ya incluido en el precio?
+// (pedido de Yosy, 25/10/2026: antes solo se descontaba si se pagaba por el
+// checkout de Mercado Pago; ahora también cuenta si esa misma clienta
+// transfirió la seña a mano, porque el precio del servicio ya trae el cargo
+// de más sea cual sea el medio de pago). Dos caminos:
+// - Mercado Pago: el webhook deja a la vez el id del pago y la marca de
+//   "verificada automáticamente".
+// - Transferencia: solo en el circuito "mercado_pago" (Mili/Roma — las
+//   únicas con precios que ya incluyen el cargo; ver circuitoPago en
+//   src/types), con el comprobante ya aprobado (aprobadoPorProfesional).
+// Una reserva cobrada en efectivo en el estudio, sin seña adelantada, no
+// cumple ninguno de los dos y no tiene cargo.
 export function descuentoMercadoPago(turno: {
   idTransaccionMP: string | null;
   senaVerificadaAutomaticamente: boolean;
   fechaCreacion: string;
+  circuitoPago?: 'mercado_pago' | 'transferencia';
+  aprobadoPorProfesional?: boolean;
 }): number {
-  if (!turno.idTransaccionMP || !turno.senaVerificadaAutomaticamente) return 0;
   if (turno.fechaCreacion.slice(0, 10) < DESCUENTO_MP_DESDE) return 0;
-  return DESCUENTO_MP_POR_RESERVA;
+  const pagadoPorMP = !!turno.idTransaccionMP && turno.senaVerificadaAutomaticamente;
+  const transferidoEnCircuitoMP = turno.circuitoPago === 'mercado_pago' && !!turno.aprobadoPorProfesional;
+  if (pagadoPorMP || transferidoEnCircuitoMP) return DESCUENTO_MP_POR_RESERVA;
+  return 0;
 }

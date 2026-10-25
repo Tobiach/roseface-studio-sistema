@@ -14,13 +14,16 @@ interface Props {
   clienta: Clienta;
   // Solo Yosy puede dejar a una clienta sin teléfono.
   puedeVaciarTelefono: boolean;
+  // Solo Yosy puede ver/editar el teléfono (25/10/2026, pedido de Tobias: una
+  // profesional no debe quedarse con el contacto de la clienta).
+  puedeVerTelefono: boolean;
   onGuardar: (datos: DatosClienta) => Promise<boolean>;
   onCancelar: () => void;
 }
 
 const campo = 'w-full px-3 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white';
 
-export const PanelEditarClienta: React.FC<Props> = ({ clienta, puedeVaciarTelefono, onGuardar, onCancelar }) => {
+export const PanelEditarClienta: React.FC<Props> = ({ clienta, puedeVaciarTelefono, puedeVerTelefono, onGuardar, onCancelar }) => {
   const [nombre, setNombre] = useState(clienta.nombre);
   const [telefono, setTelefono] = useState(clienta.telefono ?? '');
   const [email, setEmail] = useState(clienta.email ?? '');
@@ -32,8 +35,9 @@ export const PanelEditarClienta: React.FC<Props> = ({ clienta, puedeVaciarTelefo
   const emailLimpio = email.trim();
 
   const nombreOk = nombreLimpio.length >= 2 && nombreLimpio.length <= 80;
-  const telefonoOk =
-    telefonoLimpio === ''
+  const telefonoOk = !puedeVerTelefono
+    ? true
+    : telefonoLimpio === ''
       ? puedeVaciarTelefono
       : /^[0-9+()\-\s.]+$/.test(telefonoLimpio) && digitos >= 8 && digitos <= 15;
   const emailOk = emailLimpio === '' || (emailLimpio.length <= 120 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpio));
@@ -41,7 +45,7 @@ export const PanelEditarClienta: React.FC<Props> = ({ clienta, puedeVaciarTelefo
   // Solo se mandan los datos que cambiaron.
   const datos: DatosClienta = {};
   if (nombreLimpio !== clienta.nombre) datos.nombre = nombreLimpio;
-  if (telefonoLimpio !== (clienta.telefono ?? '')) datos.telefono = telefonoLimpio;
+  if (puedeVerTelefono && telefonoLimpio !== (clienta.telefono ?? '')) datos.telefono = telefonoLimpio;
   if (emailLimpio !== (clienta.email ?? '')) datos.email = emailLimpio;
   const hayCambios = Object.keys(datos).length > 0;
 
@@ -59,29 +63,35 @@ export const PanelEditarClienta: React.FC<Props> = ({ clienta, puedeVaciarTelefo
         <input type="text" value={nombre} maxLength={80} onChange={(e) => setNombre(e.target.value)} className={campo} />
         {!nombreOk && <p className="text-[11px] text-red-700 mt-1 font-semibold">El nombre tiene que tener al menos 2 letras.</p>}
       </div>
-      <div>
-        <label className="font-bold text-rf-black block mb-1 text-[11px]">Teléfono (WhatsApp)</label>
-        <input
-          type="tel"
-          value={telefono}
-          onChange={(e) => setTelefono(e.target.value)}
-          placeholder="Ej: 11 2769 6736"
-          className={campo}
-        />
-        {!telefonoOk ? (
-          <p className="text-[11px] text-red-700 mt-1 font-semibold">
-            {telefonoLimpio === ''
-              ? 'Solo Yosy puede dejar una clienta sin teléfono.'
-              : 'El teléfono tiene que tener entre 8 y 15 números (podés usar espacios, guiones o +).'}
-          </p>
-        ) : (
-          digitos > 0 && (
-            <p className="text-[11px] text-gray-500 mt-1">
-              Se le escribe a: <strong>+{normalizarTelefonoWhatsApp(telefonoLimpio)}</strong> (con código de país, como lo pide WhatsApp)
+      {puedeVerTelefono ? (
+        <div>
+          <label className="font-bold text-rf-black block mb-1 text-[11px]">Teléfono (WhatsApp)</label>
+          <input
+            type="tel"
+            value={telefono}
+            onChange={(e) => setTelefono(e.target.value)}
+            placeholder="Ej: 11 2769 6736"
+            className={campo}
+          />
+          {!telefonoOk ? (
+            <p className="text-[11px] text-red-700 mt-1 font-semibold">
+              {telefonoLimpio === ''
+                ? 'Solo Yosy puede dejar una clienta sin teléfono.'
+                : 'El teléfono tiene que tener entre 8 y 15 números (podés usar espacios, guiones o +).'}
             </p>
-          )
-        )}
-      </div>
+          ) : (
+            digitos > 0 && (
+              <p className="text-[11px] text-gray-500 mt-1">
+                Se le escribe a: <strong>+{normalizarTelefonoWhatsApp(telefonoLimpio)}</strong> (con código de país, como lo pide WhatsApp)
+              </p>
+            )
+          )}
+        </div>
+      ) : (
+        <p className="text-[11px] text-rf-charcoal bg-rf-cream border border-pink-100 rounded-xl p-2">
+          El teléfono de la clienta solo lo ve y lo edita Yosy.
+        </p>
+      )}
       <div>
         <label className="font-bold text-rf-black block mb-1 text-[11px]">Mail (opcional)</label>
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={campo} />

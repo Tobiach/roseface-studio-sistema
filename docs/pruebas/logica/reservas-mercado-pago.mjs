@@ -34,5 +34,24 @@ const prof = { id: 'p1', modeloComision: { tipo: 'porcentaje', porcentajeProfesi
 const cierre = calcularCierreSemanal(prof, turnos, ...SEM);
 ok(cierre.reservasMercadoPago === 1 && cierre.descuentoMercadoPago === 1000, `el cierre descuenta solo la atendida: 1 reserva, $1.000 (da ${cierre.reservasMercadoPago} / ${cierre.descuentoMercadoPago})`);
 ok(cierre.facturacionBruta === 90000 && cierre.facturacionTotal === 89000, `bruta 90.000 (2 completadas: a y la de demo g) − 1.000 de MP = base 89.000 (da ${cierre.facturacionBruta} / ${cierre.facturacionTotal})`);
+
+// ---------- 25/10: el cargo de gestión también cuenta si se pagó por transferencia,
+// pero SOLO en el circuito "mercado_pago" (Mili/Roma) con el comprobante ya aprobado.
+const turnosTransferencia = [
+  // completado, circuito mercado_pago, transferencia YA aprobada -> cuenta
+  T({ id: 'm1', estado: 'completado', fecha: '2026-10-20', idTransaccionMP: null, senaVerificadaAutomaticamente: false, circuitoPago: 'mercado_pago', aprobadoPorProfesional: true }),
+  // completado, circuito mercado_pago, transferencia TODAVÍA sin aprobar -> no cuenta
+  T({ id: 'm2', estado: 'completado', fecha: '2026-10-20', idTransaccionMP: null, senaVerificadaAutomaticamente: false, circuitoPago: 'mercado_pago', aprobadoPorProfesional: false }),
+  // completado, circuito transferencia (alquiler fijo), comprobante aprobado -> NO cuenta (no reparte por %)
+  T({ id: 'm3', estado: 'completado', fecha: '2026-10-20', idTransaccionMP: null, senaVerificadaAutomaticamente: false, circuitoPago: 'transferencia', aprobadoPorProfesional: true }),
+];
+const cierreTransferencia = calcularCierreSemanal(
+  { id: 'p1', modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 55 } },
+  turnosTransferencia,
+  '2026-10-19',
+  '2026-10-25'
+);
+ok(cierreTransferencia.reservasMercadoPago === 1 && cierreTransferencia.descuentoMercadoPago === 1000, `solo m1 (transferencia aprobada, circuito MP) tiene cargo: 1 reserva, $1.000 (da ${cierreTransferencia.reservasMercadoPago} / ${cierreTransferencia.descuentoMercadoPago})`);
+
 console.log(fallas ? `\n${fallas} FALLAS` : '\nTodo OK');
 process.exit(fallas ? 1 : 0);

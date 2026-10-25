@@ -51,6 +51,21 @@ export function estadoSena(t: CampoSena): EstadoSena {
 export const esTurnoConSenaPendiente = (t: CampoSena): boolean =>
   t.origenReserva === 'manual' && estadoSena(t) === 'pendiente';
 
+// Ventana en la que una profesional puede corregir el servicio de un turno YA
+// completado (25/10/2026, pedido de Tobias): solo si es de hoy y pasaron menos
+// de 4hs desde que lo completó — pasada esa ventana, o si es de otro día, solo
+// Yosy. Mismo número duplicado en api/editar-turno.ts (Vercel no comparte
+// código entre funciones) — si se cambia, cambiar en los dos lados.
+export const VENTANA_EDICION_PROFESIONAL_MIN = 4 * 60;
+
+type CampoCompletado = Pick<Turno, 'fecha' | 'completadoEn'>;
+
+export function puedeProfesionalEditarCompletado(t: CampoCompletado, hoyISOValue: string): boolean {
+  if (t.fecha !== hoyISOValue || !t.completadoEn) return false;
+  const minutosPasados = (Date.now() - new Date(t.completadoEn).getTime()) / 60000;
+  return minutosPasados >= 0 && minutosPasados <= VENTANA_EDICION_PROFESIONAL_MIN;
+}
+
 export const ventanasDelTurno = (t: CampoSena): VentanaRecordatorio[] =>
   esTurnoConSenaPendiente(t) ? VENTANAS_SENA_PENDIENTE : VENTANAS_TURNO_PAGO;
 

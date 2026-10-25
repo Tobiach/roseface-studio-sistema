@@ -16,6 +16,8 @@ const llamar = (headers, body) => new Promise((resolve) => {
   editar({ method: 'POST', headers, body }, res);
 });
 const hoy = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
+const ayer = new Date(Date.now() - 27 * 3600_000).toISOString().slice(0, 10);
+const haceMin = (min) => new Date(Date.now() - min * 60_000).toISOString();
 const base = { hora_inicio: '09:00:00', hora_fin: '10:30:00', notas_internas: null, id_transaccion_mp: null, aprobado_por_profesional: false, origen_reserva: 'manual' };
 function reset() {
   db.servicios = [
@@ -42,6 +44,14 @@ function reset() {
     { ...base, ...hora(14), id: 6, clienta_id: 'c1', profesional_id: 'prof-mili', servicio_id: 's-clasica', fecha: hoy, estado: 'reservado', monto_total: 41500, monto_sena: 30000, servicios_extra: [] },
     // 7: cancelado -> no se puede confirmar
     { ...base, ...hora(15), id: 7, clienta_id: 'c1', profesional_id: 'prof-mili', servicio_id: 's-clasica', fecha: hoy, estado: 'cancelado', monto_total: 41500, monto_sena: 30000, servicios_extra: [] },
+    // 8: completado HOY hace 1h (dentro de la ventana de 4hs) -> Mili SÍ puede corregir
+    { ...base, ...hora(16), id: 8, clienta_id: 'c1', profesional_id: 'prof-mili', servicio_id: 's-clasica', fecha: hoy, estado: 'completado', monto_total: 41500, monto_sena: 30000, servicios_extra: [], completado_en: haceMin(60) },
+    // 9: completado HOY hace 5h (fuera de la ventana de 4hs) -> Mili NO puede
+    { ...base, ...hora(17), id: 9, clienta_id: 'c1', profesional_id: 'prof-mili', servicio_id: 's-clasica', fecha: hoy, estado: 'completado', monto_total: 41500, monto_sena: 30000, servicios_extra: [], completado_en: haceMin(5 * 60) },
+    // 10: completado AYER hace 1h (fecha no coincide con "hoy", aunque la hora esté fresca) -> Mili NO puede
+    { ...base, ...hora(18), id: 10, clienta_id: 'c1', profesional_id: 'prof-mili', servicio_id: 's-clasica', fecha: ayer, estado: 'completado', monto_total: 41500, monto_sena: 30000, servicios_extra: [], completado_en: haceMin(60) },
+    // 11: reservado HOY -> confirmar y volver a corregir dentro de la ventana (no debe resetear completado_en)
+    { ...base, ...hora(19), id: 11, clienta_id: 'c1', profesional_id: 'prof-mili', servicio_id: 's-clasica', fecha: hoy, estado: 'reservado', monto_total: 41500, monto_sena: 30000, servicios_extra: [] },
   ];
 }
 const turno = (id) => db.turnos.find((t) => t.id === id);
@@ -90,3 +100,27 @@ ok(r.status === 401, `Sin token -> 401 (${r.status})`);
 reset();
 r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'completar', serviciosExtra: [{ nombre: '', precio: 100 }] });
 ok(r.status === 400 && /no son válidos/.test(r.body.error), `Extra sin nombre -> 400 (${r.status}, ${r.body.error})`);
+
+// ---------- 10) Ventana de 4hs (25/10): completado HOY hace 1h -> Mili SÍ puede corregir el servicio
+r = await llamar({ authorization: MILI }, { turnoId: 8, accion: 'completar', servicioId: 's-hibridas' });
+ok(r.status === 200 && turno(8).servicio_id === 's-hibridas', `completado hace 1h, dentro de la ventana -> 200 (${r.status}, ${turno(8).servicio_id})`);
+
+// ---------- 11) Completado HOY hace 5h (fuera de la ventana de 4hs) -> Mili NO puede
+r = await llamar({ authorization: MILI }, { turnoId: 9, accion: 'completar', servicioId: 's-hibridas' });
+ok(r.status === 403 && /más de 4hs/.test(r.body.error), `completado hace 5h -> 403 (${r.status}, ${r.body.error})`);
+ok(turno(9).servicio_id === 's-clasica', '... y el servicio no cambió');
+
+// ---------- 12) Completado AYER hace 1h (la fecha no es de hoy) -> Mili NO puede
+r = await llamar({ authorization: MILI }, { turnoId: 10, accion: 'completar', servicioId: 's-hibridas' });
+ok(r.status === 403, `completado ayer, aunque sea reciente -> 403 (${r.status})`);
+
+// ---------- 13) Yosy no tiene ventana: puede sobre el de hace 5hs y el de ayer
+r = await llamar({ authorization: ADMIN }, { turnoId: 9, accion: 'completar', servicioId: 's-hibridas' });
+ok(r.status === 200 && turno(9).servicio_id === 's-hibridas', `Yosy sobre uno de hace 5hs -> 200 (${r.status})`);
+
+// ---------- 14) completado_en se pone en la PRIMERA confirmación y no se resetea al corregir después
+r = await llamar({ authorization: MILI }, { turnoId: 11, accion: 'completar' });
+ok(r.status === 200 && typeof turno(11).completado_en === 'string', `primera confirmación anota completado_en (${turno(11).completado_en})`);
+const primerSello = turno(11).completado_en;
+r = await llamar({ authorization: MILI }, { turnoId: 11, accion: 'completar', serviciosExtra: [{ nombre: 'Retoque', precio: 3000 }] });
+ok(r.status === 200 && turno(11).completado_en === primerSello, `corregir dentro de la ventana NO resetea completado_en (${turno(11).completado_en})`);
