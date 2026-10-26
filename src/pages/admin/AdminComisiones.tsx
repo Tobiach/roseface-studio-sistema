@@ -285,30 +285,34 @@ export const AdminComisiones: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Calculations Details */}
+                  {/* Calculations Details — a una profesional (modelo %) ya NO se le muestra el
+                      total facturado ni la base de cálculo (25/10, pedido de Tobias: que no se vea
+                      tan gráficamente cuánto facturó el estudio y cuánto va para ella) — solo el
+                      cargo de gestión aplicado y, más abajo, su monto final a liquidar. */}
                   <div className="space-y-2 text-xs">
-                    <div className="flex justify-between py-1 border-b border-pink-50">
-                      <span className="text-rf-charcoal">
-                        {esProfesional ? 'Total de tus turnos:' : 'Facturación Generada:'}
-                      </span>
-                      <span className="font-semibold text-rf-black">
-                        {formatCurrency(cierre.facturacionBruta)}
-                      </span>
-                    </div>
+                    {!esProfesional && (
+                      <div className="flex justify-between py-1 border-b border-pink-50">
+                        <span className="text-rf-charcoal">Facturación Generada:</span>
+                        <span className="font-semibold text-rf-black">
+                          {formatCurrency(cierre.facturacionBruta)}
+                        </span>
+                      </div>
+                    )}
 
                     {cierre.descuentoMercadoPago > 0 && (
-                      <>
-                        <div className="flex justify-between py-1 border-b border-pink-50 text-violet-800">
-                          <span>
-                            Cargo de gestión ({cierre.reservasMercadoPago} reserva{cierre.reservasMercadoPago === 1 ? '' : 's'} × {formatCurrency(DESCUENTO_MP_POR_RESERVA)}):
-                          </span>
-                          <span className="font-semibold">− {formatCurrency(cierre.descuentoMercadoPago)}</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-pink-50">
-                          <span className="text-rf-charcoal">Base para el cálculo:</span>
-                          <span className="font-semibold text-rf-black">{formatCurrency(cierre.facturacionTotal)}</span>
-                        </div>
-                      </>
+                      <div className="flex justify-between py-1 border-b border-pink-50 text-violet-800">
+                        <span>
+                          Cargo de gestión ({cierre.reservasMercadoPago} reserva{cierre.reservasMercadoPago === 1 ? '' : 's'} × {formatCurrency(DESCUENTO_MP_POR_RESERVA)}):
+                        </span>
+                        <span className="font-semibold">− {formatCurrency(cierre.descuentoMercadoPago)}</span>
+                      </div>
+                    )}
+
+                    {!esProfesional && cierre.descuentoMercadoPago > 0 && (
+                      <div className="flex justify-between py-1 border-b border-pink-50">
+                        <span className="text-rf-charcoal">Base para el cálculo:</span>
+                        <span className="font-semibold text-rf-black">{formatCurrency(cierre.facturacionTotal)}</span>
+                      </div>
                     )}
 
                     {esPorcentaje ? (
