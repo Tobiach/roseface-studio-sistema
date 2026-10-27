@@ -19,34 +19,41 @@ import {
   CreditCard,
 } from 'lucide-react';
 
+const fmtCorta = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+
 export const AdminComisiones: React.FC = () => {
   const { profesionales, turnos, rolActivo, profesionalActivoId } = useApp();
   const esProfesional = rolActivo === 'profesional';
 
-  // Semanas reales (lunes a domingo), calculadas desde hoy — antes esto
-  // eran 3 semanas de agosto 2026 hardcodeadas, así que pasado ese mes el
-  // panel ya no tenía forma de mostrar ninguna semana real. Genera la
-  // semana actual + las 7 anteriores para poder cerrar cualquier semana
-  // pasada reciente.
-  const semanasDisponibles = useMemo(() => {
+  // Lunes de la semana actual (lunes a domingo), calculado desde hoy.
+  const { lunesActual, lunesPasado } = useMemo(() => {
     const hoy = hoyISO();
     const diaSemana = new Date(`${hoy}T12:00:00`).getDay(); // 0=domingo..6=sábado
     const offsetALunes = diaSemana === 0 ? -6 : 1 - diaSemana;
-    const lunesActual = sumarDiasISO(hoy, offsetALunes);
-    const fmt = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-
-    return Array.from({ length: 8 }, (_, i) => {
-      const inicio = sumarDiasISO(lunesActual, -7 * i);
-      const fin = sumarDiasISO(inicio, 6);
-      return {
-        value: `${inicio}|${fin}`,
-        label: `Semana: ${fmt(inicio)} a ${fmt(fin)}${i === 0 ? ' (Actual)' : ''}`,
-      };
-    });
+    const actual = sumarDiasISO(hoy, offsetALunes);
+    return { lunesActual: actual, lunesPasado: sumarDiasISO(actual, -7) };
   }, []);
 
-  const [semanaSeleccionada, setSemanaSeleccionada] = useState<string>(semanasDisponibles[0].value);
-  const [semanaInicio, semanaFin] = semanaSeleccionada.split('|');
+  // Rango de fechas del cierre — antes era un desplegable con 3 semanas de
+  // agosto 2026 hardcodeadas (y después, 8 semanas calculadas desde hoy pero
+  // topadas ahí): pasado ese tope no había forma de ver una semana más vieja,
+  // ni una futura, ni un rango que no fuera "una semana exacta". Ahora son 2
+  // accesos rápidos (semana actual/pasada) + un rango libre sin tope, mismo
+  // patrón que "Rango a elección" de la Agenda (25/10, pedido de Tobias).
+  const [semanaInicio, setSemanaInicio] = useState<string>(lunesActual);
+  const [semanaFin, setSemanaFin] = useState<string>(sumarDiasISO(lunesActual, 6));
+  const [presetActivo, setPresetActivo] = useState<'actual' | 'pasada' | 'rango'>('actual');
+
+  const irASemanaActual = () => {
+    setSemanaInicio(lunesActual);
+    setSemanaFin(sumarDiasISO(lunesActual, 6));
+    setPresetActivo('actual');
+  };
+  const irASemanaPasada = () => {
+    setSemanaInicio(lunesPasado);
+    setSemanaFin(sumarDiasISO(lunesPasado, 6));
+    setPresetActivo('pasada');
+  };
 
   // Un profesional solo ve su propio cierre — no el del resto del equipo
   const profesionalesVisibles = esProfesional
@@ -80,21 +87,72 @@ export const AdminComisiones: React.FC = () => {
           </h1>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-pink-200 text-xs font-semibold">
-            <Calendar className="w-4 h-4 text-rf-rose-deep" />
-            <select
-              value={semanaSeleccionada}
-              onChange={(e) => setSemanaSeleccionada(e.target.value)}
-              className="bg-transparent focus:outline-none cursor-pointer"
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <Calendar className="w-4 h-4 text-rf-rose-deep shrink-0" />
+            <button
+              onClick={irASemanaActual}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+                presetActivo === 'actual'
+                  ? 'bg-rf-rose-deep text-white border-rf-rose-deep'
+                  : 'bg-white text-rf-charcoal border-pink-200 hover:border-rf-rose'
+              }`}
             >
-              {semanasDisponibles.map((semana) => (
-                <option key={semana.value} value={semana.value}>
-                  {semana.label}
-                </option>
-              ))}
-            </select>
+              Semana actual
+            </button>
+            <button
+              onClick={irASemanaPasada}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+                presetActivo === 'pasada'
+                  ? 'bg-rf-rose-deep text-white border-rf-rose-deep'
+                  : 'bg-white text-rf-charcoal border-pink-200 hover:border-rf-rose'
+              }`}
+            >
+              Semana pasada
+            </button>
+            <button
+              onClick={() => setPresetActivo('rango')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+                presetActivo === 'rango'
+                  ? 'bg-rf-rose-deep text-white border-rf-rose-deep'
+                  : 'bg-white text-rf-charcoal border-pink-200 hover:border-rf-rose'
+              }`}
+            >
+              Rango a elección
+            </button>
           </div>
+
+          {presetActivo === 'rango' ? (
+            <div className="flex items-end gap-2">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-rf-charcoal block mb-1">Desde</label>
+                <input
+                  type="date"
+                  value={semanaInicio}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSemanaInicio(v);
+                    if (v > semanaFin) setSemanaFin(v);
+                  }}
+                  className="px-3 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-rf-charcoal block mb-1">Hasta</label>
+                <input
+                  type="date"
+                  value={semanaFin}
+                  min={semanaInicio}
+                  onChange={(e) => setSemanaFin(e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-pink-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-rf-rose-deep"
+                />
+              </div>
+            </div>
+          ) : (
+            <p className="text-[11px] text-rf-charcoal font-semibold">
+              {fmtCorta(semanaInicio)} a {fmtCorta(semanaFin)}
+            </p>
+          )}
         </div>
       </div>
 
@@ -127,8 +185,8 @@ export const AdminComisiones: React.FC = () => {
         </div>
         <ul className="text-xs text-sky-950 space-y-1.5 leading-relaxed">
           <li>
-            • Solo se cuentan los turnos marcados como <strong>Completado</strong> dentro de la semana
-            seleccionada — un turno reservado o cancelado no suma facturación.
+            • Solo se cuentan los turnos marcados como <strong>Completado</strong> dentro del período
+            elegido — un turno reservado o cancelado no suma facturación.
             Si la clienta se hizo servicios extra en el momento, se cargan al confirmar que vino y suman al total del turno.
           </li>
           <li>
@@ -255,7 +313,7 @@ export const AdminComisiones: React.FC = () => {
                         <span>Reservas con cargo de gestión</span>
                       </div>
                       <p>
-                        Esta semana: <strong>{reservas(mpSemana)}</strong> × {formatCurrency(DESCUENTO_MP_POR_RESERVA)} ={' '}
+                        En el período elegido: <strong>{reservas(mpSemana)}</strong> × {formatCurrency(DESCUENTO_MP_POR_RESERVA)} ={' '}
                         <strong>{formatCurrency(mpSemana * DESCUENTO_MP_POR_RESERVA)}</strong>
                       </p>
                       {mpSemana > 0 && (
