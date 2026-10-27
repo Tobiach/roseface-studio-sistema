@@ -312,7 +312,23 @@ además se filtraba en texto plano en el aviso de Turno Manual cuando el nombre 
   de nuevo). Sin verificar visualmente: que el teléfono realmente no aparezca en pantalla para una profesional, que el botón
   "Editar servicios realizados" se oculte/muestre bien según la ventana, que la tarjeta de "Facturación de hoy" se vea bien.
 - Lint y build: 0 errores.
-- **Sin deployar todavía** — falta: (a) que Tobias corra la migración SQL nueva, (b) su OK para pushear.
+- **Deployado y verificado** (commit `d84c50b`, Tobias corrió el SQL y dio el OK). Deployment
+  `roseface-studio-sistema-k5ki3rfzn-tobiachs-projects.vercel.app`, bundle confirmado (`index-D3DxHk71.js`,
+  "Cargo de gestión" y "Facturación de hoy" presentes) y endpoint probado sin escribir (sin token → 401).
+
+### 11.1 Agregado el mismo 25/10 (de noche): a una profesional ya no se le muestra cuánto facturó el estudio
+Pedido nuevo de Tobias sobre la misma pantalla de "Mi Cierre Semanal": que a una profesional (modelo %, Mili/Roma) **solo le
+figure su pago**, sin ver el total facturado ni la base de cálculo — así no puede ver tan gráficamente cuánto facturó el
+estudio y cuánto le corresponde a ella. Confirmado con Tobias (2 preguntas): el "Cargo de gestión" SÍ se deja visible junto al
+monto a liquidar (es una aclaración útil, no revela el total del estudio); la tarjeta "Facturación de hoy" y "Reservas con cargo
+de gestión" quedan como están (son su propia facturación, no la del estudio, y no arman el mismo paso a paso).
+**Qué se sacó** (`AdminComisiones.tsx`, solo para `esProfesional`): la fila "Total de tus turnos" y la fila "Base para el
+cálculo". Yosy sigue viendo todo igual que antes (incluida la fila que sí le muestra el corte de Rose Face, eso no cambió).
+**Verificado**: lint y build en 0; es un cambio de qué se renderiza (sin tocar cálculos ni el servidor), así que no hacía falta
+una prueba de lógica nueva — se revisó el JSX a mano para confirmar que ninguna otra rama (alquiler fijo) quedó afectada.
+Pantalla (Chromium) tampoco se corrió para esto. **Deployado y verificado**: commit `542829d`, deployment
+`roseface-studio-sistema-nnhvjn7rb-tobiachs-projects.vercel.app`, bundle confirmado (`index-CZElEWwg.js`) y endpoint probado
+sin escribir. Rollback a este bloque si hiciera falta: `npx vercel rollback roseface-studio-sistema-k5ki3rfzn-tobiachs-projects.vercel.app --yes`.
 
 ## 9. Cómo verificar un deploy (patrón usado siempre)
 1. `npm run lint` y `npm run build` en 0 → commit → (avisar/pedir OK) `git push origin main` — **el push ya deploya solo**; confirmar con
