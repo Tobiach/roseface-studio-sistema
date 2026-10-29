@@ -23,6 +23,7 @@ import { AdminComisiones } from './pages/admin/AdminComisiones';
 import { AdminClientasRecurrentes } from './pages/admin/AdminClientasRecurrentes';
 import { AdminCaja } from './pages/admin/AdminCaja';
 import { AdminVIP } from './pages/admin/AdminVIP';
+import { AdminCuentasBancarias } from './pages/admin/AdminCuentasBancarias';
 
 // Después de cada navegación, si la URL trae #ancla (ej. /#servicios) hace
 // scroll suave hasta esa sección, descontando el alto del header sticky.
@@ -76,13 +77,14 @@ const AdminLayout: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
-  // Un profesional solo puede ver su Agenda y sus Comisiones — Caja, VIP y
-  // Clientas Recurrentes son exclusivos de la dueña.
+  // Un profesional solo puede ver su Agenda y sus Comisiones — Caja, VIP,
+  // Clientas Recurrentes y Cuentas de Banco son exclusivos de la dueña.
   const rutaRestringidaParaProfesional =
     rolActivo === 'profesional' &&
     (location.pathname.startsWith('/admin/caja') ||
       location.pathname.startsWith('/admin/vip') ||
-      location.pathname.startsWith('/admin/clientas-recurrentes'));
+      location.pathname.startsWith('/admin/clientas-recurrentes') ||
+      location.pathname.startsWith('/admin/cuentas-banco'));
 
   if (rutaRestringidaParaProfesional) {
     return <Navigate to="/admin/agenda" replace />;
@@ -138,6 +140,7 @@ export const router = createBrowserRouter([
       { path: 'clientas-recurrentes', element: <AdminClientasRecurrentes /> },
       { path: 'caja', element: <AdminCaja /> },
       { path: 'vip', element: <AdminVIP /> },
+      { path: 'cuentas-banco', element: <AdminCuentasBancarias /> },
     ],
   },
   {

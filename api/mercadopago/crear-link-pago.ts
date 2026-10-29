@@ -1,5 +1,12 @@
 // api/mercadopago/crear-link-pago.ts
 //
+// RETIRADO (29/10/2026): el panel ya no llama a este endpoint — el recordatorio
+// de seña de Mili/Roma manda la cuenta bancaria del día en vez de este link
+// (ver src/lib/cuentasBancarias.ts, pedido de Tobias: "ya no se van a mandar
+// los links de MP"). El archivo queda tal cual por si hiciera falta volver
+// atrás (no rompe nada estando ahí sin uso); no está pensado para borrarse sin
+// que Tobias lo pida.
+//
 // Link de pago de Mercado Pago para la seña de un turno CARGADO A MANO que ya
 // existe (17/10/2026, "opción A"). Se pide desde el panel al mandar el
 // recordatorio de seña de 72h / 48h por WhatsApp: la clienta paga directo

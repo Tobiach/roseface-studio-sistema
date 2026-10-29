@@ -1,6 +1,7 @@
 // src/lib/whatsapp.ts
 import type { PlantillaRecordatorio } from '../types';
 import { formatCurrency } from './formatters';
+import type { CuentaBancaria } from './cuentasBancarias';
 
 const WA_NUMBER = '5491160549387'; // Rose Face Studio — sin +, sin espacios
 
@@ -119,15 +120,20 @@ export function mensajeRecordatorio(
     // 72h y 48h antes se le pide la seña, 24h antes se confirma la cita.
     senaPendiente?: boolean;
     montoSena?: number;
-    // Link de pago de Mercado Pago atado a ese turno (solo en los mensajes de seña de 72h y 48h).
-    linkPago?: string;
+    // Cuenta bancaria del día para transferir la seña (29/10/2026, reemplaza el
+    // link de Mercado Pago — solo en los mensajes de seña de 72h y 48h).
+    cuentaBancaria?: CuentaBancaria;
   }
 ): string {
-  const { nombreClienta, servicio, fecha, hora, senaPendiente, montoSena, linkPago } = datos;
+  const { nombreClienta, servicio, fecha, hora, senaPendiente, montoSena, cuentaBancaria } = datos;
 
   if (senaPendiente) {
     const sena = montoSena && montoSena > 0 ? ` de ${formatCurrency(montoSena)}` : '';
-    const pagarAca = linkPago ? ` Podés pagarla directo con Mercado Pago desde acá 👉 ${linkPago}` : '';
+    const pagarAca = cuentaBancaria
+      ? ` Acá te dejo la cuenta para que hagas la transferencia:\n*${cuentaBancaria.banco}*${
+          cuentaBancaria.cuentaEnPesos ? ` (Cuenta en Pesos ${cuentaBancaria.cuentaEnPesos})` : ''
+        }\n*CBU:* ${cuentaBancaria.cbu}\n*Alias:* ${cuentaBancaria.alias}\nTitular: ${cuentaBancaria.titular}\n\nMandame el comprobante así te aparto el turno 📲`
+      : '';
     switch (plantilla) {
       case '72h':
         return `Hola hola ${nombreClienta}! 💗 Te escribo por tu turno en Rose Face Studio: ${servicio} el ${fecha} a las ${hora} hs. Para dejarlo confirmado necesitamos que abones la seña${sena} dentro de las próximas 72 hs.${pagarAca} Cualquier duda, seguimos por acá 💕`;

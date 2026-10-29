@@ -242,7 +242,13 @@ export const Reserva: React.FC = () => {
   // servidor, con el monto recalculado ahí). Si falla (sin MP configurado
   // todavía, o corriendo local sin funciones serverless), cae al flujo
   // simulado para no romper la demo.
-  const handlePagarSena = async () => {
+  //
+  // sinMP (29/10/2026, pedido de Tobias): en el circuito de Mercado Pago
+  // (Mili/Roma), la clienta puede elegir "no tengo Mercado Pago" y
+  // transferir a una cuenta propia de Rose Face en vez de pagar por MP — el
+  // servidor devuelve el mismo circuito=transferencia que ya usan Cris/Ari,
+  // solo que con la cuenta del estudio y sin tocar circuitoPago.
+  const handlePagarSena = async (sinMP = false) => {
     if (!servicioSeleccionado || !profesionalSeleccionado || !horaSeleccionada) return;
 
     setIsProcessingPayment(true);
@@ -263,6 +269,7 @@ export const Reserva: React.FC = () => {
           horaFin,
           clienta: { nombre: nombreClienta, telefono: telefonoClienta, email: emailClienta },
           origen: origenParam ?? undefined,
+          medioPago: sinMP ? 'transferencia_estudio' : undefined,
         }),
       });
 
@@ -298,7 +305,7 @@ export const Reserva: React.FC = () => {
           fechaCreacion: new Date().toISOString(),
           origenReserva: 'web',
           idTransaccionMP: null,
-          circuitoPago: 'transferencia',
+          circuitoPago: data.circuitoPago === 'mercado_pago' ? 'mercado_pago' : 'transferencia',
         });
 
         const params = new URLSearchParams({
@@ -805,7 +812,7 @@ export const Reserva: React.FC = () => {
                     fullWidth
                     size="lg"
                     disabled={isProcessingPayment || !nombreClienta.trim() || !telefonoClienta.trim()}
-                    onClick={handlePagarSena}
+                    onClick={() => handlePagarSena(false)}
                     className="bg-[#009EE3] hover:bg-[#0089C7] text-white border-none shadow-md py-4"
                   >
                     {isProcessingPayment ? (
@@ -820,6 +827,20 @@ export const Reserva: React.FC = () => {
                       </span>
                     )}
                   </Button>
+
+                  {/* 29/10/2026 (pedido de Tobias): solo para el circuito de Mercado
+                      Pago (Mili/Roma) — la que ya es por transferencia (Cris/Ari, etc.)
+                      no necesita esta alternativa, el botón de arriba ya la manda ahí. */}
+                  {profesionalSeleccionado?.modeloComision.tipo === 'porcentaje' && (
+                    <button
+                      type="button"
+                      disabled={isProcessingPayment || !nombreClienta.trim() || !telefonoClienta.trim()}
+                      onClick={() => handlePagarSena(true)}
+                      className="w-full text-center text-xs font-semibold text-sky-700 hover:text-sky-900 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed py-1"
+                    >
+                      ¿No tenés Mercado Pago? Pagá por transferencia a la cuenta de Rose Face
+                    </button>
+                  )}
                 </div>
 
                 <div className="pt-4 border-t border-sky-100 space-y-2 text-[11px] text-gray-500">

@@ -14,6 +14,7 @@ import {
   Eye,
   LogOut,
   Sparkles,
+  Landmark,
   X,
 } from 'lucide-react';
 
@@ -57,6 +58,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ abierta = false, onCerrar }) =
       path: '/admin/caja',
       icon: TrendingUp,
       description: 'Facturación y finanzas',
+    },
+    {
+      label: 'Cuentas de Banco',
+      path: '/admin/cuentas-banco',
+      icon: Landmark,
+      description: 'Para el recordatorio de seña',
     },
     {
       label: 'Fidelización VIP',

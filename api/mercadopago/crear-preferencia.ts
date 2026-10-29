@@ -48,6 +48,22 @@ const DATOS_BANCARIOS: Record<string, { titular: string; cbu: string; banco: str
   },
 };
 
+// Cuentas propias de Rose Face para Mili/Roma cuando la clienta no tiene
+// Mercado Pago (29/10/2026, pedido de Tobias) — rotan según el día del
+// turno. Duplicado de src/lib/cuentasBancarias.ts (Vercel no comparte código
+// entre funciones); mismos datos reales, no inventar ni desactualizar sin
+// tocar los dos lados.
+const CUENTA_ROSEFACE_GALICIA = { titular: 'Haidi Trinidad Beitia', cbu: '0070136130004034722155', alias: 'FRANJA.LIJA.BANCO', banco: 'Banco Galicia' };
+const CUENTA_ROSEFACE_LEMON = { titular: 'Alejandro José Hernández Monaca', cbu: '0000168300000020305972', alias: 'alemonaca.LEMON', banco: 'Banco Lemon' };
+const CUENTA_ROSEFACE_SANTANDER = { titular: 'Yosainy Muñoz', cbu: '0720480188000002712640', alias: 'RoseFace', banco: 'Banco Santander' };
+// Date.getDay(): 0=domingo..6=sábado. Miércoles sumado a Galicia (mismo criterio que cuentasBancarias.ts).
+function cuentaRoseFaceDelDia(fechaISO: string): { titular: string; cbu: string; alias: string; banco: string } {
+  const dia = new Date(`${fechaISO}T12:00:00`).getDay();
+  if (dia === 0 || dia === 6) return CUENTA_ROSEFACE_SANTANDER;
+  if (dia === 4 || dia === 5) return CUENTA_ROSEFACE_LEMON;
+  return CUENTA_ROSEFACE_GALICIA;
+}
+
 // Hold del horario mientras la clienta paga. Pasado este tiempo sin
 // confirmación, el horario se libera para otra clienta (Fase 3). El
 // circuito de transferencia tiene más margen porque implica un paso manual
@@ -82,6 +98,11 @@ interface CrearPreferenciaBody {
   // Yosy le manda a una clienta fiel desde "Clientas Recurrentes") — solo
   // para poder filtrar/contar después, no cambia ninguna lógica de pago.
   origen?: string;
+  // 29/10/2026: la clienta de Mili/Roma eligió "no tengo Mercado Pago" —
+  // transfiere a una cuenta propia de Rose Face en vez de pagar por MP.
+  // El circuito de comisión sigue siendo "mercado_pago" (no cambia a quién
+  // le corresponde qué %); solo cambia CÓMO paga esta reserva puntual.
+  medioPago?: 'transferencia_estudio';
 }
 
 const ESTADO_CANCELADO = 'cancelado';
@@ -128,7 +149,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const body = req.body as Partial<CrearPreferenciaBody>;
-  const { servicioId, profesionalId, fecha, hora, horaFin, clienta, origen } = body ?? {};
+  const { servicioId, profesionalId, fecha, hora, horaFin, clienta, origen, medioPago } = body ?? {};
 
   if (!servicioId || !profesionalId || !fecha || !hora || !horaFin || !clienta?.nombre) {
     res.status(400).json({ error: 'Faltan datos de la reserva' });
@@ -187,20 +208,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
-    // El circuito de pago sale 1:1 del modelo de comisión de la profesional
-    // (Fase 5): porcentaje → Mercado Pago (a la cuenta del estudio),
-    // alquiler_fijo → transferencia directa a la profesional + comprobante.
+    // El circuito de pago (a efectos de COMISIÓN) sale 1:1 del modelo de la
+    // profesional (Fase 5): porcentaje → Mercado Pago (a la cuenta del
+    // estudio), alquiler_fijo → transferencia directa a la profesional +
+    // comprobante. Esto NUNCA cambia, ni siquiera si esta reserva puntual se
+    // paga distinto (ver "sinMP" abajo) — es lo que define cómo se reparte
+    // la comisión, no cómo pagó esta clienta en particular.
     const circuito: 'mercado_pago' | 'transferencia' =
       profesional.modelo_comision?.tipo === 'alquiler_fijo' ? 'transferencia' : 'mercado_pago';
 
+    // 29/10/2026: en el circuito de Mercado Pago, la clienta puede elegir
+    // "no tengo Mercado Pago" y transferir en cambio a una cuenta propia de
+    // Rose Face (rotan según el día, ver cuentaRoseFaceDelDia). El circuito
+    // de comisión sigue siendo "mercado_pago" — circuitoPago no se toca.
+    const sinMP = circuito === 'mercado_pago' && medioPago === 'transferencia_estudio';
+
     let accessToken: string | undefined;
-    if (circuito === 'mercado_pago') {
+    if (circuito === 'mercado_pago' && !sinMP) {
       accessToken = process.env.MP_ACCESS_TOKEN;
       if (!accessToken) {
         res.status(500).json({ error: 'MP_ACCESS_TOKEN no configurado en el servidor' });
         return;
       }
-    } else if (!profesional.alias_cbu) {
+    } else if (circuito === 'transferencia' && !profesional.alias_cbu) {
       res.status(500).json({ error: 'Falta configurar el alias/CBU de esta profesional' });
       return;
     }
@@ -329,7 +359,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           origen === 'recurrencia' ? ' — vino del link de Clientas Recurrentes' : ''
         }`,
         expira_en: new Date(
-          Date.now() + (circuito === 'mercado_pago' ? HOLD_MINUTOS_MP : HOLD_MINUTOS_TRANSFERENCIA) * 60 * 1000
+          Date.now() + (circuito === 'mercado_pago' && !sinMP ? HOLD_MINUTOS_MP : HOLD_MINUTOS_TRANSFERENCIA) * 60 * 1000
         ).toISOString(),
         circuito_pago: circuito,
       })
@@ -353,11 +383,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const datosBancarios = DATOS_BANCARIOS[profesionalId];
       res.status(200).json({
         circuito: 'transferencia',
+        circuitoPago: circuito,
         turnoId: String(turno.id),
         aliasCbu: profesional.alias_cbu,
         titular: datosBancarios?.titular ?? '',
         cbu: datosBancarios?.cbu ?? '',
         banco: datosBancarios?.banco ?? '',
+        servicio: servicio.nombre,
+        profesional: profesional.nombre,
+        fecha,
+        hora,
+        montoSena: String(montoSena),
+        montoTotal: String(montoTotal),
+        nombre: clienta.nombre,
+      });
+      return;
+    }
+
+    if (sinMP) {
+      // Mili/Roma sin Mercado Pago: misma pantalla de "subir comprobante" que
+      // el circuito de transferencia, pero con la cuenta propia de Rose Face
+      // del día — circuitoPago queda "mercado_pago" (no cambia la comisión).
+      const cuenta = cuentaRoseFaceDelDia(fecha);
+      res.status(200).json({
+        circuito: 'transferencia',
+        circuitoPago: circuito,
+        turnoId: String(turno.id),
+        aliasCbu: cuenta.alias,
+        titular: cuenta.titular,
+        cbu: cuenta.cbu,
+        banco: cuenta.banco,
         servicio: servicio.nombre,
         profesional: profesional.nombre,
         fecha,

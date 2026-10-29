@@ -54,8 +54,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(404).json({ ok: false, error: 'Turno no encontrado' });
     return;
   }
-  if (turno.circuito_pago !== 'transferencia') {
-    res.status(400).json({ ok: false, error: 'Este turno no es del circuito de transferencia' });
+  // 29/10/2026: también se acepta en el circuito "mercado_pago" cuando la
+  // clienta eligió "no tengo Mercado Pago" y transfiere a la cuenta de Rose
+  // Face del día (ver api/mercadopago/crear-preferencia.ts) — circuitoPago
+  // no cambia, sigue siendo el que define la comisión.
+  if (turno.circuito_pago !== 'transferencia' && turno.circuito_pago !== 'mercado_pago') {
+    res.status(400).json({ ok: false, error: 'Este turno no acepta comprobante de transferencia' });
     return;
   }
   if (turno.estado !== 'reservado') {

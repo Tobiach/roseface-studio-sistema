@@ -79,8 +79,8 @@ export const ReservaTransferencia: React.FC = () => {
           {nombre ? `¡Gracias, ${nombre}!` : '¡Listo!'}
         </h1>
         <p className="text-sm text-rf-charcoal leading-relaxed">
-          {profesional} va a revisar tu comprobante y confirmar el turno. Te avisamos por WhatsApp
-          apenas quede confirmado.
+          Vamos a revisar tu comprobante y confirmar el turno. Te avisamos por WhatsApp apenas
+          quede confirmado.
         </p>
 
         {/* Cross-sell — mismo mensaje que en el circuito de Mercado Pago */}
@@ -157,7 +157,7 @@ export const ReservaTransferencia: React.FC = () => {
 
           <div className="flex items-center justify-between bg-white rounded-xl border border-sky-200 px-3 py-2.5">
             <div>
-              <span className="text-[11px] text-gray-400 block">Alias de {profesional}</span>
+              <span className="text-[11px] text-gray-400 block">Alias</span>
               <span className="font-bold text-rf-black text-sm">{aliasCbu}</span>
             </div>
             <button

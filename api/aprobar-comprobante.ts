@@ -10,8 +10,42 @@
 // Reemplaza el UPDATE que hacía `aprobarComprobante` en AppContext.tsx, y
 // absorbe la lógica de mail que antes vivía en notificar-turno-confirmado.ts
 // (ese archivo queda sin uso y se borra — nada más lo llamaba).
+//
+// 29/10/2026: dos cambios. (1) Exige el token de sesión de
+// api/verificar-pin.ts (antes no pedía ninguno — cualquiera que supiera el
+// id de un turno con comprobante podía aprobarlo). (2) Ahora también acepta
+// el circuito "mercado_pago" (Mili/Roma cuando la clienta no tiene MP y
+// transfiere a la cuenta de Rose Face del día) — pero ESE circuito solo lo
+// puede aprobar Yosy, nunca la profesional: a diferencia del circuito
+// transferencia (donde la plata es entre la clienta y la profesional, Yosy
+// no se mete), acá el ingreso se reparte por comisión y afecta el cierre
+// semanal, así que la aprobación tiene que pasar por la dueña.
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+interface Sesion {
+  rol: 'admin' | 'profesional';
+  pid: string | null;
+}
+
+// Duplicado de api/editar-turno.ts (Vercel no comparte código entre funciones).
+function leerSesion(token: string | undefined, secreto: string): Sesion | null {
+  if (!token) return null;
+  const [payload, firma] = token.split('.');
+  if (!payload || !firma) return null;
+  const esperada = createHmac('sha256', secreto).update(`rf-sesion-v1.${payload}`).digest();
+  const recibida = Buffer.from(firma, 'base64url');
+  if (recibida.length !== esperada.length || !timingSafeEqual(recibida, esperada)) return null;
+  try {
+    const datos = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as { rol?: string; pid?: string | null; exp?: number };
+    if (!datos.exp || datos.exp < Date.now()) return null;
+    if (datos.rol !== 'admin' && datos.rol !== 'profesional') return null;
+    return { rol: datos.rol, pid: datos.pid ?? null };
+  } catch {
+    return null;
+  }
+}
 
 // Vercel no empaqueta carpetas compartidas fuera de cada función individual
 // (probado: api/_lib/ no llega al bundle) — duplicado a propósito, mismo
@@ -92,10 +126,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const supabaseAdmin = getSupabaseAdmin();
-  if (!supabaseAdmin) {
+  const secreto = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseAdmin || !secreto) {
     res.status(500).json({ error: 'Supabase no configurado en el servidor' });
     return;
   }
+
+  const autorizacion = req.headers.authorization ?? '';
+  const sesion = leerSesion(autorizacion.startsWith('Bearer ') ? autorizacion.slice(7) : undefined, secreto);
+  if (!sesion) {
+    res.status(401).json({ ok: false, error: 'Sesión vencida: volvé a ingresar tu PIN' });
+    return;
+  }
+  const esAdmin = sesion.rol === 'admin';
 
   const { turnoId } = (req.body ?? {}) as { turnoId?: string };
   if (!turnoId) {
@@ -115,8 +158,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(404).json({ ok: false, error: 'Turno no encontrado' });
     return;
   }
-  if (turnoActual.circuito_pago !== 'transferencia') {
-    res.status(400).json({ ok: false, error: 'Este turno no es del circuito de transferencia' });
+  if (turnoActual.circuito_pago === 'mercado_pago') {
+    // Mili/Roma sin MP: afecta la comisión del cierre semanal, aprueba solo Yosy.
+    if (!esAdmin) {
+      res.status(403).json({ ok: false, error: 'Solo Yosy puede aprobar este comprobante' });
+      return;
+    }
+  } else if (turnoActual.circuito_pago === 'transferencia') {
+    // Alquiler fijo: la plata es entre la clienta y la profesional — la aprueba
+    // ella misma (o Yosy, por si hace falta ayudarla).
+    if (!esAdmin && sesion.pid !== turnoActual.profesional_id) {
+      res.status(403).json({ ok: false, error: 'Ese turno no es de tu agenda' });
+      return;
+    }
+  } else {
+    res.status(400).json({ ok: false, error: 'Este turno no acepta comprobante de transferencia' });
     return;
   }
   if (!turnoActual.comprobante_transferencia_url) {

@@ -362,9 +362,11 @@ el período elegido" presentes). Rollback a este bloque: `npx vercel rollback ro
    Banco Lemon, sábado-domingo Banco Santander — datos reales en el Google Doc que compartió Tobias, NO repetir acá los CBU/alias
    completos fuera de ese doc y el código) para reemplazar el link de Mercado Pago en los recordatorios de seña. Confirmado con
    Tobias: aplica **solo a Mili y Roma** (las únicas que hoy mandan link de MP); el resto sigue con transferencia a su cuenta
-   propia + comprobante, sin cambios. Miércoles: Tobias confirmó que SÍ trabajan ese día, pero **todavía no dijo qué cuenta
-   usar** — pendiente de su respuesta antes
-   de tocar código de esto. **NADA de la sección de cuentas bancarias está construido todavía.**
+   propia + comprobante, sin cambios. Miércoles: Tobias dijo "que se sume a la rotación de alguna de las 3" sin especificar cuál
+   — se sumó a la de Galicia (lunes a miércoles), es la única decisión arbitraria mía en todo esto, un cambio de una línea si
+   prefiere otra. **Construido y deployado — ver sección 14.**
+6. (Mismo día, pedido aparte) En la reserva por la web, si la clienta de Mili/Roma no tiene Mercado Pago, que pueda transferir
+   a la cuenta de Rose Face del día y marcar que pagó, para que Yosy lo verifique. **Construido y deployado — ver sección 14.**
 
 **Qué se construyó (puntos 1-4)**:
 - `api/editar-turno.ts`, acción `clienta`: se sacó la excepción de "completar un teléfono vacío" — ahora `!esAdmin` alcanza
@@ -390,7 +392,61 @@ durante gran parte de la sesión — un `npm run build` llegó a fallar una vez 
 `Downloads` (888 MB) y `AppData\Local\Temp` (885 MB) del usuario NO explican el lleno — el grueso está en otro lado (sistema,
 `WinSxS`, algún programa grande) y los barridos recursivos para encontrarlo fueron demasiado lentos para completarse en la
 sesión. Se le avisó a Tobias; recomendado correr el Liberador de espacio en disco / Configuración → Almacenamiento de Windows
-(mucho más rápido que un barrido remoto) para encontrar y confirmar qué borrar.
+(mucho más rápido que un barrido remoto) para encontrar y confirmar qué borrar. El disco se llenó del todo más de una vez
+durante esta sesión (0 MB libres, incluso hizo fallar un `npx vercel` por ENOSPC) y Tobias lo liberó manualmente cada vez — no
+se encontró la causa raíz, solo se trabajó alrededor cuando había espacio.
+
+## 14. Mismo día (29/10) — cuentas bancarias de Rose Face: reemplazan el link de MP para Mili/Roma, en el recordatorio Y en la reserva web
+
+Completa los puntos 5 y 6 de la sección 13 (quedaron pendientes ahí por falta de la respuesta de Tobias sobre el miércoles).
+
+**Dónde viven las cuentas** (datos reales, no inventados — vienen del Google Doc "día a día Rose Face" que compartió Tobias):
+`src/lib/cuentasBancarias.ts` (frontend — recordatorios de WhatsApp y la página "Cuentas de Banco") y duplicado en
+`api/mercadopago/crear-preferencia.ts` (Vercel no comparte código entre funciones, mismo motivo que `MONTO_SENA_FIJO`/
+`DATOS_BANCARIOS` ya duplicados ahí) — se verificó con un `grep` que los 2 archivos tienen el mismo CBU/alias/titular, letra por
+letra, para las 3 cuentas. Lunes a miércoles Banco Galicia, jueves/viernes Banco Lemon, sábado/domingo Banco Santander.
+
+**1) Recordatorio de seña (72h/48h) de Mili y Roma** — ya NO manda el link de Mercado Pago (`crear-link-pago.ts` queda en el
+repo sin uso, con una nota arriba por si hace falta volver atrás; `crearLinkPago`/`llevaLinkDePago` se sacaron de
+`AppContext.tsx`/`AdminAgenda.tsx`). En su lugar, `llevaCuentaBancaria` + `cuentaBancariaParaTurno` arman el texto con la cuenta
+del día (sin pedirle nada al servidor — es instantáneo, a diferencia del viejo link que tardaba en generarse).
+
+**2) Sección "Cuentas de Banco"** (`/admin/cuentas-banco`, solo Yosy — mismo guard que Caja/VIP en `router.tsx`/`Sidebar.tsx`):
+lista las 3 cuentas con botón de copiar para CBU/alias/titular.
+
+**3) En la reserva pública, "¿No tenés Mercado Pago?"** — solo aparece para Mili/Roma (`modeloComision.tipo === 'porcentaje'`).
+La clienta transfiere a la cuenta de Rose Face del día y sube el comprobante en la MISMA pantalla `/reserva/transferencia` que
+ya usan Cris/Ari (`api/mercadopago/crear-preferencia.ts` devuelve la misma forma de respuesta `circuito: 'transferencia'`, solo
+que con la cuenta del estudio en vez de la propia de la profesional). **Punto crítico, verificado con test**: el turno queda
+con `circuitoPago: 'mercado_pago'` igual que si hubiera pagado por MP — ese campo define la comisión, no cómo pagó esta
+reserva puntual; si se pisara con `'transferencia'` se rompería el descuento de $1.000 (cargo de gestión, sección 11) y el
+reparto de comisión de esa profesional.
+
+**4) Yosy aprueba el comprobante** (antes esto era exclusivo de la propia profesional de alquiler fijo — Fase 5):
+`comprobantesPendientes` en `AdminAgenda.tsx` ahora también le muestra a Yosy los turnos `circuitoPago==='mercado_pago'` con
+comprobante sin aprobar (los de alquiler fijo siguen siendo solo para la propia profesional). **Hallazgo de seguridad
+encontrado al tocar esto** (no estaba en el pedido, pero había que arreglarlo para que la función tuviera sentido):
+`api/aprobar-comprobante.ts` no pedía NINGÚN token — cualquiera que supiera el id de un turno con comprobante podía aprobarlo
+y confirmar un turno sin que nadie lo revisara. Se le agregó el mismo token de sesión HMAC que usa `editar-turno.ts`, con
+permisos: circuito `mercado_pago` → solo Yosy; circuito `transferencia` → la propia profesional o Yosy (como ya era, más
+Yosy como respaldo). `api/guardar-comprobante.ts` (donde sube el archivo la clienta, sin login) se dejó público a propósito —
+es la clienta subiendo SU comprobante, no tiene sesión — pero ahora también acepta el circuito `mercado_pago` (antes solo
+`transferencia`, rechazaba a Mili/Roma con 400).
+
+**Verificado**:
+- `docs/pruebas/logica/cuentas-bancarias.mjs` (17 casos): la rotación por día de la semana, los datos reales exactos, cuándo
+  `llevaCuentaBancaria` es true/false, y que el mensaje final tiene el banco/CBU correctos y ya no menciona "Mercado Pago".
+- `docs/pruebas/servidor/crear-preferencia-sin-mp.mjs` (11 casos, contra una versión extendida de la base falsa — se le sumó
+  soporte de `.insert()`/`.ilike()`/`.limit()` a `fake-supabase.mjs`, usado también por los demás scripts de `editar-turno.ts`
+  sin romper ninguno de sus casos, re-corridos los 4 archivos para confirmarlo): sin `medioPago` sigue pidiendo
+  `MP_ACCESS_TOKEN` como siempre; con `medioPago:'transferencia_estudio'` no lo pide, el turno se crea con `circuito_pago`
+  "mercado_pago" en la base, la cuenta devuelta es la del día correcto (se probó jueves y sábado, con fechas calculadas en el
+  momento de correr el test, no hardcodeadas), el hold es de 60 min (no los 13 de MP); y una regresión de que Ari (alquiler
+  fijo) sigue exactamente igual que antes.
+- Lint y build en 0. **NO se probó**: pantalla/Chromium (no se intentó), ni un comprobante real subido y aprobado de punta a
+  punta (requeriría escribir en la base real).
+- **Deployado y verificado**: pendiente de completar con el commit y los datos del deploy en el momento de pushear (ver el
+  mensaje del chat de esa fecha si este párrafo no se actualizó).
 
 ## 9. Cómo verificar un deploy (patrón usado siempre)
 1. `npm run lint` y `npm run build` en 0 → commit → (avisar/pedir OK) `git push origin main` — **el push ya deploya solo**; confirmar con

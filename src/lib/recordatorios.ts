@@ -12,6 +12,7 @@
 import type { PlantillaRecordatorio, RecordatorioConfig, Turno } from '../types';
 import { formatDateReadable } from './formatters';
 import { mensajeRecordatorio } from './whatsapp';
+import { cuentaBancariaDelDia, type CuentaBancaria } from './cuentasBancarias';
 
 export interface VentanaRecordatorio {
   value: PlantillaRecordatorio;
@@ -112,7 +113,7 @@ export function mensajeParaTurno(
   plantilla: PlantillaRecordatorio,
   nombreClienta: string,
   servicio: string,
-  linkPago?: string
+  cuentaBancaria?: CuentaBancaria
 ): string {
   return mensajeRecordatorio(plantilla, {
     nombreClienta,
@@ -121,11 +122,16 @@ export function mensajeParaTurno(
     hora: t.horaInicio,
     senaPendiente: esTurnoConSenaPendiente(t),
     montoSena: t.montoSena,
-    linkPago,
+    cuentaBancaria,
   });
 }
 
-// Los mensajes de seña de 72h y 48h llevan un link de pago de Mercado Pago atado
-// al turno (el de 24h confirma la cita y no pide plata).
-export const llevaLinkDePago = (t: CampoSena, plantilla: PlantillaRecordatorio): boolean =>
-  esTurnoConSenaPendiente(t) && (plantilla === '72h' || plantilla === '48h');
+type CampoSenaConCircuito = CampoSena & Pick<Turno, 'circuitoPago' | 'fecha'>;
+
+// Los mensajes de seña de 72h y 48h llevan la cuenta bancaria del día (29/10/2026,
+// reemplaza el link de Mercado Pago que llevaban antes) — solo en el circuito
+// "mercado_pago" (Mili/Roma); el resto sigue sin nada automático en el mensaje.
+export const llevaCuentaBancaria = (t: CampoSenaConCircuito, plantilla: PlantillaRecordatorio): boolean =>
+  esTurnoConSenaPendiente(t) && (plantilla === '72h' || plantilla === '48h') && t.circuitoPago === 'mercado_pago';
+
+export const cuentaBancariaParaTurno = (t: Pick<Turno, 'fecha'>): CuentaBancaria => cuentaBancariaDelDia(t.fecha);

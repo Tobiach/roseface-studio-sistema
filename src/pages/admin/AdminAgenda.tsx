@@ -14,7 +14,7 @@ import { PanelEditarTurno } from '../../components/admin/PanelEditarTurno';
 import { PanelEditarClienta } from '../../components/admin/PanelEditarClienta';
 import { AvisoHorario } from '../../components/admin/AvisoHorario';
 import { formatCurrency, formatDateReadable, formatDateShort } from '../../lib/formatters';
-import { ventanasDelTurno, estadoSena, estadoRecordatorios, mensajeParaTurno, llevaLinkDePago, puedeProfesionalEditarCompletado, type VentanaRecordatorio } from '../../lib/recordatorios';
+import { ventanasDelTurno, estadoSena, estadoRecordatorios, mensajeParaTurno, llevaCuentaBancaria, cuentaBancariaParaTurno, puedeProfesionalEditarCompletado, type VentanaRecordatorio } from '../../lib/recordatorios';
 import { SenaBadge } from '../../components/ui/SenaBadge';
 import { hoyISO, sumarDiasISO, sumarMinutos, finSinPasarMedianoche, turnoBloqueaHorario, encajeEnHorario, DIAS_SEMANA } from '../../lib/disponibilidad';
 import { calcularMontoSena, descuentoMercadoPago, DESCUENTO_MP_POR_RESERVA } from '../../lib/pricing';
@@ -88,12 +88,15 @@ export const AdminAgenda: React.FC = () => {
   } = useApp();
   const esProfesional = rolActivo === 'profesional';
 
-  // Comprobantes de transferencia esperando aprobación — solo la propia
-  // profesional de alquiler fijo los ve, nunca Yosy (Fase 5).
+  // Comprobantes de transferencia esperando aprobación — la propia
+  // profesional de alquiler fijo ve los suyos (Fase 5); Yosy ve los de
+  // Mili/Roma cuando la clienta no tenía Mercado Pago (29/10/2026): esos
+  // afectan la comisión del cierre, así que los aprueba ella, nunca la
+  // profesional (ver api/aprobar-comprobante.ts).
   const profesionalActivo = profesionales.find((p) => p.id === profesionalActivoId);
   const esAlquilerFijo = profesionalActivo?.modeloComision.tipo === 'alquiler_fijo';
-  const comprobantesPendientes =
-    esProfesional && esAlquilerFijo
+  const comprobantesPendientes = esProfesional
+    ? esAlquilerFijo
       ? turnos.filter(
           (t) =>
             t.profesionalId === profesionalActivoId &&
@@ -101,7 +104,8 @@ export const AdminAgenda: React.FC = () => {
             !!t.comprobanteTransferenciaUrl &&
             !t.aprobadoPorProfesional
         )
-      : [];
+      : []
+    : turnos.filter((t) => t.circuitoPago === 'mercado_pago' && !!t.comprobanteTransferenciaUrl && !t.aprobadoPorProfesional);
 
   // Notificación de pago para Yosy (Fase 6.1) — últimos turnos confirmados.
   // En el circuito de transferencia no se le muestra monto ni comprobante:
@@ -410,7 +414,7 @@ export const AdminAgenda: React.FC = () => {
   }
 
   // Marca el recordatorio como enviado y abre WhatsApp con el mensaje armado; en los de
-  // seña (72h / 48h) además genera y agrega el link de pago de Mercado Pago de ese turno.
+  // seña (72h / 48h) de Mili/Roma además agrega la cuenta bancaria del día de ese turno.
   const enviarRecordatorio = (turno: Turno, plantilla: PlantillaRecordatorio) => {
     const clienta = clientas.find((c) => c.id === turno.clientaId);
     if (!clienta) {
@@ -1385,14 +1389,15 @@ export const AdminAgenda: React.FC = () => {
                     );
                     const activado = config?.activado ?? false;
                     const clienta = clientas.find((c) => c.id === turnoSeleccionadoModal.clientaId);
-                    const conLink = llevaLinkDePago(turnoSeleccionadoModal, v.value);
-                    // Vista previa: el link real se genera recién al enviar.
+                    const conCuenta = llevaCuentaBancaria(turnoSeleccionadoModal, v.value);
+                    // La cuenta bancaria no hace falta generarla: la vista previa ya es la real.
+                    const cuentaBancaria = conCuenta ? cuentaBancariaParaTurno(turnoSeleccionadoModal) : undefined;
                     const mensaje = mensajeParaTurno(
                       turnoSeleccionadoModal,
                       v.value,
                       clienta?.nombre ?? 'clienta',
                       getServicioNombre(turnoSeleccionadoModal.servicioId),
-                      conLink ? '[link de pago]' : undefined
+                      cuentaBancaria
                     );
 
                     const enviarPorWhatsApp = () => enviarRecordatorio(turnoSeleccionadoModal, v.value);
@@ -1416,9 +1421,9 @@ export const AdminAgenda: React.FC = () => {
                           )}
                         </div>
                         <p className="text-[10px] text-rf-charcoal italic line-clamp-3">{mensaje}</p>
-                        {conLink && (
+                        {conCuenta && cuentaBancaria && (
                           <p className="text-[10px] text-violet-800 font-semibold">
-                            🔗 Al enviarlo se agrega un link de pago de Mercado Pago para la seña de este turno.
+                            🏦 Lleva la cuenta de {cuentaBancaria.banco} ({cuentaBancaria.dias.toLowerCase()}) para la seña de este turno.
                           </p>
                         )}
                         <Button variant={activado ? 'outline' : 'primary'} size="sm" fullWidth onClick={enviarPorWhatsApp}>
