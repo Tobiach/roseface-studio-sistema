@@ -445,8 +445,10 @@ es la clienta subiendo SU comprobante, no tiene sesión — pero ahora también 
   fijo) sigue exactamente igual que antes.
 - Lint y build en 0. **NO se probó**: pantalla/Chromium (no se intentó), ni un comprobante real subido y aprobado de punta a
   punta (requeriría escribir en la base real).
-- **Deployado y verificado**: pendiente de completar con el commit y los datos del deploy en el momento de pushear (ver el
-  mensaje del chat de esa fecha si este párrafo no se actualizó).
+- **Deployado y verificado**: commit `6864a48`, deployment `roseface-studio-sistema-fzocxknw7-tobiachs-projects.vercel.app`,
+  bundle confirmado ("Cuentas de Banco", "Banco Galicia", "Banco Lemon", "No tenés Mercado Pago" presentes) y
+  `aprobar-comprobante` probado sin token → 401 (antes no pedía ninguno). Rollback a este bloque:
+  `npx vercel rollback roseface-studio-sistema-k3x4o218n-tobiachs-projects.vercel.app --yes`.
 
 ## 9. Cómo verificar un deploy (patrón usado siempre)
 1. `npm run lint` y `npm run build` en 0 → commit → (avisar/pedir OK) `git push origin main` — **el push ya deploya solo**; confirmar con
