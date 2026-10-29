@@ -4,8 +4,8 @@
 // lo que se factura), día, hora, profesional (solo Yosy) y, solo Yosy, el precio
 // y la seña a mano. El guardado pasa por api/editar-turno.ts, que recalcula el
 // total en el servidor y deja el cambio anotado en el turno.
-import React, { useState } from 'react';
-import { Save } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Plus, Save, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { formatCurrency } from '../../lib/formatters';
 import { finSinPasarMedianoche, turnoBloqueaHorario } from '../../lib/disponibilidad';
@@ -13,7 +13,9 @@ import { calcularMontoSena } from '../../lib/pricing';
 import { estadoSena } from '../../lib/recordatorios';
 import { AvisoHorario } from './AvisoHorario';
 import type { CambiosTurno } from '../../context/AppContext';
-import type { BloqueoHorario, Profesional, Servicio, Turno } from '../../types';
+import type { BloqueoHorario, Profesional, Servicio, ServicioExtra, Turno } from '../../types';
+
+const OPCION_MANUAL = '__manual__';
 
 interface Props {
   turno: Turno;
@@ -54,6 +56,14 @@ export const PanelEditarTurno: React.FC<Props> = ({
   const [senaManual, setSenaManual] = useState('');
   const [nota, setNota] = useState('');
   const [guardando, setGuardando] = useState(false);
+  // Servicios extra (25/10/2026, pedido de Tobias): antes solo se podían sumar al
+  // confirmar "Vino" — una clienta que reservó un servicio y se termina llevando
+  // varios necesitaba esperar a que vuelva para cargarlo. Ahora también se puede
+  // desde acá, sin tocar el estado del turno.
+  const [extras, setExtras] = useState<ServicioExtra[]>(turno.serviciosExtra ?? []);
+  const [opcionExtra, setOpcionExtra] = useState('');
+  const [nombreExtra, setNombreExtra] = useState('');
+  const [precioExtra, setPrecioExtra] = useState('');
 
   const servicioNuevo = servicios.find((s) => s.id === servicioId);
   const profesionalSel = profesionales.find((p) => p.id === profesionalId);
@@ -79,8 +89,15 @@ export const PanelEditarTurno: React.FC<Props> = ({
   const horaFin = finManual ?? horaFinCalculada;
 
   // Plata: lo que muestra es una vista previa — el total real lo recalcula el servidor.
-  const sumaExtras = (turno.serviciosExtra ?? []).reduce((a, e) => a + e.precio, 0);
-  const totalCalculado = cambiaServicio && servicioNuevo ? servicioNuevo.precio + sumaExtras : turno.montoTotal;
+  const extrasPrevios = turno.serviciosExtra ?? [];
+  const cambiaronExtras = JSON.stringify(extras) !== JSON.stringify(extrasPrevios);
+  const sumaExtras = extras.reduce((a, e) => a + e.precio, 0);
+  const totalCalculado =
+    cambiaServicio && servicioNuevo
+      ? servicioNuevo.precio + sumaExtras
+      : cambiaronExtras
+      ? turno.montoTotal - extrasPrevios.reduce((a, e) => a + e.precio, 0) + sumaExtras
+      : turno.montoTotal;
   const totalManualNum = totalManual === '' ? null : Number(totalManual);
   const totalFinal = esAdmin && totalManualNum !== null && Number.isFinite(totalManualNum) ? totalManualNum : totalCalculado;
   const senaPendiente = estadoSena(turno) === 'pendiente';
@@ -117,11 +134,54 @@ export const PanelEditarTurno: React.FC<Props> = ({
   if (finManual !== null && finManual !== horaFinCalculada) cambios.horaFin = finManual;
   if (esAdmin && totalManualNum !== null && Number.isFinite(totalManualNum) && totalManualNum !== totalCalculado) cambios.montoTotal = totalManualNum;
   if (esAdmin && senaManualNum !== null && Number.isFinite(senaManualNum) && senaManualNum !== senaCalculada) cambios.montoSena = senaManualNum;
+  if (cambiaronExtras) cambios.serviciosExtra = extras;
   const hayCambios = Object.keys(cambios).length > 0;
   if (nota.trim()) cambios.nota = nota.trim();
 
   const bloqueado =
     guardando || !hayCambios || !!mismoInicio || !servicioValido || !fecha || !horaInicio || finInvalido || yaPaso;
+
+  const serviciosPorCategoria = useMemo(() => {
+    const grupos = new Map<string, Servicio[]>();
+    for (const s of servicios) grupos.set(s.categoria, [...(grupos.get(s.categoria) ?? []), s]);
+    return Array.from(grupos.entries());
+  }, [servicios]);
+
+  const elegirOpcionExtra = (valor: string) => {
+    setOpcionExtra(valor);
+    if (valor.startsWith('adicional:')) {
+      const adicional = profesionalSel?.adicionales?.[Number(valor.slice('adicional:'.length))];
+      if (adicional) {
+        setNombreExtra(adicional.nombre);
+        setPrecioExtra(String(adicional.precio));
+      }
+    } else if (valor.startsWith('servicio:')) {
+      const servicioElegido = servicios.find((s) => s.id === valor.slice('servicio:'.length));
+      if (servicioElegido) {
+        setNombreExtra(servicioElegido.nombre);
+        setPrecioExtra(String(servicioElegido.precio));
+      }
+    } else {
+      setNombreExtra('');
+      setPrecioExtra('');
+    }
+  };
+  const precioExtraNumerico = Number(precioExtra);
+  const puedeAgregarExtra = nombreExtra.trim().length > 0 && precioExtra !== '' && Number.isFinite(precioExtraNumerico) && precioExtraNumerico >= 0;
+  const agregarExtra = () => {
+    if (!puedeAgregarExtra) return;
+    setExtras((prev) => [
+      ...prev,
+      {
+        nombre: nombreExtra.trim(),
+        precio: Math.round(precioExtraNumerico),
+        servicioId: opcionExtra.startsWith('servicio:') ? opcionExtra.slice('servicio:'.length) : null,
+      },
+    ]);
+    setOpcionExtra('');
+    setNombreExtra('');
+    setPrecioExtra('');
+  };
 
   const guardar = async () => {
     setGuardando(true);
@@ -170,6 +230,84 @@ export const PanelEditarTurno: React.FC<Props> = ({
           <p className="text-[11px] text-red-700 mt-1 font-semibold">
             {profesionalSel?.nombre ?? 'Esa profesional'} no realiza ese servicio: elegí otro.
           </p>
+        )}
+      </div>
+
+      <div className="space-y-2 rounded-xl bg-rf-cream/60 border border-pink-100 p-3">
+        <p className="text-[11px] font-bold text-rf-black">
+          Servicios extra {extras.length > 0 && `(${extras.length})`}
+        </p>
+        {extras.length > 0 && (
+          <div className="rounded-xl border border-pink-200 divide-y divide-pink-100 bg-white text-xs">
+            {extras.map((extra, i) => (
+              <div key={`${extra.nombre}-${i}`} className="flex items-center justify-between gap-2 px-3 py-2">
+                <span className="min-w-0 truncate">{extra.nombre}</span>
+                <span className="flex items-center gap-2 shrink-0">
+                  <span className="font-semibold">{formatCurrency(extra.precio)}</span>
+                  <button
+                    type="button"
+                    aria-label={`Quitar ${extra.nombre}`}
+                    onClick={() => setExtras((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="text-gray-400 hover:text-rf-danger cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        <select
+          value={opcionExtra}
+          onChange={(e) => elegirOpcionExtra(e.target.value)}
+          className="w-full px-3 py-2 rounded-xl border border-pink-200 text-xs bg-white"
+        >
+          <option value="">Sumar un servicio extra…</option>
+          {profesionalSel?.adicionales && profesionalSel.adicionales.length > 0 && (
+            <optgroup label={`Adicionales de ${profesionalSel.nombre}`}>
+              {profesionalSel.adicionales.map((a, i) => (
+                <option key={a.nombre} value={`adicional:${i}`}>
+                  {a.nombre} — {formatCurrency(a.precio)}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {serviciosPorCategoria.map(([categoria, lista]) => (
+            <optgroup key={categoria} label={categoria}>
+              {lista.map((s) => (
+                <option key={s.id} value={`servicio:${s.id}`}>
+                  {s.nombre} — {formatCurrency(s.precio)}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+          <option value={OPCION_MANUAL}>Otro (escribirlo a mano)</option>
+        </select>
+        {opcionExtra && (
+          <div className="grid grid-cols-[1fr_6.5rem] gap-2">
+            <input
+              type="text"
+              value={nombreExtra}
+              onChange={(e) => setNombreExtra(e.target.value)}
+              placeholder="Nombre del servicio"
+              className="px-3 py-2 rounded-xl border border-pink-200 text-xs bg-white"
+            />
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={precioExtra}
+              onChange={(e) => setPrecioExtra(e.target.value)}
+              placeholder="Precio"
+              className="px-3 py-2 rounded-xl border border-pink-200 text-xs bg-white"
+            />
+          </div>
+        )}
+        {opcionExtra && (
+          <Button type="button" variant="outline" size="sm" fullWidth disabled={!puedeAgregarExtra} onClick={agregarExtra}>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Agregar al turno</span>
+          </Button>
         )}
       </div>
 
@@ -286,6 +424,12 @@ export const PanelEditarTurno: React.FC<Props> = ({
           {cambiaHorario && (
             <p>
               {turno.fecha} {turno.horaInicio} → <strong>{fecha} {horaInicio}</strong>
+            </p>
+          )}
+          {cambiaronExtras && (
+            <p>
+              Extras: {extrasPrevios.length ? extrasPrevios.map((e) => e.nombre).join(', ') : 'ninguno'} →{' '}
+              <strong>{extras.length ? extras.map((e) => e.nombre).join(', ') : 'ninguno'}</strong>
             </p>
           )}
           {totalFinal !== turno.montoTotal && (

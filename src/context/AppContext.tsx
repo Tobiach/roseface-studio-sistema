@@ -129,6 +129,7 @@ export interface CambiosTurno {
   horaFin?: string;
   montoTotal?: number;
   montoSena?: number;
+  serviciosExtra?: ServicioExtra[];
   nota?: string;
 }
 

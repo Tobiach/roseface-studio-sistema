@@ -115,3 +115,36 @@ ok(r.status === 409, `reactivar con el horario ya ocupado -> 409 (${r.status}: $
 r = await llamar({ authorization: ADMIN }, { turnoId: 2, accion: 'cancelar' });
 r = await llamar({ authorization: ADMIN }, { turnoId: 2, accion: 'reactivar' });
 ok(r.status === 200 && turno(2).estado === 'sena_confirmada', `un turno del sitio con pago confirmado vuelve como seña confirmada (${turno(2).estado})`);
+
+// --- Servicios extra desde "Editar reserva" (29/10/2026): antes solo se sumaban
+// al confirmar "Vino" — ahora también se pueden cargar/editar acá sin completar el turno.
+reset();
+// Turno 2: reservado, sin extras todavía -> una profesional suma 2 extras sin cambiar el servicio
+r = await llamar({ authorization: MILI }, { turnoId: 2, accion: 'editar', serviciosExtra: [{ nombre: 'Retiro', precio: 3000 }, { nombre: 'Diseño', precio: 2000 }] });
+t = turno(2);
+ok(r.status === 200 && t.servicios_extra.length === 2 && t.monto_total === 41500 + 5000, `profesional suma 2 extras sin cambiar el servicio: total ${t.monto_total} (esperado 46500)`);
+ok(t.monto_sena === 30000, 'la seña ya pagada no se toca');
+ok(/extras: Retiro, Diseño/.test(t.notas_internas), 'queda anotado qué extras quedaron');
+
+// Turno 1: cambia el servicio Y los extras a la vez (reemplaza el extra de $3.000 que ya tenía)
+reset();
+r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'editar', servicioId: 's-volumen', serviciosExtra: [{ nombre: 'Masaje', precio: 4000 }] });
+t = turno(1);
+ok(r.status === 200 && t.servicio_id === 's-volumen' && t.servicios_extra.length === 1 && t.servicios_extra[0].nombre === 'Masaje' && t.monto_total === 51000 + 4000, `cambia servicio y extras juntos: total ${t.monto_total} (esperado 55000)`);
+
+// Vaciar los extras (mandar un array vacío es un cambio válido, saca el que tenía)
+reset();
+r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'editar', serviciosExtra: [] });
+t = turno(1);
+ok(r.status === 200 && t.servicios_extra.length === 0 && t.monto_total === 41500, `vaciar los extras saca el de $3.000 (total ${t.monto_total}, esperado 41500)`);
+
+// Extras inválidos -> 400, no guarda nada
+reset();
+r = await llamar({ authorization: MILI }, { turnoId: 2, accion: 'editar', serviciosExtra: [{ nombre: '', precio: 100 }] });
+ok(r.status === 400 && /no son válidos/.test(r.body.error), `extra sin nombre -> 400 (${r.status}, ${r.body.error})`);
+ok(turno(2).servicios_extra.length === 0, '... y no se guardó nada');
+
+// Mandar los mismos extras que ya tenía igual cuenta como "hay cambios" (no hace falta que cambien para poder guardar)
+reset();
+r = await llamar({ authorization: MILI }, { turnoId: 1, accion: 'editar', serviciosExtra: [{ nombre: 'Retiro', precio: 3000 }] });
+ok(r.status === 200, `mandar los mismos extras -> 200, no exige que sean distintos (${r.status})`);

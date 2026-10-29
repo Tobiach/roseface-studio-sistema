@@ -387,13 +387,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (datos.telefono !== undefined) {
       const tel = typeof datos.telefono === 'string' ? datos.telefono.trim() : '';
-      const teniaTelefono = !!(clienta.telefono ?? '').trim();
-      // El teléfono de la clienta solo lo ve y lo toca Yosy (25/10/2026, pedido de
-      // Tobias: una profesional no debe quedarse con el contacto para captarla por
-      // su cuenta) — excepto completar uno que todavía no tiene cargado (ej. Turno
-      // Manual con una clienta existente sin teléfono: la profesional ya lo tiene,
-      // se lo acaba de dar la propia clienta al reservar).
-      if (!esAdmin && (teniaTelefono || tel === '')) {
+      // El teléfono de la clienta solo lo ve y lo toca Yosy (25/10/2026, endurecido
+      // 29/10: una profesional no puede agregar un teléfono de NADIE, ni siquiera
+      // completar uno que esté vacío — antes era la única excepción, Tobias pidió
+      // sacarla del todo).
+      if (!esAdmin) {
         res.status(403).json({ ok: false, error: 'Solo Yosy puede ver o cambiar el teléfono de la clienta' });
         return;
       }
@@ -590,9 +588,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // Plata: el total se recalcula acá. Los extras ya cargados se conservan.
-  const extras = Array.isArray(turno.servicios_extra) ? (turno.servicios_extra as Fila[]) : [];
-  const sumaExtras = extras.reduce((acc, e) => acc + (Number(e.precio) || 0), 0);
+  // Servicios extra (25/10/2026): antes solo se podían sumar al confirmar "Vino"
+  // (acción "completar") — una clienta que reservó un servicio y terminó
+  // llevándose varios necesitaba esperar a que vuelva. Ahora también se pueden
+  // cargar/editar acá, sin tocar el estado del turno.
+  let extrasValidados: ServicioExtra[] | undefined;
+  if (body.serviciosExtra !== undefined) {
+    const limpios = validarExtras(body.serviciosExtra);
+    if (!limpios) {
+      res.status(400).json({ ok: false, error: 'Los servicios extra no son válidos' });
+      return;
+    }
+    extrasValidados = limpios;
+  }
+  const extrasPrevios = Array.isArray(turno.servicios_extra) ? (turno.servicios_extra as ServicioExtra[]) : [];
+  const extrasFinal = extrasValidados ?? extrasPrevios;
+  const sumaExtras = sumarExtras(extrasFinal);
+
+  // Plata: el total se recalcula acá.
   const totalActual = Number(turno.monto_total);
   let montoTotal = totalActual;
   if (body.montoTotal !== undefined) {
@@ -601,7 +614,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
     montoTotal = Math.round(body.montoTotal);
-  } else if (cambiaServicio) {
+  } else if (cambiaServicio || extrasValidados !== undefined) {
     montoTotal = Number(servicio.precio) + sumaExtras;
   }
 
@@ -646,7 +659,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const hayCambios =
-    cambiaServicio || cambiaProfesional || cambiaHorario || cambiaFin || montoTotal !== totalActual || montoSena !== senaActual;
+    cambiaServicio || cambiaProfesional || cambiaHorario || cambiaFin || montoTotal !== totalActual || montoSena !== senaActual || extrasValidados !== undefined;
   if (!hayCambios) {
     res.status(400).json({ ok: false, error: 'No hay nada para cambiar' });
     return;
@@ -660,6 +673,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (horaInicio !== hhmm(turno.hora_inicio)) cambios.push(`hora ${hhmm(turno.hora_inicio)} → ${horaInicio}`);
   // La hora de fin sola se anota solo si es lo único del horario que se tocó.
   if (cambiaFin && !cambiaServicio && !cambiaHorario) cambios.push(`fin ${hhmm(turno.hora_fin)} → ${horaFin}`);
+  if (extrasValidados !== undefined) cambios.push(`extras: ${extrasFinal.length ? extrasFinal.map((e) => e.nombre).join(', ') : 'ninguno'}`);
   if (montoTotal !== totalActual) cambios.push(`total ${plata(totalActual)} → ${plata(montoTotal)}`);
   if (montoSena !== senaActual) cambios.push(`seña ${plata(senaActual)} → ${plata(montoSena)}`);
   const nota = typeof body.nota === 'string' ? body.nota.trim().slice(0, 300) : '';
@@ -672,6 +686,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     hora_inicio: horaInicio,
     hora_fin: horaFin,
     monto_total: montoTotal,
+    servicios_extra: extrasFinal,
     monto_sena: montoSena,
     notas_internas: agregarAlRegistro(linea),
   };

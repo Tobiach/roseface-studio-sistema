@@ -272,9 +272,11 @@ export const AdminAgenda: React.FC = () => {
   const handleCrearTurnoManual = async () => {
     if (!tmNombre.trim() || !tmProfesionalId || !tmServicioId || !tmFecha || !tmHora || !tmServicio) return;
     const registrarSena = tmSenaAbonada && tmEstado !== 'completado';
-    // Si la clienta ya existía y no tenía teléfono, el que se escribió se guarda en su ficha.
-    // (Si ya tenía uno distinto no se pisa solo: pudo ser otra persona con el mismo nombre.)
-    const completarTelefono = !!tmClientaExistente && tmTelefonoTipeado !== '' && !(tmClientaExistente.telefono ?? '').trim();
+    // Si la clienta ya existía y no tenía teléfono, el que se escribió se guarda en su ficha
+    // (si ya tenía uno distinto no se pisa solo: pudo ser otra persona con el mismo nombre).
+    // Solo Yosy: una profesional no tiene ni el campo para escribirlo (29/10/2026).
+    const completarTelefono =
+      !esProfesional && !!tmClientaExistente && tmTelefonoTipeado !== '' && !(tmClientaExistente.telefono ?? '').trim();
     // Registrar la seña como pagada o guardar el teléfono exige PIN reciente: se pide ANTES de
     // crear el turno, así no queda un turno creado sin lo que se quiso cargar.
     if ((registrarSena || completarTelefono) && !sesionConToken) {
@@ -284,7 +286,7 @@ export const AdminAgenda: React.FC = () => {
     }
     setTmGuardando(true);
     try {
-      const clientaId = await buscarOCrearClienta(tmNombre.trim(), tmTelefono.trim());
+      const clientaId = await buscarOCrearClienta(tmNombre.trim(), esProfesional ? '' : tmTelefono.trim());
       const horaFin = finSinPasarMedianoche(tmHora, tmServicio.duracionMinutos);
       // La base solo deja insertar desde el navegador turnos en estado
       // 'reservado' (RLS de turnos, 15/10/2026: si no, cualquiera podría
@@ -1575,7 +1577,7 @@ export const AdminAgenda: React.FC = () => {
 
             <div className="space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-3">
-                <div>
+                <div className={esProfesional ? 'col-span-2' : ''}>
                   <label className="font-bold text-rf-black block mb-1">Nombre de la clienta</label>
                   <input
                     type="text"
@@ -1585,32 +1587,35 @@ export const AdminAgenda: React.FC = () => {
                     className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
                   />
                 </div>
-                <div>
-                  <label className="font-bold text-rf-black block mb-1">Teléfono</label>
-                  <input
-                    type="text"
-                    value={tmTelefono}
-                    onChange={(e) => setTmTelefono(e.target.value)}
-                    placeholder="Opcional"
-                    className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
-                  />
-                </div>
+                {!esProfesional && (
+                  <div>
+                    <label className="font-bold text-rf-black block mb-1">Teléfono</label>
+                    <input
+                      type="text"
+                      value={tmTelefono}
+                      onChange={(e) => setTmTelefono(e.target.value)}
+                      placeholder="Opcional"
+                      className="w-full px-3 py-2 rounded-xl border border-pink-200 font-semibold"
+                    />
+                  </div>
+                )}
               </div>
 
-              {tmClientaExistente && (
+              {/* El teléfono (nuevo o ya cargado) es terreno exclusivo de Yosy (29/10/2026,
+                  pedido de Tobias: una profesional no agrega el número de nadie) — por eso acá
+                  no se le muestra ni el campo ni ningún aviso sobre si la clienta ya existe. */}
+              {!esProfesional && tmClientaExistente && (
                 <p className="rounded-xl bg-sky-50 border border-sky-200 text-sky-900 p-2.5 text-[11px]">
                   {!(tmClientaExistente.telefono ?? '').trim()
                     ? tmTelefonoTipeado
                       ? '✓ Ya está cargada en el sistema, sin teléfono: el que escribas se guarda en su ficha.'
                       : 'Ya está cargada en el sistema pero sin teléfono: escribilo para guardarlo en su ficha.'
-                    : esProfesional
-                    ? 'Ya está cargada en el sistema con un teléfono (solo Yosy lo ve). Se usa el que ya tiene guardado.'
                     : tmTelefonoTipeado && tmTelefonoTipeado !== tmClientaExistente.telefono
                     ? `⚠️ Ya está cargada con el teléfono ${tmClientaExistente.telefono}. Se usa ese; si cambió, corregilo con "Editar datos" en el turno.`
                     : `Ya está cargada en el sistema (teléfono ${tmClientaExistente.telefono}).`}
                 </p>
               )}
-              {tmTelefonoInvalido && (
+              {!esProfesional && tmTelefonoInvalido && (
                 <p className="rounded-xl bg-red-50 border border-red-200 text-red-800 p-2.5 text-[11px] font-semibold">
                   El teléfono tiene que tener entre 8 y 15 números (solo números, espacios, guiones o +). Si no lo tenés, dejalo vacío.
                 </p>
