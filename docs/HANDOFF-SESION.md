@@ -1,4 +1,4 @@
-# HANDOFF — Rose Face Studio (estado al 22/10/2026, actualizado 25/10 — ver sección 11)
+# HANDOFF — Rose Face Studio (estado al 22/10/2026, actualizado 29/10 — ver sección 12)
 
 > Documento de traspaso entre sesiones de Claude Code. Leerlo ENTERO antes de tocar nada.
 > Complementa a `CLAUDE.md` (reglas del repo), `docs/SEGURIDAD_PENDIENTE.md` (RLS/seguridad),
@@ -329,6 +329,68 @@ una prueba de lógica nueva — se revisó el JSX a mano para confirmar que ning
 Pantalla (Chromium) tampoco se corrió para esto. **Deployado y verificado**: commit `542829d`, deployment
 `roseface-studio-sistema-nnhvjn7rb-tobiachs-projects.vercel.app`, bundle confirmado (`index-CZElEWwg.js`) y endpoint probado
 sin escribir. Rollback a este bloque si hiciera falta: `npx vercel rollback roseface-studio-sistema-k5ki3rfzn-tobiachs-projects.vercel.app --yes`.
+
+## 12. Sesión del 27/10/2026 — "Mis Comisiones" sin tope de 8 semanas
+
+**Pedido de Tobias**: el selector de semana de "Mis Comisiones" (arriba a la derecha) solo ofrecía la semana actual + 7
+anteriores (ya había sido un fix de un bug previo: 3 semanas de agosto 2026 hardcodeadas) — pasado ese tope no había forma de
+ver una semana más vieja, una futura, ni un rango que no fuera "una semana exacta". Pidió algo "en tiempo real", que se pueda
+filtrar como se quiera, "algo así como la agenda del estudio".
+
+**Qué se construyó** (`AdminComisiones.tsx`): se sacó el desplegable de 8 semanas y se puso el mismo patrón que ya usa la
+Agenda — 2 accesos rápidos ("Semana actual" / "Semana pasada") + "Rango a elección" con Desde/Hasta libres, sin tope hacia
+atrás ni hacia adelante. El motor de cálculo (`calcularCierreSemanal`, `resumenReservasMercadoPago` en `comisionesEngine.ts`)
+ya era agnóstico al rango (solo filtra `fecha >= inicio && fecha <= fin`), así que no hizo falta tocarlo — se verificó con un
+script de Node que un rango de 3 semanas no alineado a lunes-domingo (10/10 a 31/10) suma exactamente los turnos esperados.
+Se ajustaron 2 textos que asumían "semana" ("Esta semana: N reservas" → "En el período elegido", y la explicación de arriba)
+para no ser engañosos con un rango libre.
+
+**Verificado**: lint y build en 0 (sin pruebas de lógica nuevas — el motor no cambió, solo se verificó aparte con el script de
+Node). Pantalla no se corrió. **Deployado y verificado**: commit `087afde`, deployment
+`roseface-studio-sistema-klnulyz8o-tobiachs-projects.vercel.app`, bundle confirmado ("Semana pasada", "Rango a elección", "En
+el período elegido" presentes). Rollback a este bloque: `npx vercel rollback roseface-studio-sistema-3hnd690eb-tobiachs-projects.vercel.app --yes`.
+
+## 13. Sesión del 29/10/2026 — teléfono sin excepciones, extras desde "Editar reserva", y pendiente: cuentas bancarias
+
+**Pedido de Tobias**, varios puntos sobre una captura previa:
+1. Una profesional no puede agregar el teléfono de nadie (antes, 25/10, había una excepción para completar uno vacío).
+2. El aviso de "ya está cargada en el sistema" en Turno Manual no debe aparecerle a una profesional en absoluto.
+3-4. "No permite editar... nuevos servicios, extras" + "que permita agregar varios servicios a una clienta que hizo 1 sola
+   reserva": investigando se confirmó que `PanelEditarTurno` ("Editar reserva") solo dejaba cambiar el servicio PRINCIPAL — los
+   extras solo se podían cargar al confirmar "Vino" (acción `completar`). No era un error, era una funcionalidad que faltaba.
+5. Sección nueva "Cuentas de banco": 3 cuentas que rotan según el día del turno (lunes-martes Banco Galicia, jueves-viernes
+   Banco Lemon, sábado-domingo Banco Santander — datos reales en el Google Doc que compartió Tobias, NO repetir acá los CBU/alias
+   completos fuera de ese doc y el código) para reemplazar el link de Mercado Pago en los recordatorios de seña. Confirmado con
+   Tobias: aplica **solo a Mili y Roma** (las únicas que hoy mandan link de MP); el resto sigue con transferencia a su cuenta
+   propia + comprobante, sin cambios. Miércoles: Tobias confirmó que SÍ trabajan ese día, pero **todavía no dijo qué cuenta
+   usar** — pendiente de su respuesta antes
+   de tocar código de esto. **NADA de la sección de cuentas bancarias está construido todavía.**
+
+**Qué se construyó (puntos 1-4)**:
+- `api/editar-turno.ts`, acción `clienta`: se sacó la excepción de "completar un teléfono vacío" — ahora `!esAdmin` alcanza
+  para rebotar 403, sin mirar si la clienta ya tenía uno o no.
+- `AdminAgenda.tsx` (Turno Manual): el campo "Teléfono" no se renderiza para `esProfesional` (el Nombre pasa a ocupar las 2
+  columnas), y el aviso de "ya está cargada..." tampoco se muestra. `completarTelefono` y el llamado a `buscarOCrearClienta`
+  quedan gateados por `!esProfesional`.
+- `api/editar-turno.ts`, acción `editar`: ahora acepta `serviciosExtra` igual que `completar` (mismo `validarExtras`), recalcula
+  `monto_total` (servicio actual/nuevo + suma de extras) y lo anota en `notas_internas`. No exige que el turno esté completado.
+- `PanelEditarTurno.tsx` / `CambiosTurno` (AppContext): sección nueva de servicios extra (agregar del catálogo, de los
+  "adicionales" de la profesional, o a mano; sacar uno) con el mismo patrón visual que `PanelServiciosRealizados.tsx`.
+
+**Verificado**: se extendieron `editar-turno-edicion-cancelar-reactivar.mjs` (47 casos, +8 de extras) y
+`editar-turno-reabrir-y-clienta.mjs` (28 casos, reescritos los de teléfono para la regla sin excepciones) contra la base
+falsa — todos pasan; se re-corrieron `editar-turno-completar.mjs` (21) y `editar-turno-fuera-de-horario-medianoche.mjs` (3) sin
+regresiones. Lint y build en 0 (el build se pudo correr a pesar de que el disco C: de esta PC estaba prácticamente lleno, ver
+abajo). Pantalla no se corrió.
+
+**Deployado y verificado**: commit `2295442`.
+
+**Hallazgo aparte, no resuelto**: el disco C: de la PC donde corre esta sesión estaba al 100% (0 a 73 MB libres de 119 GB)
+durante gran parte de la sesión — un `npm run build` llegó a fallar una vez por eso (`ENOSPC`). Se investigó qué ocupa espacio:
+`Downloads` (888 MB) y `AppData\Local\Temp` (885 MB) del usuario NO explican el lleno — el grueso está en otro lado (sistema,
+`WinSxS`, algún programa grande) y los barridos recursivos para encontrarlo fueron demasiado lentos para completarse en la
+sesión. Se le avisó a Tobias; recomendado correr el Liberador de espacio en disco / Configuración → Almacenamiento de Windows
+(mucho más rápido que un barrido remoto) para encontrar y confirmar qué borrar.
 
 ## 9. Cómo verificar un deploy (patrón usado siempre)
 1. `npm run lint` y `npm run build` en 0 → commit → (avisar/pedir OK) `git push origin main` — **el push ya deploya solo**; confirmar con
