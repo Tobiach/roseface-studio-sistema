@@ -1,4 +1,4 @@
-# HANDOFF — Rose Face Studio (estado al 22/10/2026, actualizado 29/10 — ver sección 12)
+# HANDOFF — Rose Face Studio (estado al 22/10/2026, actualizado 30/10 — ver sección 15)
 
 > Documento de traspaso entre sesiones de Claude Code. Leerlo ENTERO antes de tocar nada.
 > Complementa a `CLAUDE.md` (reglas del repo), `docs/SEGURIDAD_PENDIENTE.md` (RLS/seguridad),
@@ -449,6 +449,48 @@ es la clienta subiendo SU comprobante, no tiene sesión — pero ahora también 
   bundle confirmado ("Cuentas de Banco", "Banco Galicia", "Banco Lemon", "No tenés Mercado Pago" presentes) y
   `aprobar-comprobante` probado sin token → 401 (antes no pedía ninguno). Rollback a este bloque:
   `npx vercel rollback roseface-studio-sistema-k3x4o218n-tobiachs-projects.vercel.app --yes`.
+
+## 15. Sesión del 30/10/2026 — "Agregar otro turno" no vuelve a pedir seña si ya se pagó en esta visita, y desbloquear tocando el calendario
+
+**Pedido de Tobias**, 2 puntos:
+1. Confirmó que YA conocía/probó el cartel "¿Sumamos otro turno?" (de la sesión del 29/10) y pidió una mejora puntual: si la
+   clienta ya pagó los $30.000 de seña y quiere sumar otro servicio, que no se la vuelva a pedir.
+2. Al tocar un horario bloqueado en el calendario (el cuadrito gris), que aparezca algo para desbloquearlo — antes no hacía
+   nada al tocarlo (solo se podía sacar desde una lista aparte, más abajo en la pantalla).
+
+**Propuesta discutida y confirmada por Tobias antes de construir** (patrón ya probado: proponer, no adivinar, en algo que toca
+plata): el botón "Agregar otro turno" ahora manda el id del turno que la clienta ya pagó como "ancla". El servidor
+(`api/mercadopago/crear-preferencia.ts`, función nueva `validarTurnoAncla`) SOLO deja pasar sin seña si las 3 condiciones se
+cumplen juntas — nunca confía en lo que dice el navegador sin verificarlo contra la base:
+1. Esa reserva ancla existe y su seña YA está confirmada (no `'reservado'` ni `'cancelado'`).
+2. Es para el MISMO día que la reserva nueva (es "sumar algo a esta visita", no un pase libre para cualquier fecha futura).
+3. El nombre Y el teléfono que puso ahora coinciden con los de la clienta de esa reserva ancla.
+
+Si las 3 se cumplen: el turno nuevo se crea directo como `sena_confirmada` con `monto_sena: 0`, sin pasar por Mercado Pago ni
+pedir comprobante — el navegador salta directo a la pantalla de confirmación (mismo patrón ya usado para el flujo simulado sin
+backend). Si algo no coincide, sigue el camino normal (pide la seña real) sin romper ni bloquear la reserva por eso. Funciona
+encadenado (un 3er turno puede usar el 2do, ya confirmado, como su propia ancla) y es independiente del circuito de pago del
+segundo servicio (Mercado Pago o transferencia).
+
+**Punto 2**: `CalendarioGrilla.tsx` — la celda bloqueada pasó de `<div>` inerte a `<button>` con `onClickBloqueo`; en
+`AdminAgenda.tsx` abre un cartel de confirmación chico (mismo estilo que el resto de los confirm de la app) que llama a
+`eliminarBloqueo` (función que ya existía y ya se usaba desde la lista de abajo — esto solo le suma una segunda forma de
+llegar a lo mismo, más directa).
+
+**Verificado**: `docs/pruebas/servidor/crear-preferencia-sena-ya-pagada.mjs` (12 casos: ancla válida, sin pagar, cancelada,
+otro día, nombre distinto, teléfono distinto, id inventado que no rompe nada, y encadenar un 3er turno) — todos pasan;
+re-corrido `crear-preferencia-sin-mp.mjs` sin regresiones. Lint y build en 0. El desbloqueo por click no tiene lógica de
+servidor nueva (reutiliza `eliminarBloqueo`, ya probado en producción) — no se le sumó test de servidor por eso. **NO se
+probó**: pantalla/Chromium en ninguno de los dos (no se intentó esta sesión).
+
+**Deployado y verificado**: commit `f6271f4`, deployment `roseface-studio-sistema-m3g52hx9c-tobiachs-projects.vercel.app`,
+bundle confirmado (aparece `turnoAncla`) y endpoint probado sin escribir (body vacío → 400 "Faltan datos de la reserva", no
+crea nada). Rollback a este bloque: `npx vercel rollback roseface-studio-sistema-bjx019q5v-tobiachs-projects.vercel.app --yes`.
+
+**Gotcha de esta sesión, igual que el 29/10 — sin resolver todavía**: el disco C: de la PC volvió a quedar en 0 varias veces
+(llegó a los 4 MB libres e hizo fallar hasta la instalación del propio `npx vercel`). Tobias lo liberó cada vez que se le avisó,
+pero sigue sin encontrarse la causa de fondo — si una futura sesión tiene margen, vale la pena insistir en encontrarla en vez
+de solo pedirle que libere espacio de nuevo cada vez.
 
 ## 9. Cómo verificar un deploy (patrón usado siempre)
 1. `npm run lint` y `npm run build` en 0 → commit → (avisar/pedir OK) `git push origin main` — **el push ya deploya solo**; confirmar con
