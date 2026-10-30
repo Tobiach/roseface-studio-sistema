@@ -6,7 +6,7 @@
 // Varias pruebas terminan con process.exit(0) aunque tengan fallas (solo las imprimen), así que el resultado se
 // decide leyendo las líneas "OK   " / "FALLA" de cada una. Sale con código 1 si hay cualquier falla.
 import { build } from 'esbuild';
-import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -25,11 +25,15 @@ try {
     outfile: join(tmp, 'editar-turno.mjs'),
     alias: { '@supabase/supabase-js': join(tmp, 'fake-supabase.mjs') },
   });
+  // Cada prueba importa lo que compila acá como ./nombre.mjs. Si una librería todavía no existe en esta rama
+  // (por ejemplo instagram.ts antes de juntar las ramas), se saltea en vez de romper todo.
   for (const [fuente, salida] of [
     ['src/lib/disponibilidad.ts', 'disp.mjs'],
     ['src/lib/whatsapp.ts', 'wa2.mjs'],
     ['src/lib/comisionesEngine.ts', 'eng.mjs'],
+    ['src/lib/instagram.ts', 'ig.mjs'],
   ]) {
+    if (!existsSync(join(RAIZ_REPO, fuente))) continue;
     await build({ ...comun, entryPoints: [join(RAIZ_REPO, fuente)], outfile: join(tmp, salida) });
   }
 
