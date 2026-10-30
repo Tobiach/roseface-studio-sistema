@@ -87,6 +87,53 @@ function getSupabaseAdmin() {
   return createClient(url, key);
 }
 
+const soloDigitos = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '');
+
+// "Agregar otro turno" sin volver a pedir seña (30/10/2026, pedido de
+// Tobias): solo si el turno que manda el navegador como "ancla" es
+// VERIFICABLE server-side — nunca confiar en que el cliente diga "ya pagué".
+// Las 3 condiciones tienen que darse juntas:
+//  1. Esa reserva existe y su seña ya está confirmada (no 'reservado' —
+//     todavía sin pagar/subir comprobante — ni 'cancelado').
+//  2. Es para el MISMO día que la reserva nueva (esto es "sumar algo a esta
+//     visita", no un pase libre para cualquier otra fecha).
+//  3. El nombre Y el teléfono que puso ahora coinciden con los de la clienta
+//     de esa reserva (si alguien solo adivina un id de turno ajeno, no va a
+//     saber el teléfono exacto que puso esa clienta).
+// Si cualquier chequeo falla, no es un error: se vuelve en silencio al
+// camino normal (pedir la seña), no se le bloquea la reserva por esto.
+async function validarTurnoAncla(
+  supabaseAdmin: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
+  turnoAnclaId: string,
+  fechaNueva: string,
+  nombreNuevo: string,
+  telefonoNuevo: string | undefined
+): Promise<boolean> {
+  const { data: ancla } = await supabaseAdmin
+    .from('turnos')
+    .select('id, estado, fecha, clienta_id')
+    .eq('id', turnoAnclaId)
+    .maybeSingle();
+  if (!ancla) return false;
+  if (ancla.estado === 'reservado' || ancla.estado === 'cancelado') return false;
+  if (ancla.fecha !== fechaNueva) return false;
+
+  const { data: clientaAncla } = await supabaseAdmin
+    .from('clientas')
+    .select('nombre, telefono')
+    .eq('id', ancla.clienta_id)
+    .maybeSingle();
+  if (!clientaAncla) return false;
+
+  const nombreCoincide = clientaAncla.nombre.trim().toLowerCase() === nombreNuevo.trim().toLowerCase();
+  const telefonoAnclaDigitos = soloDigitos(clientaAncla.telefono);
+  const telefonoNuevoDigitos = soloDigitos(telefonoNuevo);
+  // Si ninguna de las dos reservas tiene teléfono cargado, el nombre solo no alcanza para confiar.
+  const telefonoCoincide = telefonoAnclaDigitos.length >= 8 && telefonoAnclaDigitos === telefonoNuevoDigitos;
+
+  return nombreCoincide && telefonoCoincide;
+}
+
 interface CrearPreferenciaBody {
   servicioId: string;
   profesionalId: string;
@@ -103,6 +150,11 @@ interface CrearPreferenciaBody {
   // El circuito de comisión sigue siendo "mercado_pago" (no cambia a quién
   // le corresponde qué %); solo cambia CÓMO paga esta reserva puntual.
   medioPago?: 'transferencia_estudio';
+  // 30/10/2026 (pedido de Tobias): viene del botón "Agregar otro turno" de
+  // la pantalla de confirmación — el id del turno que esta misma clienta ya
+  // reservó y pagó en esta visita. Si se verifica (ver validarTurnoAncla),
+  // esta reserva nueva no vuelve a pedir seña.
+  turnoAnclaId?: string;
 }
 
 const ESTADO_CANCELADO = 'cancelado';
@@ -149,7 +201,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const body = req.body as Partial<CrearPreferenciaBody>;
-  const { servicioId, profesionalId, fecha, hora, horaFin, clienta, origen, medioPago } = body ?? {};
+  const { servicioId, profesionalId, fecha, hora, horaFin, clienta, origen, medioPago, turnoAnclaId } = body ?? {};
 
   if (!servicioId || !profesionalId || !fecha || !hora || !horaFin || !clienta?.nombre) {
     res.status(400).json({ error: 'Faltan datos de la reserva' });
@@ -223,20 +275,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // de comisión sigue siendo "mercado_pago" — circuitoPago no se toca.
     const sinMP = circuito === 'mercado_pago' && medioPago === 'transferencia_estudio';
 
+    // 30/10/2026: "Agregar otro turno" desde la pantalla de confirmación — si
+    // la clienta ya pagó la seña de otra reserva hoy mismo, esta no vuelve a
+    // pedir seña (ni MP ni transferencia, en ningún circuito). Ver
+    // validarTurnoAncla: no confía en nada que mande el navegador sin
+    // verificarlo contra la base.
+    const senaYaPagada = turnoAnclaId
+      ? await validarTurnoAncla(supabaseAdmin, turnoAnclaId, fecha, clienta.nombre, clienta.telefono)
+      : false;
+
     let accessToken: string | undefined;
-    if (circuito === 'mercado_pago' && !sinMP) {
-      accessToken = process.env.MP_ACCESS_TOKEN;
-      if (!accessToken) {
-        res.status(500).json({ error: 'MP_ACCESS_TOKEN no configurado en el servidor' });
+    if (!senaYaPagada) {
+      if (circuito === 'mercado_pago' && !sinMP) {
+        accessToken = process.env.MP_ACCESS_TOKEN;
+        if (!accessToken) {
+          res.status(500).json({ error: 'MP_ACCESS_TOKEN no configurado en el servidor' });
+          return;
+        }
+      } else if (circuito === 'transferencia' && !profesional.alias_cbu) {
+        res.status(500).json({ error: 'Falta configurar el alias/CBU de esta profesional' });
         return;
       }
-    } else if (circuito === 'transferencia' && !profesional.alias_cbu) {
-      res.status(500).json({ error: 'Falta configurar el alias/CBU de esta profesional' });
-      return;
     }
 
     const montoTotal = Number(servicio.precio);
-    const montoSena = calcularMontoSena(servicio);
+    const montoSena = senaYaPagada ? 0 : calcularMontoSena(servicio);
 
     // Confirmar que el horario sigue libre — el índice único de la base es
     // la última barrera, esto evita pegarle a Mercado Pago innecesariamente.
@@ -350,14 +413,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         fecha,
         hora_inicio: hora,
         hora_fin: horaFin,
-        estado: 'reservado',
+        estado: senaYaPagada ? 'sena_confirmada' : 'reservado',
         monto_total: montoTotal,
         monto_sena: montoSena,
         sena_verificada_automaticamente: false,
         origen_reserva: 'web',
         notas_internas: `Reserva web cliente: ${clienta.nombre} (${clienta.telefono ?? ''})${
           origen === 'recurrencia' ? ' — vino del link de Clientas Recurrentes' : ''
-        }`,
+        }${senaYaPagada ? ` — sin seña: ya pagó en el turno ${turnoAnclaId} de esta misma visita` : ''}`,
         expira_en: new Date(
           Date.now() + (circuito === 'mercado_pago' && !sinMP ? HOLD_MINUTOS_MP : HOLD_MINUTOS_TRANSFERENCIA) * 60 * 1000
         ).toISOString(),
@@ -373,6 +436,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       console.error('[mercadopago/crear-preferencia] Error insertando turno:', turnoError);
       res.status(500).json({ error: 'No se pudo crear el turno' });
+      return;
+    }
+
+    if (senaYaPagada) {
+      // 30/10/2026: ya pagó la seña de otra reserva hoy — este turno queda
+      // confirmado directo, sin pasar por Mercado Pago ni pedir comprobante.
+      res.status(200).json({
+        circuito: 'confirmado_sin_sena',
+        circuitoPago: circuito,
+        turnoId: String(turno.id),
+        servicio: servicio.nombre,
+        profesional: profesional.nombre,
+        fecha,
+        hora,
+        montoSena: String(montoSena),
+        montoTotal: String(montoTotal),
+        nombre: clienta.nombre,
+      });
       return;
     }
 

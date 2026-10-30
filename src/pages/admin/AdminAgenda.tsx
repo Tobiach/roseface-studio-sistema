@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase, supabaseEnabled } from '../../lib/supabase';
-import { Turno, EstadoTurno, PlantillaRecordatorio } from '../../types';
+import { Turno, EstadoTurno, PlantillaRecordatorio, BloqueoHorario } from '../../types';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -167,6 +167,9 @@ export const AdminAgenda: React.FC = () => {
   const [bloqueoHoraInicio, setBloqueoHoraInicio] = useState('09:00');
   const [bloqueoHoraFin, setBloqueoHoraFin] = useState('19:00');
   const [bloqueoMotivo, setBloqueoMotivo] = useState('');
+  // Tocar un horario bloqueado en el calendario ofrece desbloquearlo (29/10/2026).
+  const [bloqueoAConfirmar, setBloqueoAConfirmar] = useState<BloqueoHorario | null>(null);
+  const [desbloqueando, setDesbloqueando] = useState(false);
 
   // Turno manual (13/10/2026, pedido de Tobias/Yosy): cargar un turno a
   // mano sin pasar por el asistente público — para una clienta que llama
@@ -776,6 +779,7 @@ export const AdminAgenda: React.FC = () => {
                         bloqueos={bloqueos}
                         onSeleccionarTurno={setTurnoSeleccionadoModal}
                         getClientaNombre={getClientaNombre}
+                        onClickBloqueo={setBloqueoAConfirmar}
                       />
                     </div>
                   ))
@@ -793,6 +797,7 @@ export const AdminAgenda: React.FC = () => {
                 bloqueos={bloqueos}
                 onSeleccionarTurno={setTurnoSeleccionadoModal}
                 getClientaNombre={getClientaNombre}
+                onClickBloqueo={setBloqueoAConfirmar}
               />
             </div>
           )}
@@ -1458,6 +1463,44 @@ export const AdminAgenda: React.FC = () => {
       )}
 
       {/* MODAL BLOQUEAR HORARIO */}
+      {bloqueoAConfirmar && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 border border-pink-100 shadow-2xl animate-in fade-in zoom-in-95">
+            <h3 className="font-display font-bold text-lg text-rf-black">¿Desbloquear este horario?</h3>
+            <div className="text-xs text-rf-charcoal space-y-1 bg-rf-cream rounded-xl p-3">
+              <p>
+                <strong className="text-rf-black">{getProfesional(bloqueoAConfirmar.profesionalId)?.nombre}</strong>
+                {' — '}
+                {formatDateReadable(bloqueoAConfirmar.fecha)}
+              </p>
+              <p>
+                {bloqueoAConfirmar.diaCompleto ? 'Todo el día' : `${bloqueoAConfirmar.horaInicio} a ${bloqueoAConfirmar.horaFin} hs`}
+              </p>
+              {bloqueoAConfirmar.motivo && <p className="italic">"{bloqueoAConfirmar.motivo}"</p>}
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setBloqueoAConfirmar(null)} disabled={desbloqueando}>
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={async () => {
+                  setDesbloqueando(true);
+                  await eliminarBloqueo(bloqueoAConfirmar.id);
+                  setDesbloqueando(false);
+                  setBloqueoAConfirmar(null);
+                }}
+                disabled={desbloqueando}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{desbloqueando ? 'Desbloqueando…' : 'Sí, desbloquear'}</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {modalBloqueoAbierto && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-4 border border-pink-100 shadow-2xl animate-in fade-in zoom-in-95">

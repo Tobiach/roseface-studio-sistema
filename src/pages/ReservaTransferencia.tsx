@@ -96,7 +96,7 @@ export const ReservaTransferencia: React.FC = () => {
             Uñas. Tus datos ya quedaron guardados, así que el segundo turno lo reservás en un toque.
           </p>
           <div className="text-center">
-            <Link to="/reserva" className="inline-block">
+            <Link to={turnoId ? `/reserva?turnoAncla=${turnoId}` : '/reserva'} className="inline-block">
               <Button variant="outline" size="md">
                 <Plus className="w-4 h-4" />
                 <span>Agregar otro turno</span>

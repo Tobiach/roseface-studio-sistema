@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { Servicio, Profesional } from '../types';
+import { Servicio, Profesional, Turno } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -114,6 +114,12 @@ export const Reserva: React.FC = () => {
   // (ej. cuántas clientas fieles volvieron desde el link que les mandó
   // Yosy). Viaja como nota interna del turno, no cambia el flujo.
   const origenParam = searchParams.get('origen');
+
+  // 30/10/2026: viene del botón "Agregar otro turno" — el id del turno que
+  // esta clienta ya reservó y pagó en esta misma visita. El servidor lo
+  // verifica (mismo día, mismo nombre y teléfono) antes de confiar en que no
+  // hace falta volver a cobrar la seña — ver crear-preferencia.ts.
+  const turnoAnclaParam = searchParams.get('turnoAncla');
 
   // Si se viene del perfil de una profesional puntual ("Reservar turno con
   // X"), toda la reserva queda acotada a ella — nunca se le ofrecen otras.
@@ -270,6 +276,7 @@ export const Reserva: React.FC = () => {
           clienta: { nombre: nombreClienta, telefono: telefonoClienta, email: emailClienta },
           origen: origenParam ?? undefined,
           medioPago: sinMP ? 'transferencia_estudio' : undefined,
+          turnoAnclaId: turnoAnclaParam ?? undefined,
         }),
       });
 
@@ -283,6 +290,33 @@ export const Reserva: React.FC = () => {
       }
       if (!response.ok) throw new Error('crear-preferencia respondió con error');
       const data = await response.json();
+
+      if (data.circuito === 'confirmado_sin_sena') {
+        // 30/10/2026: "Agregar otro turno" de una clienta que ya pagó la
+        // seña hoy — el servidor ya lo verificó y creó el turno directo como
+        // confirmado, sin pasar por MP ni pedir comprobante.
+        const turnoConfirmado: Turno = {
+          id: String(data.turnoId),
+          clientaId: '',
+          profesionalId: profesionalSeleccionado.id,
+          servicioId: servicioSeleccionado.id,
+          fecha: data.fecha,
+          horaInicio: data.hora,
+          horaFin,
+          estado: 'sena_confirmada',
+          montoTotal: Number(data.montoTotal ?? servicioSeleccionado.precio),
+          montoSena: 0,
+          senaVerificadaAutomaticamente: false,
+          fechaCreacion: new Date().toISOString(),
+          origenReserva: 'web',
+          idTransaccionMP: null,
+          circuitoPago: data.circuitoPago === 'mercado_pago' ? 'mercado_pago' : 'transferencia',
+        };
+        registrarTurnoLocal(turnoConfirmado);
+        setIsProcessingPayment(false);
+        navigate('/reserva/confirmacion', { state: { turno: turnoConfirmado } });
+        return;
+      }
 
       if (data.circuito === 'transferencia') {
         // El turno ya lo creó el servidor (estado 'reservado'). Como acá no

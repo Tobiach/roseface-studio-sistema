@@ -69,6 +69,9 @@ export const ReservaConfirmacion: React.FC = () => {
     : null;
 
   const pagoPendiente = resumen?.estado === 'reservado' && !!turnoIdDesdeMP;
+  // 30/10/2026: id de este turno para que "Agregar otro turno" lo lleve como
+  // "ancla" — si el servidor lo verifica, la próxima reserva no pide seña.
+  const turnoIdParaSumarOtro = turnoDelState?.id ?? turnoIdDesdeMP ?? undefined;
   const saldoRestante = resumen ? Math.max(0, resumen.montoTotal - resumen.montoSena) : 0;
 
   return (
@@ -184,7 +187,7 @@ export const ReservaConfirmacion: React.FC = () => {
           Muchas clientas combinan más de un servicio en la misma visita — por ejemplo Pestañas y
           Uñas. Tus datos ya quedaron guardados, así que el segundo turno lo reservás en un toque.
         </p>
-        <Link to="/reserva" className="inline-block">
+        <Link to={turnoIdParaSumarOtro ? `/reserva?turnoAncla=${turnoIdParaSumarOtro}` : '/reserva'} className="inline-block">
           <Button variant="outline" size="md">
             <Plus className="w-4 h-4" />
             <span>Agregar otro turno</span>

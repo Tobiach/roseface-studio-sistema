@@ -18,6 +18,9 @@ interface CalendarioGrillaProps {
   bloqueos?: BloqueoHorario[];
   onSeleccionarTurno: (turno: Turno) => void;
   getClientaNombre: (id: string) => string;
+  // Tocar un horario bloqueado ofrece desbloquearlo (29/10/2026, pedido de
+  // Tobias) — antes el cuadrito gris no hacía nada al tocarlo.
+  onClickBloqueo?: (bloqueo: BloqueoHorario) => void;
 }
 
 const COLOR_POR_ESTADO: Record<string, string> = {
@@ -46,6 +49,7 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
   bloqueos = [],
   onSeleccionarTurno,
   getClientaNombre,
+  onClickBloqueo,
 }) => {
   const diaSemana = DIAS_SEMANA[new Date(`${fecha}T12:00:00`).getDay()];
 
@@ -205,13 +209,15 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
 
                   if (estado.tipo === 'bloqueado') {
                     return (
-                      <div
+                      <button
                         key={p.id}
-                        title={estado.bloqueo.motivo ?? 'Horario bloqueado'}
-                        className="bg-gray-300 min-h-[28px] flex items-center justify-center"
+                        type="button"
+                        title={`${estado.bloqueo.motivo ?? 'Horario bloqueado'} — tocar para desbloquear`}
+                        onClick={() => onClickBloqueo?.(estado.bloqueo)}
+                        className="bg-gray-300 hover:bg-gray-400 min-h-[28px] w-full flex items-center justify-center cursor-pointer"
                       >
                         <span className="text-[8px] text-gray-600 font-bold">🚫</span>
-                      </div>
+                      </button>
                     );
                   }
 
