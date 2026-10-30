@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { RitualTimeline } from '../components/ui/RitualTimeline';
+import { Estrellas } from '../components/ui/Estrellas';
 import { formatCurrency, formatDateReadable } from '../lib/formatters';
 import { calcularHorariosDisponibles, sumarMinutos, hoyISO, mananaISO } from '../lib/disponibilidad';
 import { calcularMontoSena } from '../lib/pricing';
@@ -14,7 +15,6 @@ import { leerClienteRecordado, guardarClienteRecordado } from '../lib/clienteRec
 import { supabaseEnabled } from '../lib/supabase';
 import {
   Clock,
-  Star,
   Calendar as CalendarIcon,
   ChevronRight,
   ChevronLeft,
@@ -686,7 +686,7 @@ export const Reserva: React.FC = () => {
                           </h3>
                           {/* Google Style Rating */}
                           <div className="flex items-center gap-1 text-xs font-semibold text-rf-black bg-pink-50 px-2 py-0.5 rounded-full border border-pink-100">
-                            <Star className="w-3 h-3 fill-rf-gold-bright text-rf-gold-bright" />
+                            <Estrellas valor={prof.calificacionPromedio} className="w-3 h-3" />
                             <span>{prof.calificacionPromedio.toFixed(1)}</span>
                             <span className="text-[10px] text-rf-charcoal font-normal">
                               ({prof.cantidadResenas})

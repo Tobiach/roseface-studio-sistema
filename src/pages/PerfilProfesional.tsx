@@ -9,10 +9,10 @@ import { formatCurrency } from '../lib/formatters';
 import { Lightbox } from '../components/ui/Lightbox';
 import { VideoYoutube } from '../components/ui/VideoYoutube';
 import { VideoInstagram } from '../components/ui/VideoInstagram';
+import { Estrellas } from '../components/ui/Estrellas';
 import { esLinkDeInstagram } from '../lib/instagram';
 import { slugDeNombre } from '../lib/profesionalSlug';
 import {
-  Star,
   Calendar,
   Clock,
   Sparkles,
@@ -75,7 +75,7 @@ export const PerfilProfesional: React.FC = () => {
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
               {/* Google Style Rating */}
               <div className="bg-pink-50 px-3 py-1 rounded-full border border-pink-200/80 flex items-center gap-1.5 text-xs font-semibold text-rf-black">
-                <Star className="w-3.5 h-3.5 fill-rf-gold-bright text-rf-gold-bright" />
+                <Estrellas valor={prof.calificacionPromedio} className="w-3.5 h-3.5" />
                 <span>{prof.calificacionPromedio.toFixed(1)}</span>
                 <span className="text-rf-charcoal text-[11px] font-normal">
                   ({prof.cantidadResenas} opiniones)

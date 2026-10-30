@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Badge } from '../components/ui/Badge';
-import { Star } from 'lucide-react';
+import { Estrellas } from '../components/ui/Estrellas';
 import { slugDeNombre } from '../lib/profesionalSlug';
 
 export const Profesionales: React.FC = () => {
@@ -50,7 +50,7 @@ export const Profesionales: React.FC = () => {
                 className="w-full aspect-[4/5] object-cover object-top filter brightness-[1.02] contrast-[1.03] saturate-[1.05] group-hover:scale-105 transition-transform duration-300"
               />
               <div className="absolute bottom-1 right-1 sm:bottom-1.5 sm:right-1.5 bg-white/95 backdrop-blur-xs px-1.5 py-0.5 rounded-full border border-pink-200/80 shadow-xs flex items-center gap-0.5">
-                <Star className="w-2.5 h-2.5 fill-rf-gold-bright text-rf-gold-bright" />
+                <Estrellas valor={prof.calificacionPromedio} className="w-2 h-2" />
                 <span className="text-[10px] font-semibold text-rf-black font-mono">
                   {prof.calificacionPromedio.toFixed(1)}
                 </span>
