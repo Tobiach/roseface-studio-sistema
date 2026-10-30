@@ -47,6 +47,13 @@ src/
 
 ## Documentación
 
+- [`docs/HANDOFF-SESION.md`](docs/HANDOFF-SESION.md) — **el documento principal.** Estado real
+  del sistema, arquitectura, endpoints y permisos, reglas de negocio vigentes, gotchas técnicos
+  y el historial de cada sesión de trabajo con fecha. Se actualiza en cada cambio — es la fuente
+  de verdad, no un documento histórico fijo.
+- [`docs/pruebas/README.md`](docs/pruebas/README.md) — cómo se prueba cada cambio antes de
+  deployar (lógica de servidor contra una base falsa, pantalla con Chromium, verificación en
+  producción sin escribir nada) y el catálogo de scripts guardados.
 - [`docs/PENDIENTE_ONBOARDING.md`](docs/PENDIENTE_ONBOARDING.md) — estado real de los datos
   del negocio (precios, horarios, comisiones, fotos) y qué falta confirmar con Yosy antes
   de asumir algo.
@@ -82,11 +89,15 @@ npm run lint      # chequeo de tipos (tsc --noEmit)
 
 ## Deploy
 
-El proyecto de Vercel ya está linkeado (`tobiachs-projects/roseface-studio-sistema`).
-Un `git push` a `main` **no** dispara deploy — es manual:
+El proyecto de Vercel ya está linkeado (`tobiachs-projects/roseface-studio-sistema`) con
+integración de Git: **un `git push` a `main` deploya solo a producción**, sin ningún paso manual.
 
 ```bash
-npm run lint && npm run build   # verificar antes de deployar
-git push origin main            # mantener el repo sincronizado
-npx vercel --yes --prod         # deploy real a producción
+npm run lint && npm run build   # verificar ANTES de pushear — build roto en main rompe el sitio real
+git push origin main            # esto YA deploya a producción
 ```
+
+Para confirmar que un deploy salió bien: `npx vercel ls --prod` (tiene que aparecer uno nuevo a
+los pocos segundos) y comparar el bundle servido (`curl` a `/`, buscar el hash de
+`assets/index-*.js`) contra el build local. Para volver atrás rápido sin tocar git:
+`npx vercel rollback <url-del-deploy-anterior> --yes`.
