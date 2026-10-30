@@ -8,6 +8,8 @@ import { Badge } from '../components/ui/Badge';
 import { formatCurrency } from '../lib/formatters';
 import { Lightbox } from '../components/ui/Lightbox';
 import { VideoYoutube } from '../components/ui/VideoYoutube';
+import { VideoInstagram } from '../components/ui/VideoInstagram';
+import { esLinkDeInstagram } from '../lib/instagram';
 import { slugDeNombre } from '../lib/profesionalSlug';
 import {
   Star,
@@ -111,17 +113,21 @@ export const PerfilProfesional: React.FC = () => {
         </div>
       </Card>
 
-      {/* Video de presentación — solo si Yosy cargó un link de YouTube para esta profesional */}
+      {/* Video de presentación — solo si Yosy cargó un link (reel de Instagram o video de YouTube) para esta profesional */}
       {prof.videoUrl && (
         <div className="space-y-3">
           <h2 className="font-display text-2xl font-bold text-rf-black">
             Conocé a {prof.nombre}
           </h2>
-          <VideoYoutube
-            url={prof.videoUrl}
-            titulo={`Presentación de ${prof.nombre} — Rose Face Studio`}
-            className="max-w-lg"
-          />
+          {esLinkDeInstagram(prof.videoUrl) ? (
+            <VideoInstagram url={prof.videoUrl} titulo={`Presentación de ${prof.nombre} — Rose Face Studio`} />
+          ) : (
+            <VideoYoutube
+              url={prof.videoUrl}
+              titulo={`Presentación de ${prof.nombre} — Rose Face Studio`}
+              className="max-w-lg"
+            />
+          )}
         </div>
       )}
 
