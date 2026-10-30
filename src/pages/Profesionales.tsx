@@ -29,7 +29,7 @@ export const Profesionales: React.FC = () => {
           Conocé al equipo detrás de Rose Face Studio
         </h1>
         <p className="text-sm text-rf-charcoal leading-relaxed">
-          Cada especialista cuenta con formación certificada y años de experiencia dedicada a cada especialidad.
+          Cada especialista cuenta con formación certificada en su especialidad.
         </p>
       </div>
 

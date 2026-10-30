@@ -81,7 +81,6 @@ export const PerfilProfesional: React.FC = () => {
                   ({prof.cantidadResenas} opiniones)
                 </span>
               </div>
-              <Badge variant="rose">{prof.aniosExperiencia} años de trayectoria</Badge>
             </div>
 
             <h1 className="font-display text-3xl font-bold text-rf-black">

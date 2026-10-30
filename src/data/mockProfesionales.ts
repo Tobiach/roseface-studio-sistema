@@ -28,9 +28,7 @@ export const mockProfesionales: Profesional[] = [
     // incluido volumen ruso" (doc "dia a dia Rose Face") — Yosy también
     // hace pestañas, no solo cejas.
     especialidades: ['Cejas', 'Laminado de Cejas', 'Pestañas'],
-    bio: 'Especialista en cejas, laminado y pestañas — diseño de mirada, cejas definidas y con efecto duradero.',
-    aniosExperiencia: 8,
-    galeria: trabajosPorProfesional['prof-yosy'],
+    bio: 'Especialista en cejas, laminado y pestañas — diseño de mirada, cejas definidas y con efecto duradero.',    galeria: trabajosPorProfesional['prof-yosy'],
     calificacionPromedio: 5.0,
     cantidadResenas: 120,
     modeloComision: { tipo: 'porcentaje', porcentajeProfesional: 100 }, // es la dueña
@@ -60,9 +58,7 @@ export const mockProfesionales: Profesional[] = [
     nombre: 'Mili',
     fotoUrl: fotoMili,
     especialidades: ['Pestañas', 'Lifting de Pestañas', 'Cejas'],
-    bio: 'Especialista senior en diseño de mirada y lifting de pestañas. Alta precisión y foco en la belleza natural.',
-    aniosExperiencia: 5,
-    galeria: trabajosPorProfesional['prof-mili'],
+    bio: 'Especialista senior en diseño de mirada y lifting de pestañas. Alta precisión y foco en la belleza natural.',    galeria: trabajosPorProfesional['prof-mili'],
     calificacionPromedio: 5.0,
     cantidadResenas: 86,
     // 55% confirmado por Yosy, texto literal (doc "dia a dia Rose Face",
@@ -90,15 +86,13 @@ export const mockProfesionales: Profesional[] = [
     // interno — nunca cambian). Foto real de Roma ya cargada; video sigue
     // pendiente. La bio/especialidades quedan con el mismo rol que tenía
     // Sharon (pestañas/cejas) como punto de partida — confirmar con Roma
-    // su bio y años de experiencia reales cuando se pueda, lo de abajo es
+    // su bio real cuando se pueda, lo de abajo es
     // genérico a propósito, no un dato inventado.
     id: 'prof-sharon',
     nombre: 'Roma',
     fotoUrl: fotoRoma,
     especialidades: ['Pestañas', 'Volumen Ruso', 'Cejas'],
-    bio: 'Especialista en pestañas, volumen ruso y cejas.',
-    aniosExperiencia: 1, // placeholder — pedir el número real
-    galeria: trabajosPorProfesional['prof-sharon'],
+    bio: 'Especialista en pestañas, volumen ruso y cejas.',    galeria: trabajosPorProfesional['prof-sharon'],
     calificacionPromedio: 5.0,
     cantidadResenas: 142,
     // 45% CONFIRMADO — Yosy lo reconfirmó directo por WhatsApp con Tobias
@@ -139,9 +133,7 @@ export const mockProfesionales: Profesional[] = [
     // queda sin especialidad/servicio asignado hasta que se defina qué va
     // a hacer. No se inventa una especialidad nueva acá.
     especialidades: [],
-    bio: 'Especialidad a confirmar.',
-    aniosExperiencia: 4,
-    galeria: trabajosPorProfesional['prof-martina'] ?? [],
+    bio: 'Especialidad a confirmar.',    galeria: trabajosPorProfesional['prof-martina'] ?? [],
     calificacionPromedio: 5.0,
     cantidadResenas: 52,
     modeloComision: { tipo: 'alquiler_fijo', montoSemanal: 50000 }, // PLACEHOLDER — alquiler real pendiente
@@ -171,9 +163,7 @@ export const mockProfesionales: Profesional[] = [
     nombre: 'Cris',
     fotoUrl: fotoSofia,
     especialidades: ['Faciales', 'Corporales'],
-    bio: 'Cosmiatra y masoterapeuta. Cuidado integral de la piel, peeling ultrasónico y masajes descontracturantes.',
-    aniosExperiencia: 6,
-    galeria: trabajosPorProfesional['prof-sofia'] ?? [],
+    bio: 'Cosmiatra y masoterapeuta. Cuidado integral de la piel, peeling ultrasónico y masajes descontracturantes.',    galeria: trabajosPorProfesional['prof-sofia'] ?? [],
     calificacionPromedio: 5.0,
     cantidadResenas: 86,
     modeloComision: { tipo: 'alquiler_fijo', montoSemanal: 45000 }, // PLACEHOLDER
@@ -211,9 +201,7 @@ export const mockProfesionales: Profesional[] = [
     nombre: 'Ari',
     fotoUrl: fotoAlexandra,
     especialidades: ['Uñas', 'Semipermanente', 'Esculpidas'],
-    bio: 'Nail artist. Capping en gel, esculpidas en acrílico y esmaltado semipermanente con nail art personalizado.',
-    aniosExperiencia: 4,
-    galeria: trabajosPorProfesional['prof-alexandra'],
+    bio: 'Nail artist. Capping en gel, esculpidas en acrílico y esmaltado semipermanente con nail art personalizado.',    galeria: trabajosPorProfesional['prof-alexandra'],
     calificacionPromedio: 5.0,
     cantidadResenas: 142,
     modeloComision: { tipo: 'alquiler_fijo', montoSemanal: 48000 }, // PLACEHOLDER
@@ -265,9 +253,7 @@ export const mockProfesionales: Profesional[] = [
     nombre: 'Vero',
     fotoUrl: fotoCamila,
     especialidades: ['Depilación Láser'],
-    bio: 'Especialista en depilación láser con tecnología Soprano Ice — sesiones rápidas, seguras y con resultados duraderos.',
-    aniosExperiencia: 3,
-    galeria: trabajosPorProfesional['prof-camila'] ?? [],
+    bio: 'Especialista en depilación láser con tecnología Soprano Ice — sesiones rápidas, seguras y con resultados duraderos.',    galeria: trabajosPorProfesional['prof-camila'] ?? [],
     calificacionPromedio: 5.0,
     cantidadResenas: 64,
     // ⚠️ Sigue en 0% — era el valor placeholder de cuando esto era un slot

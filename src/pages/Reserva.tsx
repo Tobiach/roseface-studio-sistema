@@ -704,10 +704,6 @@ export const Reserva: React.FC = () => {
                         )}
 
                         <p className="text-xs text-rf-charcoal line-clamp-2">{prof.bio}</p>
-                        <div className="flex items-center gap-2 pt-1 text-[11px] text-rf-rose-deep font-medium">
-                          <Sparkles className="w-3 h-3 text-rf-gold" />
-                          <span>{prof.aniosExperiencia} años de trayectoria</span>
-                        </div>
                       </div>
                     </div>
                   </Card>

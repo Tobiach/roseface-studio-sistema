@@ -8,9 +8,7 @@ export interface Profesional {
   apodo?: string;
   fotoUrl: string;
   especialidades: string[];        // ej: ['Pestañas', 'Lifting']
-  bio: string;
-  aniosExperiencia: number;
-  galeria: string[];               // urls de trabajos realizados
+  bio: string;  galeria: string[];               // urls de trabajos realizados
   calificacionPromedio: number;    // 1-5
   cantidadResenas: number;
   modeloComision: ModeloComision;
