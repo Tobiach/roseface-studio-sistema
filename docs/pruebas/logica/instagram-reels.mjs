@@ -3,12 +3,13 @@
 const { extraerCodigoInstagram, esLinkDeInstagram } = await import('./ig.mjs');
 const ok = (c, m) => console.log(`${c ? 'OK   ' : 'FALLA'} ${m}`);
 
-// Los 4 links reales que pasó Tobias el 30/10/2026 (con los parámetros de seguimiento que trae el botón "compartir")
+// Los 5 links reales que pasó Tobias el 30/10/2026 (con los parámetros de seguimiento que trae el botón "compartir")
 const reales = {
   Roma: ['https://www.instagram.com/reel/DfDi89TR6Md/?psln=cmtlNzJ2NTlmem40', 'DfDi89TR6Md'],
   Mili: ['https://www.instagram.com/reel/DfDjgatxHLq/?rpxt=NWtzYmYybzNzZ21w', 'DfDjgatxHLq'],
   Yosy: ['https://www.instagram.com/reel/DdsKYi-ppp7/?vrfl=MTA1OHkya2oyY2xkZw==', 'DdsKYi-ppp7'],
   Cris: ['https://www.instagram.com/reel/DextWMdxdrH/?exln=MTM2ZjJocWQ4aGl4bw==', 'DextWMdxdrH'],
+  Ari: ['https://www.instagram.com/reel/Defyk8txbMo/?dlrf=MWRmc3RzNnRxMHFrcQ==', 'Defyk8txbMo'],
 };
 for (const [quien, [url, codigo]] of Object.entries(reales)) {
   ok(extraerCodigoInstagram(url) === codigo, `${quien}: saca el código ${codigo} del link con parámetros`);

@@ -1,5 +1,5 @@
 // Perfil de cada profesional con su reel de Instagram (30/10/2026).
-// Lee los datos REALES, pero a la respuesta de /rest/v1/profesionales le inyecta los 4 links de Instagram (NO escribe nada en la base):
+// Lee los datos REALES, pero a la respuesta de /rest/v1/profesionales le inyecta los 5 links de Instagram (NO escribe nada en la base):
 // sirve para probar el código ANTES de cargar los links en la base. Toda escritura del navegador se aborta.
 import { chromium } from 'playwright-core';
 const exe = process.env.CHROMIUM_EXE || process.env.USERPROFILE + '/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
@@ -14,6 +14,7 @@ const reels = {
   'prof-mili': { slug: 'mili', nombre: 'Mili', codigo: 'DfDjgatxHLq', url: 'https://www.instagram.com/reel/DfDjgatxHLq/?rpxt=NWtzYmYybzNzZ21w' },
   'prof-yosy': { slug: 'yosy', nombre: 'Yosy', codigo: 'DdsKYi-ppp7', url: 'https://www.instagram.com/reel/DdsKYi-ppp7/?vrfl=MTA1OHkya2oyY2xkZw==' },
   'prof-sofia': { slug: 'cris', nombre: 'Cris', codigo: 'DextWMdxdrH', url: 'https://www.instagram.com/reel/DextWMdxdrH/?exln=MTM2ZjJocWQ4aGl4bw==' },
+  'prof-alexandra': { slug: 'ari', nombre: 'Ari', codigo: 'Defyk8txbMo', url: 'https://www.instagram.com/reel/Defyk8txbMo/?dlrf=MWRmc3RzNnRxMHFrcQ==' },
 };
 
 const b = await chromium.launch({ executablePath: exe, headless: true });
@@ -79,15 +80,12 @@ for (const [id, r] of Object.entries(reels)) {
   await ctx.close();
 }
 
-// 3) Controles: quien tiene un video de YouTube lo sigue viendo igual, y quien no tiene video no muestra el bloque
+// 3) Control: quien tiene un video de YouTube lo sigue viendo igual
 {
   const { p, ctx } = await pagina(390);
   await p.goto(`${BASE}/profesionales/vero`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await p.getByRole('heading', { name: /Conocé a Vero/ }).waitFor({ timeout: 60000 }).catch(() => {});
   ok((await p.locator('button[aria-label^="Reproducir"]').count()) === 1 && (await p.locator('iframe[src*="instagram.com"]').count()) === 0, 'Vero (video de YouTube): se sigue viendo con el reproductor de YouTube, sin Instagram');
-  await p.goto(`${BASE}/profesionales/ari`, { waitUntil: 'domcontentloaded', timeout: 120000 });
-  await p.getByRole('heading', { name: /Servicios que realiza Ari/ }).waitFor({ timeout: 60000 }).catch(() => {});
-  ok((await p.getByRole('heading', { name: /Conocé a Ari/ }).count()) === 0, 'Ari (sin video): no aparece el bloque "Conocé a…"');
   await ctx.close();
 }
 
