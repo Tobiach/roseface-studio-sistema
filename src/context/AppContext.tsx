@@ -93,7 +93,8 @@ interface AppContextType {
   ) => Promise<{ ok: boolean; advertencias?: string[] }>;
   subirComprobante: (turnoId: string, file: File) => Promise<void>;
   aprobarComprobante: (turnoId: string) => Promise<void>;
-  crearBloqueo: (data: Omit<BloqueoHorario, 'id'>) => Promise<void>;
+  // Devuelve true si el bloqueo quedó guardado (para que la Agenda pueda llevar a la persona a verlo).
+  crearBloqueo: (data: Omit<BloqueoHorario, 'id'>) => Promise<boolean>;
   eliminarBloqueo: (id: string) => Promise<void>;
   toggleRecordatorio: (turnoId: string, plantilla: PlantillaRecordatorio, activar: boolean) => Promise<void>;
   guardarHorario: (
@@ -693,7 +694,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Bloqueo manual de horario (Fase 6): Yosy bloquea para cualquiera, cada
   // profesional solo para sí misma — esa restricción se aplica en la UI
   // (AdminAgenda), acá solo se persiste.
-  const crearBloqueo = async (data: Omit<BloqueoHorario, 'id'>): Promise<void> => {
+  const crearBloqueo = async (data: Omit<BloqueoHorario, 'id'>): Promise<boolean> => {
     if (supabaseEnabled && supabase) {
       const { data: row, error } = await supabase
         .from('bloqueos_horario')
@@ -703,13 +704,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (error || !row) {
         showToast('❌ No se pudo crear el bloqueo.');
-        return;
+        return false;
       }
       setBloqueos((prev) => [...prev, bloqueoFromRow(row)]);
     } else {
       setBloqueos((prev) => [...prev, { ...data, id: `bloq-${Date.now()}` }]);
     }
     showToast('🚫 Horario bloqueado');
+    return true;
   };
 
   const eliminarBloqueo = async (id: string): Promise<void> => {

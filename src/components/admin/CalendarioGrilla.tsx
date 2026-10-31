@@ -8,7 +8,7 @@
 // profesional que ese día no trabaja (15/10/2026, pedido de Yosy).
 import React, { useMemo } from 'react';
 import { Profesional, Turno, BloqueoHorario } from '../../types';
-import { DIAS_SEMANA, generarFranjas, estadoDeFranja, sumarMinutos, turnoBloqueaHorario, encajeEnHorario } from '../../lib/disponibilidad';
+import { DIAS_SEMANA, estadoDeFranja, sumarMinutos, turnoBloqueaHorario, encajeEnHorario, bloqueoCubreFranja } from '../../lib/disponibilidad';
 import { estadoSena } from '../../lib/recordatorios';
 
 interface CalendarioGrillaProps {
@@ -62,16 +62,26 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
     [turnos, fecha, profesionales]
   );
 
-  // Columnas: las que trabajan ese día + cualquiera que tenga un turno cargado.
+  // Bloqueos manuales de ese día (de las profesionales que se están mostrando).
+  const bloqueosDelDia = useMemo(
+    () => bloqueos.filter((b) => b.fecha === fecha && profesionales.some((p) => p.id === b.profesionalId)),
+    [bloqueos, fecha, profesionales]
+  );
+
+  // Columnas: las que trabajan ese día + cualquiera que tenga un turno o un bloqueo cargado
+  // (un bloqueo en un día que ella no trabaja también tiene que verse: 31/10/2026).
   const columnas = useMemo(
     () =>
       profesionales.filter(
-        (p) => !!p.horarioDisponible[diaSemana] || turnosDelDia.some((t) => t.profesionalId === p.id)
+        (p) =>
+          !!p.horarioDisponible[diaSemana] ||
+          turnosDelDia.some((t) => t.profesionalId === p.id) ||
+          bloqueosDelDia.some((b) => b.profesionalId === p.id)
       ),
-    [profesionales, diaSemana, turnosDelDia]
+    [profesionales, diaSemana, turnosDelDia, bloqueosDelDia]
   );
 
-  // Rango de filas: la unión de las jornadas y de todos los turnos del día.
+  // Rango de filas: la unión de las jornadas, de todos los turnos y de los bloqueos con horario del día.
   const { desde, hasta } = useMemo(() => {
     const inicios: number[] = [];
     const fines: number[] = [];
@@ -86,14 +96,27 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
       inicios.push(aMinutos(t.horaInicio));
       fines.push(aMinutos(finDelTurno(t)));
     }
+    for (const b of bloqueosDelDia) {
+      // Los de día completo no agrandan la grilla: cubren las filas que ya hay.
+      if (!b.diaCompleto && b.horaInicio && b.horaFin && b.horaFin > b.horaInicio) {
+        inicios.push(aMinutos(b.horaInicio));
+        fines.push(aMinutos(b.horaFin));
+      }
+    }
     if (inicios.length === 0) return { desde: '09:00', hasta: '19:00' };
     return {
       desde: aHora(Math.floor(Math.min(...inicios) / 30) * 30),
-      hasta: aHora(Math.ceil(Math.max(...fines) / 30) * 30),
+      hasta: aHora(Math.min(24 * 60, Math.ceil(Math.max(...fines) / 30) * 30)),
     };
-  }, [columnas, turnosDelDia, diaSemana]);
+  }, [columnas, turnosDelDia, bloqueosDelDia, diaSemana]);
 
-  const franjas = useMemo(() => generarFranjas(desde, hasta, 30), [desde, hasta]);
+  // Filas de 30 min. Se arman con minutos (no con sumarMinutos): algo que termina a las 23:59 daría la vuelta
+  // a las 00:00 y la lista no terminaría nunca.
+  const franjas = useMemo(() => {
+    const filas: string[] = [];
+    for (let m = aMinutos(desde); m < aMinutos(hasta); m += 30) filas.push(aHora(m));
+    return filas;
+  }, [desde, hasta]);
 
   if (columnas.length === 0) {
     return (
@@ -149,7 +172,8 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
 
           {/* Filas por franja horaria */}
           {franjas.map((franja) => {
-            const franjaFin = sumarMinutos(franja, 30);
+            // Fin de la fila como minutos (no sumarMinutos): la última fila (23:30) termina a las 24:00, no a las 00:00.
+            const franjaFin = aHora(aMinutos(franja) + 30);
             return (
               <React.Fragment key={franja}>
                 <div className="bg-white px-2 py-1.5 text-[10px] font-semibold text-rf-charcoal flex items-center justify-end sticky left-0">
@@ -201,24 +225,33 @@ export const CalendarioGrilla: React.FC<CalendarioGrillaProps> = ({
                     );
                   }
 
-                  const estado = estadoDeFranja(p, fecha, franja, turnos, bloqueos);
-
-                  if (estado.tipo === 'fuera-horario') {
-                    return <div key={p.id} className="bg-gray-100 min-h-[28px]" />;
-                  }
-
-                  if (estado.tipo === 'bloqueado') {
+                  // Un bloqueo se dibuja SIEMPRE, también fuera del horario habitual de la profesional o en un día
+                  // que no trabaja (antes quedaba en gris "fuera de horario" y no se veía). Con la primera celda de
+                  // cada bloqueo se lee qué es: el motivo, o "Bloqueado".
+                  const bloqueo = bloqueosDelDia.find((b) => b.profesionalId === p.id && bloqueoCubreFranja(b, franja, franjaFin));
+                  if (bloqueo) {
+                    const i = franjas.indexOf(franja);
+                    const empiezaAca = i === 0 || !bloqueoCubreFranja(bloqueo, franjas[i - 1], franja);
                     return (
                       <button
                         key={p.id}
                         type="button"
-                        title={`${estado.bloqueo.motivo ?? 'Horario bloqueado'} — tocar para desbloquear`}
-                        onClick={() => onClickBloqueo?.(estado.bloqueo)}
-                        className="bg-gray-300 hover:bg-gray-400 min-h-[28px] w-full flex items-center justify-center cursor-pointer"
+                        title={`${bloqueo.motivo ?? 'Horario bloqueado'} — tocar para desbloquear`}
+                        onClick={() => onClickBloqueo?.(bloqueo)}
+                        className="bg-gray-300 hover:bg-gray-400 min-h-[28px] w-full flex items-center justify-center px-1 cursor-pointer"
                       >
-                        <span className="text-[8px] text-gray-600 font-bold">🚫</span>
+                        <span className="text-[9px] text-gray-700 font-bold leading-tight truncate max-w-full">
+                          {empiezaAca ? `🚫 ${bloqueo.motivo ?? 'Bloqueado'}` : '🚫'}
+                        </span>
                       </button>
                     );
+                  }
+
+                  // Los bloqueos ya se resolvieron arriba: acá solo queda fuera de horario o libre.
+                  const estado = estadoDeFranja(p, fecha, franja, turnos, []);
+
+                  if (estado.tipo === 'fuera-horario') {
+                    return <div key={p.id} className="bg-gray-100 min-h-[28px]" />;
                   }
 
                   return <div key={p.id} className="bg-white min-h-[28px]" />;

@@ -34,7 +34,7 @@ export function turnoBloqueaHorario(t: Turno): boolean {
 
 // Un bloqueo manual (Fase 6) cubre una franja si es de día completo, o si
 // se superpone con el rango horario del bloqueo.
-function bloqueoCubreFranja(b: BloqueoHorario, horaFranja: string, horaFin: string): boolean {
+export function bloqueoCubreFranja(b: BloqueoHorario, horaFranja: string, horaFin: string): boolean {
   if (b.diaCompleto) return true;
   if (!b.horaInicio || !b.horaFin) return true; // por las dudas, un bloqueo mal cargado bloquea todo el día
   return horaFranja < b.horaFin && horaFin > b.horaInicio;

@@ -398,6 +398,10 @@ export const AdminAgenda: React.FC = () => {
       (profesionalFiltroEfectivo === 'todos' || b.profesionalId === profesionalFiltroEfectivo)
   );
 
+  // Días a dibujar en la vista de rango: los que tienen turnos Y los que solo tienen un bloqueo
+  // (antes un día con un bloqueo y ningún turno no aparecía).
+  const diasDelRango = [...new Set([...Object.keys(turnosPorDia), ...bloqueosDelRango.map((b) => b.fecha)])].sort();
+
   // Cola de recordatorios: por cada turno futuro (de la profesional filtrada, sin
   // importar el rango de fechas elegido arriba — si no, con "Hoy" nunca se verían
   // los de 72h/48h), la ventana que ya entró en tiempo y todavía no se activó — solo la más urgente, para que
@@ -461,9 +465,31 @@ export const AdminAgenda: React.FC = () => {
     ? profesionales.filter((p) => p.id === profesionalActivoId)
     : profesionales;
 
+  // Lleva la Agenda a lo que se acaba de bloquear (31/10/2026): antes la pantalla se quedaba en otro día u
+  // otra profesional, el bloqueo "no figuraba" y se volvía a apretar Bloquear (se llegaron a crear bloqueos
+  // duplicados). Si ya se está mirando un rango que lo incluye, no se mueve nada.
+  const mostrarBloqueo = (profesionalId: string, fecha: string) => {
+    if (fecha < desde || fecha > hasta) irADia(fecha);
+    if (!esProfesional && profesionalFiltro !== 'todos' && profesionalFiltro !== profesionalId) setProfesionalFiltro('todos');
+  };
+
   const handleCrearBloqueo = async () => {
     if (!bloqueoProfesionalId || !bloqueoFecha) return;
-    await crearBloqueo({
+    // Si ese horario ya estaba bloqueado (por un bloqueo de día completo o uno más grande), no se vuelve a crear.
+    const yaBloqueado = bloqueos.some(
+      (b) =>
+        b.profesionalId === bloqueoProfesionalId &&
+        b.fecha === bloqueoFecha &&
+        (b.diaCompleto ||
+          (!bloqueoDiaCompleto && !!b.horaInicio && !!b.horaFin && b.horaInicio <= bloqueoHoraInicio && b.horaFin >= bloqueoHoraFin))
+    );
+    if (yaBloqueado) {
+      showToast('Ese horario ya estaba bloqueado: te lo muestro en el calendario.');
+      setModalBloqueoAbierto(false);
+      mostrarBloqueo(bloqueoProfesionalId, bloqueoFecha);
+      return;
+    }
+    const creado = await crearBloqueo({
       profesionalId: bloqueoProfesionalId,
       fecha: bloqueoFecha,
       diaCompleto: bloqueoDiaCompleto,
@@ -474,6 +500,7 @@ export const AdminAgenda: React.FC = () => {
     });
     setModalBloqueoAbierto(false);
     setBloqueoMotivo('');
+    if (creado) mostrarBloqueo(bloqueoProfesionalId, bloqueoFecha);
   };
 
   const renderTurnoCard = (turno: Turno) => {
@@ -594,7 +621,10 @@ export const AdminAgenda: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={() => {
-              setBloqueoProfesionalId(esProfesional ? profesionalActivoId ?? '' : profesionales[0]?.id ?? '');
+              // Yosy: la profesional que está mirando (si filtró por una); si no, la primera de la lista.
+              setBloqueoProfesionalId(
+                esProfesional ? profesionalActivoId ?? '' : profesionalFiltro !== 'todos' ? profesionalFiltro : profesionales[0]?.id ?? ''
+              );
               setBloqueoFecha(fechaFiltro);
               setModalBloqueoAbierto(true);
             }}
@@ -750,16 +780,18 @@ export const AdminAgenda: React.FC = () => {
               <h2 className="text-sm font-bold uppercase tracking-wider text-rf-charcoal">
                 Calendario — {formatDateShort(desde)} al {formatDateShort(hasta)}
               </h2>
-              {Object.keys(turnosPorDia).length === 0 ? (
+              {diasDelRango.length === 0 ? (
                 <p className="text-xs text-rf-charcoal">Sin turnos en el período.</p>
               ) : (
-                Object.keys(turnosPorDia)
-                  .sort()
-                  .map((dia) => (
+                diasDelRango.map((dia) => {
+                  const cantTurnos = (turnosPorDia[dia] ?? []).length;
+                  const cantBloqueos = bloqueosDelRango.filter((b) => b.fecha === dia).length;
+                  return (
                     <div key={dia} className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-rf-rose-deep capitalize">
-                          {formatDateReadable(dia)} · {turnosPorDia[dia].length} turno{turnosPorDia[dia].length === 1 ? '' : 's'}
+                          {formatDateReadable(dia)} · {cantTurnos} turno{cantTurnos === 1 ? '' : 's'}
+                          {cantBloqueos > 0 ? ` · ${cantBloqueos} bloqueo${cantBloqueos === 1 ? '' : 's'}` : ''}
                         </h3>
                         <button
                           onClick={() => {
@@ -782,7 +814,8 @@ export const AdminAgenda: React.FC = () => {
                         onClickBloqueo={setBloqueoAConfirmar}
                       />
                     </div>
-                  ))
+                  );
+                })
               )}
             </div>
           ) : (
