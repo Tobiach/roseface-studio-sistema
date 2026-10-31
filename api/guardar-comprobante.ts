@@ -116,16 +116,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const telefonoClienta = escapeHtml(clienta?.telefono ?? '—');
     const nombreServicio = escapeHtml(servicio?.nombre ?? 'servicio');
     const nombreProfesional = escapeHtml(profesional?.nombre ?? 'la profesional');
+    const linkComprobante = escapeHtml(url);
+    // Mili/Roma sin MP: Yosy es quien aprueba (ver api/aprobar-comprobante.ts),
+    // así que su panel SÍ le muestra este turno en "Comprobantes a Revisar".
+    // Alquiler fijo (Cris/Ari/etc.): ese pago es entre la clienta y la
+    // profesional — el panel de Yosy no lista estos, por eso el mail es solo
+    // informativo acá, no una invitación a confirmarlo ella misma.
+    const accion = turno.circuito_pago === 'mercado_pago'
+      ? '<p>Confirmalo desde tu panel, en "Comprobantes a Revisar".</p>'
+      : `<p>Este es el pago de ${nombreProfesional} con su clienta — avisale a ella para que lo revise y lo confirme.</p>`;
 
     await avisarleAYosy(
       `Nuevo comprobante para revisar — ${nombreServicio} el ${turno.fecha}`,
-      `<p>Una clienta subió el comprobante de la transferencia de su turno. Revisalo y confirmalo desde el panel.</p>
+      `<p>Una clienta subió el comprobante de la transferencia de su turno.</p>
        <ul>
          <li><strong>Clienta:</strong> ${nombreClienta} (${telefonoClienta})</li>
          <li><strong>Servicio:</strong> ${nombreServicio}</li>
          <li><strong>Profesional:</strong> ${nombreProfesional}</li>
          <li><strong>Fecha:</strong> ${turno.fecha} a las ${turno.hora_inicio} hs</li>
-       </ul>`
+       </ul>
+       <p><a href="${linkComprobante}">Ver la foto del comprobante</a></p>
+       ${accion}`
     );
   } catch (err) {
     // El comprobante ya quedó guardado arriba — que falle el mail no revierte eso.
