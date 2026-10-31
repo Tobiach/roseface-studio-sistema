@@ -12,7 +12,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { formatCurrency, formatDateReadable } from '../lib/formatters';
-import { Landmark, Copy, Upload, CheckCircle2, ArrowRight, Calendar, Clock, Plus } from 'lucide-react';
+import { Landmark, Copy, Upload, CheckCircle2, ArrowRight, Calendar, Clock, Plus, AlertTriangle } from 'lucide-react';
 
 export const ReservaTransferencia: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -200,6 +200,19 @@ export const ReservaTransferencia: React.FC = () => {
             Podés transferir desde cualquier banco o billetera virtual usando el alias o el CBU —
             no hace falta que sea Mercado Pago.
           </p>
+        </div>
+
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-amber-900">
+              Subí el comprobante ACÁ para confirmar tu turno
+            </p>
+            <p className="text-xs text-amber-800/90 leading-relaxed">
+              No hace falta que lo mandes por WhatsApp — apenas lo subas acá abajo quedamos
+              avisados con los datos de tu turno y lo revisamos.
+            </p>
+          </div>
         </div>
 
         <div className="space-y-2">

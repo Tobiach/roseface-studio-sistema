@@ -17,6 +17,30 @@ function getSupabaseAdmin() {
   return createClient(url, key);
 }
 
+function escapeHtml(valor: string): string {
+  return valor
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Duplicado de aprobar-comprobante.ts (Vercel no comparte código entre funciones).
+async function avisarleAYosy(asunto: string, html: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: 'Rose Face Studio <onboarding@resend.dev>', to: 'rosefacestudio@gmail.com', subject: asunto, html }),
+    });
+  } catch (err) {
+    console.error('[guardar-comprobante] No se pudo mandar el mail a Yosy:', err);
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido' });
@@ -46,7 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { data: turno, error: turnoError } = await supabaseAdmin
     .from('turnos')
-    .select('id, estado, circuito_pago')
+    .select('id, estado, circuito_pago, clienta_id, servicio_id, profesional_id, fecha, hora_inicio')
     .eq('id', turnoId)
     .single();
 
@@ -76,6 +100,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('[guardar-comprobante] Error actualizando turno', turnoId, updateError);
     res.status(500).json({ ok: false, error: 'No se pudo guardar el comprobante en el turno' });
     return;
+  }
+
+  // 30/10/2026 (pedido de Tobias): avisarle a Yosy apenas llega el
+  // comprobante, no solo cuando se aprueba — así puede corroborarlo contra
+  // el teléfono y el servicio reservado sin tener que ir a mirar el panel.
+  try {
+    const [{ data: clienta }, { data: servicio }, { data: profesional }] = await Promise.all([
+      supabaseAdmin.from('clientas').select('nombre, telefono').eq('id', turno.clienta_id).single(),
+      supabaseAdmin.from('servicios').select('nombre').eq('id', turno.servicio_id).single(),
+      supabaseAdmin.from('profesionales').select('nombre').eq('id', turno.profesional_id).single(),
+    ]);
+
+    const nombreClienta = escapeHtml(clienta?.nombre ?? '—');
+    const telefonoClienta = escapeHtml(clienta?.telefono ?? '—');
+    const nombreServicio = escapeHtml(servicio?.nombre ?? 'servicio');
+    const nombreProfesional = escapeHtml(profesional?.nombre ?? 'la profesional');
+
+    await avisarleAYosy(
+      `Nuevo comprobante para revisar — ${nombreServicio} el ${turno.fecha}`,
+      `<p>Una clienta subió el comprobante de la transferencia de su turno. Revisalo y confirmalo desde el panel.</p>
+       <ul>
+         <li><strong>Clienta:</strong> ${nombreClienta} (${telefonoClienta})</li>
+         <li><strong>Servicio:</strong> ${nombreServicio}</li>
+         <li><strong>Profesional:</strong> ${nombreProfesional}</li>
+         <li><strong>Fecha:</strong> ${turno.fecha} a las ${turno.hora_inicio} hs</li>
+       </ul>`
+    );
+  } catch (err) {
+    // El comprobante ya quedó guardado arriba — que falle el mail no revierte eso.
+    console.error('[guardar-comprobante] Comprobante guardado pero falló el aviso por mail:', err);
   }
 
   res.status(200).json({ ok: true });
