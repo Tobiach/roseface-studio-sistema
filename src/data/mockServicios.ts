@@ -170,6 +170,10 @@ export const mockServicios: Servicio[] = [
   // Sharon sumada acá también (22/9/2026): "Sharon y Yosy hacemos todo"
   // responde a una pregunta que cubría Pestañas Y Cejas juntas (el
   // ejemplo puntual de la pregunta era justo "laminado de cejas").
+  // 30/10/2026: Mili figuraba SIN los dos laminados, pero el mismo documento de Yosy
+  // (22/9) decía que Mili hace "Cejas laminado, perfilado y sombreado": se le habían
+  // olvidado. Tobias lo confirmó y se la sumó a "Laminado de Cejas" y a "Laminado +
+  // Perfilado" (esta última es el laminado más el perfilado, que ya hacía).
   {
     id: 'serv-cejas-bozo',
     nombre: 'Depilación de Bozo',
@@ -212,7 +216,7 @@ export const mockServicios: Servicio[] = [
     precio: 35000,
     requiereSena: true,
     puntosVIP: 8,
-    profesionalesQueLoRealizan: ['prof-yosy', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-mili', 'prof-yosy', 'prof-sharon'],
   },
   {
     id: 'serv-cejas-perfilado-sombreado',
@@ -234,7 +238,7 @@ export const mockServicios: Servicio[] = [
     precio: 44000,
     requiereSena: true,
     puntosVIP: 0,
-    profesionalesQueLoRealizan: ['prof-yosy', 'prof-sharon'],
+    profesionalesQueLoRealizan: ['prof-mili', 'prof-yosy', 'prof-sharon'],
   },
 
   // ===== UÑAS =====

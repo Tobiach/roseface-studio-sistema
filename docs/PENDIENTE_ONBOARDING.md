@@ -213,6 +213,13 @@ cargar y dónde impacta.
      Tecnológico YY → se la volvió a agregar a ese servicio (Supabase +
      `mockServicios.ts`). Natural Volumen, Medio Volumen, Lash Rose Face y
      Mega Volumen siguen SIN Mili hasta que Yosy confirme.
+     **Corrección 30/10/2026:** el mismo documento de Yosy decía que Mili hace
+     "Cejas laminado, perfilado y sombreado", pero "Laminado de Cejas" y
+     "Laminado + Perfilado" se habían quedado solo con Yosy y Roma (omisión del
+     22/9). Tobias confirmó que Mili hace laminado → se la sumó a los dos
+     (Supabase + `mockServicios.ts`). Ojo: en Reserva.tsx la etiqueta de la tarjeta de
+     Cejas dice "Perfilado y diseño" para Mili y "Laminado y diseño" para Yosy
+     (texto fijo): pendiente decidir si Mili también dice laminado.
   2. Yosy y Sharon ahora están en `profesionalesQueLoRealizan` de todos
      los servicios de Pestañas Y Cejas del otro (menos Lifting, que
      siempre fue solo de Mili, sin relación con este dato). Antes una
