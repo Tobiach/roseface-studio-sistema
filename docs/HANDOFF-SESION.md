@@ -492,6 +492,28 @@ crea nada). Rollback a este bloque: `npx vercel rollback roseface-studio-sistema
 pero sigue sin encontrarse la causa de fondo — si una futura sesión tiene margen, vale la pena insistir en encontrarla en vez
 de solo pedirle que libere espacio de nuevo cada vez.
 
+## 16. Sesión del 30–31/10/2026 — videos de Instagram, sin trayectoria, 5 estrellas, Mili/laminado y bloqueo visible
+
+Todo publicado a pedido de Tobias, con prueba de pantalla propia en `docs/pruebas/pantalla/` (ver su README):
+- **Videos de perfil = reels de Instagram** (`508deb0`/`80a417b`): `VideoInstagram.tsx` + `lib/instagram.ts`; links en `profesionales.video_url` de Roma, Mili, Yosy, Cris y Ari.
+- **Sin años de trayectoria/experiencia** en perfil, reserva y equipo (`364595d`); campo `aniosExperiencia` eliminado.
+- **5 estrellas dibujadas** por profesional (`ea0803d`, `Estrellas.tsx`); las notas (5.0) y la cantidad de opiniones no se tocaron.
+- **Mili hace laminado de cejas** (`8e1be14`): se agregó a "Laminado de Cejas" y "Laminado + Perfilado" (omisión del 22/9) en Supabase + catálogo.
+- **El bloqueo de horarios se ve en el calendario** (`4f10016`): la Agenda va al día bloqueado, el bloqueo se dibuja siempre (también fuera de
+  horario / día libre / vista de rango sin turnos) y bloquear lo que ya estaba bloqueado no crea duplicados. Causa del problema: la pantalla
+  no cambiaba de día/profesional al bloquear y la grilla solo dibujaba dentro de la jornada → se apretaba "Bloquear" de nuevo.
+
+**PUNTO DE RETROCESO (pedido de Tobias: "si hay que volver a este estado, recordá"):**
+- Estado ANTERIOR a "bloqueo visible" = commit **`8e1be14`**, deploy de producción
+  **`roseface-studio-sistema-ibozk209u-tobiachs-projects.vercel.app`** (bundle `index-D0Z7649z.js`), etiqueta git **`pre-bloqueo-visible-2026-10-31`**.
+  Para volver SOLO el código: `npx vercel rollback roseface-studio-sistema-ibozk209u-tobiachs-projects.vercel.app --yes`
+  (ojo: con el rollback hecho, un push nuevo a `main` vuelve a deployar encima; en git: `git revert 4f10016`).
+- La **base no vuelve con el rollback**. Cambios de datos de estos días y su valor anterior: `profesionales.video_url` — Roma y Ari `NULL`, Mili
+  `https://youtube.com/shorts/5ip0rEsB1E4`, Yosy `.../shorts/Xe4aapAiic0`, Cris `.../shorts/A6tZdj1x0bo`; `servicios.profesionales_que_lo_realizan` de
+  `serv-cejas-laminado` y `serv-cejas-laminado-perfilado` — antes `["prof-yosy","prof-sharon"]`; `serv-pestanas-volumen-tecnologico` — antes
+  `["prof-sharon","prof-yosy"]`; `profesionales.nombre` de `prof-sharon` — antes "Sharon" (ahora "Roma").
+- Pendiente de Tobias: OK para borrar 6 bloqueos repetidos (#8, #10, #17, #21, #23, #34: otro igual o más grande los cubre); no se borró nada.
+
 ## 9. Cómo verificar un deploy (patrón usado siempre)
 1. `npm run lint` y `npm run build` en 0 → commit → (avisar/pedir OK) `git push origin main` — **el push ya deploya solo**; confirmar con
    `npx vercel ls --prod` (aparece un deploy nuevo a los ~20 s) y usar `npx vercel --yes --prod` solo si no apareció.
